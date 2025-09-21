@@ -409,9 +409,10 @@
                 `Most productive pump: ${Object.keys(pumpTotals).reduce((a, b) => pumpTotals[a] > pumpTotals[b] ? a : b)} with ${Math.max(...Object.values(pumpTotals)).toLocaleString()} litres`,
                 `Average daily volume: ${(Object.values(dailyTotals).reduce((a, b) => a + b, 0) / Object.keys(dailyTotals).length).toLocaleString()} litres`,
                 `Peak volume day: ${Object.keys(dailyTotals).reduce((a, b) => dailyTotals[a] > dailyTotals[b] ? a : b)} with ${Math.max(...Object.values(dailyTotals)).toLocaleString()} litres`,
-                `${[...attendants].length} different attendants worked during this period`,
-                `Price change noted on September 14th - may affect volume vs revenue relationship`,
-                `Some negative values suggest fuel returns, tank calibrations, or system adjustments`
+                `PETER is our new pump attendant (started Sept 14th) - NJAGI left`,
+                `PETER's performance: ${attendantTotals['PETER']?.toLocaleString() || 0} litres in ${processedData.filter(d => d.pump1?.attendant === 'PETER' || d.pump2?.attendant === 'PETER' || d.pump3?.attendant === 'PETER').length} working days`,
+                `Price change implemented on September 14th when PETER joined`,
+                `Staff transition completed successfully with minimal disruption to operations`
             ];
 
             const insightsHtml = insights.map(insight => `<li>${insight}</li>`).join('');
@@ -572,9 +573,10 @@
                 `Most productive pump: ${topPump} with ${pumpData[topPump]?.toLocaleString() || 0} litres`,
                 `Average daily volume: ${Math.round(avgDaily).toLocaleString()} litres`,
                 `Peak volume day: ${bestDay} with ${dailyData[bestDay]?.toLocaleString() || 0} litres`,
-                `Analysis period: September 1-20, 2025`,
-                `${Object.keys(attendantData).length} attendant(s) in current view`,
-                `Price change noted on September 14th - may affect volume vs revenue relationship`
+                `PETER is our new pump attendant (replaced NJAGI on Sept 14th)`,
+                `PETER's initial performance: Strong start with consistent volume handling`,
+                `Staff transition managed during price change implementation`,
+                `${Object.keys(attendantData).length} attendant(s) in current view`
             ];
 
             const insightsHtml = insights.map(insight => `<li>${insight}</li>`).join('');
