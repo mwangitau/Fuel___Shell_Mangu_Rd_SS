@@ -455,9 +455,168 @@
         }
 
         function updateAnalysis() {
-            updateMetrics();
-            updateInsights();
-            updateDataTable();
+            const selectedAttendant = document.getElementById('attendantFilter').value;
+            const selectedPump = document.getElementById('pumpFilter').value;
+            
+            // Filter data based on selections
+            let filteredData = [...processedData];
+            let filteredAttendantTotals = {...attendantTotals};
+            let filteredPumpTotals = {...pumpTotals};
+            let filteredDailyTotals = {...dailyTotals};
+            
+            if (selectedAttendant !== 'all') {
+                // Filter by specific attendant
+                filteredData = processedData.map(day => {
+                    let newTotal = 0;
+                    const newDay = {date: day.date, total: 0};
+                    
+                    if (day.pump1.attendant === selectedAttendant) {
+                        newDay.pump1 = day.pump1;
+                        newTotal += day.pump1.value;
+                    }
+                    if (day.pump2.attendant === selectedAttendant) {
+                        newDay.pump2 = day.pump2;
+                        newTotal += day.pump2.value;
+                    }
+                    if (day.pump3.attendant === selectedAttendant) {
+                        newDay.pump3 = day.pump3;
+                        newTotal += day.pump3.value;
+                    }
+                    
+                    newDay.total = newTotal;
+                    filteredDailyTotals[day.date] = newTotal;
+                    return newDay;
+                });
+                
+                // Reset other totals for single attendant view
+                filteredAttendantTotals = {};
+                filteredAttendantTotals[selectedAttendant] = attendantTotals[selectedAttendant];
+            }
+            
+            if (selectedPump !== 'all') {
+                // Filter by specific pump
+                filteredData = processedData.map(day => {
+                    const newDay = {date: day.date, total: 0};
+                    
+                    if (selectedPump === 'PUMP 1' && day.pump1) {
+                        newDay.pump1 = day.pump1;
+                        newDay.total = day.pump1.value;
+                    } else if (selectedPump === 'PUMP 2' && day.pump2) {
+                        newDay.pump2 = day.pump2;
+                        newDay.total = day.pump2.value;
+                    } else if (selectedPump === 'PUMP3' && day.pump3) {
+                        newDay.pump3 = day.pump3;
+                        newDay.total = day.pump3.value;
+                    }
+                    
+                    filteredDailyTotals[day.date] = newDay.total;
+                    return newDay;
+                });
+                
+                // Reset pump totals for single pump view
+                filteredPumpTotals = {};
+                filteredPumpTotals[selectedPump] = pumpTotals[selectedPump];
+            }
+            
+            updateMetricsWithData(filteredDailyTotals, filteredAttendantTotals, filteredPumpTotals);
+            updateInsightsWithData(filteredDailyTotals, filteredAttendantTotals, filteredPumpTotals, selectedAttendant, selectedPump);
+            updateDataTableWithData(filteredData, selectedAttendant, selectedPump);
+        }
+        
+        function updateMetricsWithData(dailyData, attendantData, pumpData) {
+            const totalSales = Object.values(dailyData).reduce((a, b) => a + b, 0);
+            const avgDaily = totalSales / Object.keys(dailyData).length || 0;
+            const bestDay = Object.keys(dailyData).reduce((a, b) => dailyData[a] > dailyData[b] ? a : b, '');
+            const topAttendant = Object.keys(attendantData).reduce((a, b) => attendantData[a] > attendantData[b] ? a : b, '');
+            const topPump = Object.keys(pumpData).reduce((a, b) => pumpData[a] > pumpData[b] ? a : b, '');
+
+            const metricsHtml = `
+                <div class="metric-card">
+                    <div class="metric-value">${totalSales.toLocaleString()} L</div>
+                    <div class="metric-label">Total Volume Sold</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${Math.round(avgDaily).toLocaleString()} L</div>
+                    <div class="metric-label">Average Daily Volume</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${bestDay}</div>
+                    <div class="metric-label">Best Sales Day</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${topAttendant}</div>
+                    <div class="metric-label">Top Performer</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${topPump}</div>
+                    <div class="metric-label">Best Pump</div>
+                </div>
+            `;
+            document.getElementById('metricsGrid').innerHTML = metricsHtml;
+        }
+        
+        function updateInsightsWithData(dailyData, attendantData, pumpData, selectedAttendant, selectedPump) {
+            const totalVolume = Object.values(dailyData).reduce((a, b) => a + b, 0);
+            const avgDaily = totalVolume / Object.keys(dailyData).length || 0;
+            const topAttendant = Object.keys(attendantData).reduce((a, b) => attendantData[a] > attendantData[b] ? a : b, '');
+            const topPump = Object.keys(pumpData).reduce((a, b) => pumpData[a] > pumpData[b] ? a : b, '');
+            const bestDay = Object.keys(dailyData).reduce((a, b) => dailyData[a] > dailyData[b] ? a : b, '');
+            
+            let filterText = '';
+            if (selectedAttendant !== 'all') filterText += ` (Filtered by ${selectedAttendant})`;
+            if (selectedPump !== 'all') filterText += ` (Filtered by ${selectedPump})`;
+            
+            const insights = [
+                `Total fuel volume sold: ${totalVolume.toLocaleString()} litres${filterText}`,
+                `Best performing attendant: ${topAttendant} with ${attendantData[topAttendant]?.toLocaleString() || 0} litres`,
+                `Most productive pump: ${topPump} with ${pumpData[topPump]?.toLocaleString() || 0} litres`,
+                `Average daily volume: ${Math.round(avgDaily).toLocaleString()} litres`,
+                `Peak volume day: ${bestDay} with ${dailyData[bestDay]?.toLocaleString() || 0} litres`,
+                `Analysis period: September 1-20, 2025`,
+                `${Object.keys(attendantData).length} attendant(s) in current view`,
+                `Price change noted on September 14th - may affect volume vs revenue relationship`
+            ];
+
+            const insightsHtml = insights.map(insight => `<li>${insight}</li>`).join('');
+            document.getElementById('insightsList').innerHTML = insightsHtml;
+        }
+        
+        function updateDataTableWithData(data, selectedAttendant, selectedPump) {
+            let tableHtml = `
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Pump 1 Attendant</th>
+                        <th>Pump 1 Volume (L)</th>
+                        <th>Pump 2 Attendant</th>
+                        <th>Pump 2 Volume (L)</th>
+                        <th>Pump 3 Attendant</th>
+                        <th>Pump 3 Volume (L)</th>
+                        <th>Daily Total (L)</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            data.forEach(row => {
+                if (row.total > 0) { // Only show rows with data
+                    tableHtml += `
+                        <tr>
+                            <td>${row.date}</td>
+                            <td>${row.pump1?.attendant || '-'}</td>
+                            <td>${row.pump1?.value ? row.pump1.value.toLocaleString() + ' L' : '-'}</td>
+                            <td>${row.pump2?.attendant || '-'}</td>
+                            <td>${row.pump2?.value ? row.pump2.value.toLocaleString() + ' L' : '-'}</td>
+                            <td>${row.pump3?.attendant || '-'}</td>
+                            <td>${row.pump3?.value ? row.pump3.value.toLocaleString() + ' L' : '-'}</td>
+                            <td><strong>${row.total.toLocaleString()} L</strong></td>
+                        </tr>
+                    `;
+                }
+            });
+
+            tableHtml += '</tbody>';
+            document.getElementById('dataTable').innerHTML = tableHtml;
         }
 
         // Initialize the dashboard when page loads
