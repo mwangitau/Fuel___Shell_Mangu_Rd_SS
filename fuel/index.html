@@ -386,40 +386,25 @@
             return;
           }
           
-          // Extract pump data - handle multiple possible column naming patterns
+          // Handle your restructured sheet with repeated DAY and NAME OF CSA columns
           const columns = Object.keys(row);
           console.log(`Row ${index} - Available columns:`, columns);
           
-          // Find attendant columns (looking for various patterns)
-          const attendant1Col = columns.find(col => 
-            col === 'NAME OF CSA' || 
-            (col.includes('NAME OF CSA') && !col.includes('.'))
-          ) || columns[1]; // fallback to second column
-          
-          const attendant2Col = columns.find(col => 
-            col === 'NAME OF CSA.1' || 
-            col.includes('NAME OF CSA') && (col.includes('.1') || col.includes('2'))
-          ) || columns[3]; // fallback to fourth column
-          
-          const attendant3Col = columns.find(col => 
-            col === 'NAME OF CSA.2' || 
-            col.includes('NAME OF CSA') && (col.includes('.2') || col.includes('3'))
-          ) || columns[5]; // fallback to sixth column
-          
-          console.log(`Attendant columns found: ${attendant1Col}, ${attendant2Col}, ${attendant3Col}`);
+          // With your new structure, Google Sheets will likely name the columns as:
+          // DAY, NAME OF CSA, PUMP 1, DAY.1, NAME OF CSA.1, PUMP 2, DAY.2, NAME OF CSA.2, PUMP 3
           
           const pump1 = {
-            attendant: (row[attendant1Col] || 'Unknown').toString().trim(),
+            attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 1']) || 0)
           };
           
           const pump2 = {
-            attendant: (row[attendant2Col] || 'Unknown').toString().trim(),
+            attendant: (row['NAME OF CSA.1'] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 2']) || 0)
           };
           
           const pump3 = {
-            attendant: (row[attendant3Col] || 'Unknown').toString().trim(),
+            attendant: (row['NAME OF CSA.2'] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 3']) || 0)
           };
           
