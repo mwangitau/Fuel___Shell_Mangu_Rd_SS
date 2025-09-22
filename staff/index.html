@@ -114,7 +114,7 @@ allData = rows.map(r => {
 
       chart = new Chart(document.getElementById("shortagesChart"), {
         type: "line",
-        data: { labels: allData.map(d => d.date), datasets },
+        data: { labels: allData.map(d => d.Day), datasets },
         options: { responsive: true, plugins: { legend: { position: "bottom" } } }
       });
 
@@ -126,21 +126,21 @@ allData = rows.map(r => {
       let header, rows;
 
       if (selectedStaff === "ALL") {
-        header = "<tr><th>Date</th>" + staff.map(s => `<th>${s}</th>`).join("") + "</tr>";
+        header = "<tr><th>Day</th>" + staff.map(s => `<th>${s}</th>`).join("") + "</tr>";
         rows = allData.map(row => {
           let cells = staff.map(s => {
             let v = row[s];
             let cls = v < 0 ? "negative" : "positive";
             return `<td class='${cls}'>${v.toFixed(2)}</td>`;
           }).join("");
-          return `<tr><td>${row.date}</td>${cells}</tr>`;
+          return `<tr><td>${row.Day}</td>${cells}</tr>`;
         }).join("");
       } else {
         header = `<tr><th>Date</th><th>${selectedStaff}</th></tr>`;
         rows = allData.map(row => {
           let v = row[selectedStaff];
           let cls = v < 0 ? "negative" : "positive";
-          return `<tr><td>${row.date}</td><td class='${cls}'>${v.toFixed(2)}</td></tr>`;
+          return `<tr><td>${row.Day}</td><td class='${cls}'>${v.toFixed(2)}</td></tr>`;
         }).join("");
       }
 
