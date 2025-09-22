@@ -70,10 +70,11 @@
 const firstHeader = Object.keys(rows[0])[0];  
 
 allData = rows.map(r => {
-  let obj = { date: r[firstHeader] };  // always use first column as date
+  let obj = { day: r.DAY };   // 👈 use DAY column
   staff.forEach(s => obj[s] = parseFloat(r[s]) || 0);
   return obj;
 });
+
 
 
       populateDropdown();
