@@ -2,45 +2,334 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Staff Shortages Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Shell Mangu Fuel Pump Analysis</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
-    h1 { color: #333; }
-    .chart-container { width: 100%; max-width: 900px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
-    th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: right; }
-    th { background: #0077cc; color: white; text-align: center; }
-    td.negative { color: red; }
-    td.positive { color: green; }
-    .controls { text-align: center; margin-bottom: 20px; }
-    select { padding: 6px 10px; font-size: 14px; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      margin: 0; 
+      padding: 20px; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.95);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 30px;
+      font-size: 2.5em;
+      background: linear-gradient(45deg, #3498db, #9b59b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .metric-card {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 25px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform: rotate(45deg);
+      transition: all 0.5s;
+      opacity: 0;
+    }
+    .metric-card:hover {
+      transform: translateY(-5px) scale(1.02);
+    }
+    .metric-card:hover::before {
+      opacity: 1;
+      animation: shimmer 0.6s ease-in-out;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) rotate(45deg); }
+    }
+    .metric-value {
+      font-size: 2.2em;
+      font-weight: bold;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+    .metric-label {
+      font-size: 0.95em;
+      opacity: 0.95;
+      position: relative;
+      z-index: 1;
+    }
+    .metric-icon {
+      font-size: 1.5em;
+      margin-bottom: 10px;
+      opacity: 0.8;
+    }
+    .chart-container {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease;
+    }
+    .chart-container:hover {
+      transform: translateY(-2px);
+    }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 25px;
+      margin-bottom: 25px;
+    }
+    .analysis-section {
+      background: linear-gradient(135deg, #f8f9fa, #ffffff);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 25px;
+      border-left: 5px solid #3498db;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    .analysis-section h3 {
+      color: #2c3e50;
+      margin-bottom: 15px;
+      font-size: 1.4em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .insights-list {
+      list-style: none;
+      padding: 0;
+    }
+    .insights-list li {
+      background: white;
+      margin: 12px 0;
+      padding: 18px;
+      border-radius: 10px;
+      border-left: 4px solid #e74c3c;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .insights-list li:hover {
+      transform: translateX(5px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    }
+    .filter-section {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .filter-label {
+      font-size: 0.9em;
+      color: #555;
+      font-weight: 600;
+    }
+    select, button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    select:hover, button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+    }
+    button {
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      font-weight: 600;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .data-table th, .data-table td {
+      padding: 15px 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    .data-table th {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      font-weight: bold;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .data-table tbody tr:hover {
+      background: rgba(102, 126, 234, 0.05);
+    }
+    .loading-spinner {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .date-range {
+      background: rgba(255,255,255,0.9);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.9em;
+      color: #666;
+      margin-bottom: 15px;
+    }
+    footer {
+      margin-top: 40px;
+      padding: 25px;
+      background: linear-gradient(135deg, #2c3e50, #34495e);
+      color: white;
+      border-radius: 15px;
+      font-size: 13px;
+      line-height: 1.6;
+      text-align: center;
+    }
+    @media (max-width: 768px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+      .metrics-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+      .filter-section {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Staff Shortages Dashboard</h1>
-  <p>Negative numbers = shortages after selling fuel</p>
+  <div class="container">
+    <h1>⛽ Shell Mangu Fuel Pump Analysis - Volume Sales (Litres)</h1>
+    
+    <div class="date-range" id="dateRange"></div>
+    <div class="metrics-grid" id="metricsGrid"></div>
+    
+    <div class="filter-section">
+      <div class="filter-group">
+        <label class="filter-label">Data Source</label>
+        <select id="dataSource" onchange="handleDataSourceChange()">
+          <option value="sheets">Google Sheets (Auto)</option>
+          <option value="manual">Manual CSV Paste</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Attendant Filter</label>
+        <select id="attendantFilter">
+          <option value="all">All Attendants</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Pump Filter</label>
+        <select id="pumpFilter">
+          <option value="all">All Pumps</option>
+          <option value="PUMP 1">Pump 1</option>
+          <option value="PUMP 2">Pump 2</option>
+          <option value="PUMP3">Pump 3</option>
+        </select>
+      </div>
+      <button onclick="updateAnalysis()">🔄 Update Analysis</button>
+      <button onclick="exportData()" style="background: linear-gradient(135deg, #27ae60, #2ecc71);">📊 Export Data</button>
+    </div>
 
-  <div class="controls">
-    <label for="staffSelect"><strong>View Individual Staff:</strong></label>
-    <select id="staffSelect">
-      <option value="ALL">All Staff</option>
-    </select>
+    <div id="manualDataInput" style="display: none; margin-bottom: 25px;">
+      <div class="analysis-section">
+        <h3>📋 Manual CSV Data Input</h3>
+        <p>Copy and paste your CSV data from Google Sheets:</p>
+        <textarea id="csvTextarea" style="width: 100%; height: 200px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; font-family: monospace; font-size: 12px;" placeholder="Paste your CSV data here...&#10;&#10;Format should be:&#10;DAY,Attendant1,Volume1,Attendant2,Volume2,Attendant3,Volume3&#10;2025.09.01,John,1500,Mary,1200,Peter,1800&#10;2025.09.02,John,1600,Mary,1100,Peter,1900"></textarea>
+        <button onclick="loadManualData()" style="margin-top: 10px; background: linear-gradient(135deg, #3498db, #2980b9); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">
+          📊 Load Manual Data
+        </button>
+      </div>
+    </div>
+    
+    <div class="chart-container">
+      <canvas id="dailySalesChart"></canvas>
+    </div>
+    
+    <div class="charts-grid">
+      <div class="chart-container">
+        <canvas id="attendantPerformanceChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="pumpComparisonChart"></canvas>
+      </div>
+    </div>
+    
+    <div class="analysis-section">
+      <h3>📊 Key Insights</h3>
+      <ul class="insights-list" id="insightsList"></ul>
+    </div>
+    
+    <div class="analysis-section">
+      <h3>📋 Detailed Data</h3>
+      <div style="overflow-x: auto; max-height: 400px;">
+        <table class="data-table" id="dataTable"></table>
+      </div>
+    </div>
+    
+    <footer>
+      <p><strong>© 2025 Kiryan Energy Ltd — All Rights Reserved</strong></p>
+      <p><strong>Confidential:</strong> These dashboards are for official use only and must not be copied, shared, or distributed without prior written permission from Kiryan Energy Ltd.</p>
+      <p>Data refreshed automatically • Dashboard v2.1</p>
+    </footer>
   </div>
-
-  <div class="chart-container">
-    <canvas id="shortagesChart"></canvas>
-  </div>
-
-  <h2>Detailed Data</h2>
-  <table id="dataTable"></table>
 
   <script>
-    // 🔹 Use your original link here
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTO3PNP1zG_QTHC6pY0lVTrchtBF36Tc1FKIuyGfBdexGVJNVj34reyTws-5vmGP8cst3YndAdNmB_P/pub?gid=1471167944&single=true&output=csv";
 
-    const staff = ["JOHN","DAVID","ZACHARIAH","THOMAS","PAUL","MACHARIAH","NJAGI","VICTOR","PETER"];
-    let chart, allData = [];
+    let processedData = [], attendantsSet = new Set(), charts = {};
 
     function csvToArray(csv, delimiter = ',') {
       const lines = csv.trim().split('\n');
@@ -55,103 +344,496 @@
       });
     }
 
-    function formatDay(dayString) {
-      if (!dayString || dayString === "TOTALS") return null;
-      const parts = dayString.split(".");
-      if (parts.length < 3) return dayString;
-      const year = parts[0];
-      const month = parts[1].padStart(2, "0");
-      const day = parts[2].padStart(2, "0");
-      return `${year}-${month}-${day}`;
+    function formatDate(str) {
+      // Handle YYYY.MM.DD format (your data format)
+      const parts = str.split(".");
+      if (parts.length < 3) return str;
+      
+      // If first part is 4 digits (year), it's YYYY.MM.DD format
+      if (parts[0].length === 4) {
+        return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+      }
+      
+      // Otherwise assume DD.MM.YYYY format
+      return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
     }
 
-    async function loadData() {
-      const resp = await fetch(csvUrl);
-      const text = await resp.text();
-      const rows = csvToArray(text);
+    function formatDisplayDate(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
 
-      allData = rows
-        .filter(r => r.DAY && r.DAY !== "TOTALS")
-        .map(r => {
-          let obj = { day: formatDay(r.DAY) };
-          staff.forEach(s => obj[s] = parseFloat(r[s]) || 0);
-          return obj;
+    async function loadFuelData() {
+      try {
+        document.getElementById('metricsGrid').innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+        
+        const response = await fetch(csvUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+          throw new Error('Empty response from Google Sheets');
+        }
+        
+        console.log('CSV data loaded successfully');
+        const rows = csvToArray(text);
+        console.log('Parsed rows:', rows.length);
+        console.log('Sample rows:', rows.slice(0, 3));
+        
+        processedData = [];
+        attendantsSet = new Set();
+
+        rows.forEach((row, index) => {
+          // Skip rows without DAY data or special rows
+          if (!row.DAY || row.DAY === "TOTALS" || row.DAY.includes('PRICE CHANGE') || row.DAY === '') {
+            return;
+          }
+          
+          const date = formatDate(row.DAY);
+          if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            console.log(`Skipping invalid date: ${row.DAY}`);
+            return;
+          }
+          
+          // Extract pump data - adjust column names based on your actual sheet structure
+          const pump1 = {
+            attendant: (row['PUMP1_ATTENDANT'] || row['Pump1_Attendant'] || row['ATTENDANT1'] || 'Unknown').toString().trim(),
+            value: Math.abs(parseFloat(row['PUMP1_VOLUME'] || row['Pump1_Volume'] || row['VOLUME1'] || 0))
+          };
+          
+          const pump2 = {
+            attendant: (row['PUMP2_ATTENDANT'] || row['Pump2_Attendant'] || row['ATTENDANT2'] || 'Unknown').toString().trim(),
+            value: Math.abs(parseFloat(row['PUMP2_VOLUME'] || row['Pump2_Volume'] || row['VOLUME2'] || 0))
+          };
+          
+          const pump3 = {
+            attendant: (row['PUMP3_ATTENDANT'] || row['Pump3_Attendant'] || row['ATTENDANT3'] || 'Unknown').toString().trim(),
+            value: Math.abs(parseFloat(row['PUMP3_VOLUME'] || row['Pump3_Volume'] || row['VOLUME3'] || 0))
+          };
+          
+          const total = pump1.value + pump2.value + pump3.value;
+          
+          processedData.push({ date, pump1, pump2, pump3, total });
+          
+          // Add attendants to set
+          [pump1, pump2, pump3].forEach(pump => {
+            if (pump.attendant && pump.attendant !== 'Unknown' && pump.attendant !== '') {
+              attendantsSet.add(pump.attendant);
+            }
+          });
         });
 
-      populateDropdown();
-      renderChart("ALL");
-    }
+        console.log(`Processing complete. Valid rows: ${processedData.length}`);
+        console.log('Attendants found:', [...attendantsSet]);
+        
+        if (processedData.length === 0) {
+          throw new Error('No valid fuel data found. Please check your sheet structure and column names.');
+        }
 
-    function populateDropdown() {
-      const select = document.getElementById("staffSelect");
-      staff.forEach(s => {
-        let opt = document.createElement("option");
-        opt.value = s;
-        opt.textContent = s;
-        select.appendChild(opt);
-      });
-      select.addEventListener("change", e => renderChart(e.target.value));
-    }
-
-    function renderChart(selectedStaff = "ALL") {
-      if (chart) chart.destroy();
-
-      let datasets;
-      if (selectedStaff === "ALL") {
-        datasets = staff.map((s, i) => ({
-          label: s,
-          data: allData.map(d => d[s] ?? 0),
-          borderColor: `hsl(${i*40},70%,50%)`,
-          fill: false
-        }));
-      } else {
-        datasets = [{
-          label: selectedStaff,
-          data: allData.map(d => d[selectedStaff] ?? 0),
-          borderColor: "#0077cc",
-          fill: false
-        }];
+        // Sort by date
+        processedData.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        updateDateRange();
+        populateFilters();
+        updateAnalysis();
+        
+      } catch (error) {
+        console.error('Error loading data:', error);
+        
+        const errorMessage = `
+          <div style="color: red; text-align: left; padding: 20px; max-width: 600px; margin: 0 auto;">
+            <h3 style="color: #e74c3c;">❌ Data Loading Error</h3>
+            <p><strong>Error:</strong> ${error.message}</p>
+            
+            <h4>🔧 Quick Fix Options:</h4>
+            <ol style="text-align: left;">
+              <li><strong>Use Manual Input:</strong> Switch to "Manual CSV Paste" option above</li>
+              <li><strong>Check Column Names:</strong> Your sheet should have columns like DAY, ATTENDANT1, VOLUME1, etc.</li>
+              <li><strong>Verify Sheet URL:</strong> Make sure gid=${csvUrl.split('gid=')[1]?.split('&')[0]} matches your fuel data tab</li>
+            </ol>
+            
+            <button onclick="loadFuelData()" style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px 5px;">
+              🔄 Retry
+            </button>
+            <button onclick="document.getElementById('dataSource').value='manual'; handleDataSourceChange();" style="background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px 5px;">
+              📋 Use Manual Input
+            </button>
+          </div>
+        `;
+        
+        document.getElementById('metricsGrid').innerHTML = errorMessage;
       }
+    }
 
-      chart = new Chart(document.getElementById("shortagesChart"), {
-        type: "line",
-        data: { labels: allData.map(d => d.day), datasets },
-        options: { responsive: true, plugins: { legend: { position: "bottom" } } }
+    function updateDateRange() {
+      if (processedData.length > 0) {
+        const startDate = formatDisplayDate(processedData[0].date);
+        const endDate = formatDisplayDate(processedData[processedData.length - 1].date);
+        document.getElementById('dateRange').innerHTML = `📅 Data Range: ${startDate} - ${endDate} (${processedData.length} days)`;
+      }
+    }
+
+    function populateFilters() {
+      const af = document.getElementById('attendantFilter');
+      af.innerHTML = '<option value="all">All Attendants</option>';
+      Array.from(attendantsSet).sort().forEach(att => {
+        const opt = document.createElement('option');
+        opt.value = att;
+        opt.textContent = att;
+        af.appendChild(opt);
+      });
+    }
+
+    function getFilteredData() {
+      const att = document.getElementById('attendantFilter').value;
+      const pump = document.getElementById('pumpFilter').value;
+      
+      return processedData.map(r => {
+        let pumps = {};
+        ["pump1", "pump2", "pump3"].forEach((key, i) => {
+          const pName = i === 0 ? "PUMP 1" : i === 1 ? "PUMP 2" : "PUMP3";
+          pumps[key] = { ...r[key] };
+          
+          if ((att !== "all" && r[key].attendant !== att) || 
+              (pump !== "all" && pName !== pump)) {
+            pumps[key] = { attendant: r[key].attendant, value: 0 };
+          }
+        });
+        
+        return {
+          date: r.date,
+          ...pumps,
+          total: pumps.pump1.value + pumps.pump2.value + pumps.pump3.value
+        };
+      });
+    }
+
+    function updateMetrics(filtered) {
+      const dailyTotals = {}, attendantTotals = {}, pumpTotals = { "PUMP 1": 0, "PUMP 2": 0, "PUMP3": 0 };
+      
+      filtered.forEach(r => {
+        dailyTotals[r.date] = (dailyTotals[r.date] || 0) + r.total;
+        
+        [["PUMP 1", r.pump1], ["PUMP 2", r.pump2], ["PUMP3", r.pump3]].forEach(([name, p]) => {
+          if (!attendantTotals[p.attendant]) attendantTotals[p.attendant] = 0;
+          attendantTotals[p.attendant] += p.value;
+          pumpTotals[name] += p.value;
+        });
       });
 
-      renderTable(selectedStaff);
+      const total = Object.values(dailyTotals).reduce((a, b) => a + b, 0);
+      const days = Object.keys(dailyTotals).length;
+      const avg = days > 0 ? total / days : 0;
+      const bestDay = Object.keys(dailyTotals).reduce((a, b) => 
+        dailyTotals[a] > dailyTotals[b] ? a : b, Object.keys(dailyTotals)[0] || "-");
+      const topAtt = Object.keys(attendantTotals).reduce((a, b) => 
+        attendantTotals[a] > attendantTotals[b] ? a : b, "-");
+      const topPump = Object.keys(pumpTotals).reduce((a, b) => 
+        pumpTotals[a] > pumpTotals[b] ? a : b, "-");
+
+      document.getElementById('metricsGrid').innerHTML = `
+        <div class="metric-card">
+          <div class="metric-icon">📊</div>
+          <div class="metric-value">${total.toLocaleString()} L</div>
+          <div class="metric-label">Total Volume Sold</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon">📈</div>
+          <div class="metric-value">${Math.round(avg).toLocaleString()} L</div>
+          <div class="metric-label">Average Daily Volume</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon">🏆</div>
+          <div class="metric-value">${formatDisplayDate(bestDay)}</div>
+          <div class="metric-label">Best Sales Day</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon">👨‍💼</div>
+          <div class="metric-value">${topAtt}</div>
+          <div class="metric-label">Top Performer</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon">⛽</div>
+          <div class="metric-value">${topPump.replace('PUMP3', 'Pump 3').replace('PUMP ', 'Pump ')}</div>
+          <div class="metric-label">Best Pump</div>
+        </div>`;
+      
+      return { dailyTotals, attendantTotals, pumpTotals };
     }
 
-    function renderTable(selectedStaff = "ALL") {
-      const table = document.getElementById("dataTable");
-      let header, rows;
+    function createCharts(dailyTotals, attendantTotals, pumpTotals) {
+      // Destroy existing charts
+      Object.values(charts).forEach(chart => chart.destroy());
+      charts = {};
 
-      if (selectedStaff === "ALL") {
-        header = "<tr><th>Day</th>" + staff.map(s => `<th>${s}</th>`).join("") + "</tr>";
-        rows = allData.map(row => {
-          let cells = staff.map(s => {
-            let v = row[s];
-            let cls = v < 0 ? "negative" : "positive";
-            return `<td class='${cls}'>${v.toFixed(2)}</td>`;
-          }).join("");
-          return `<tr><td>${row.day}</td>${cells}</tr>`;
-        }).join("");
+      // Daily Sales Chart
+      charts.daily = new Chart(document.getElementById('dailySalesChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: Object.keys(dailyTotals).map(date => formatDisplayDate(date)),
+          datasets: [{
+            label: 'Daily Volume (L)',
+            data: Object.values(dailyTotals),
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102,126,234,0.1)',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#667eea',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: { display: true, text: 'Daily Fuel Volume Sales Trend', font: { size: 16, weight: 'bold' } },
+            legend: { display: false }
+          },
+          scales: {
+            y: { 
+              beginAtZero: true, 
+              ticks: { callback: v => v.toLocaleString() + " L" },
+              grid: { color: 'rgba(0,0,0,0.1)' }
+            },
+            x: { 
+              grid: { color: 'rgba(0,0,0,0.1)' },
+              ticks: { maxRotation: 45 }
+            }
+          }
+        }
+      });
+
+      // Attendant Performance Chart
+      charts.attendant = new Chart(document.getElementById('attendantPerformanceChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: Object.keys(attendantTotals),
+          datasets: [{
+            label: 'Total Volume (L)',
+            data: Object.values(attendantTotals),
+            backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe'],
+            borderRadius: 8,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: { display: true, text: 'Attendant Performance Comparison', font: { size: 16, weight: 'bold' } },
+            legend: { display: false }
+          },
+          scales: {
+            y: { 
+              beginAtZero: true,
+              ticks: { callback: v => v.toLocaleString() + " L" },
+              grid: { color: 'rgba(0,0,0,0.1)' }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+
+      // Pump Comparison Chart
+      charts.pump = new Chart(document.getElementById('pumpComparisonChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(pumpTotals).map(p => p.replace('PUMP3', 'Pump 3').replace('PUMP ', 'Pump ')),
+          datasets: [{
+            data: Object.values(pumpTotals),
+            backgroundColor: ['#667eea', '#764ba2', '#f093fb'],
+            borderWidth: 3,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: { display: true, text: 'Volume Distribution by Pump', font: { size: 16, weight: 'bold' } },
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+    }
+
+    function updateInsights(dailyTotals, attendantTotals, pumpTotals) {
+      const total = Object.values(dailyTotals).reduce((a, b) => a + b, 0);
+      const days = Object.keys(dailyTotals).length;
+      const avg = days > 0 ? total / days : 0;
+      const topAtt = Object.keys(attendantTotals).reduce((a, b) => 
+        attendantTotals[a] > attendantTotals[b] ? a : b, "-");
+      const topPump = Object.keys(pumpTotals).reduce((a, b) => 
+        pumpTotals[a] > pumpTotals[b] ? a : b, "-");
+      const bestDay = Object.keys(dailyTotals).reduce((a, b) => 
+        dailyTotals[a] > dailyTotals[b] ? a : b, "-");
+      const worstDay = Object.keys(dailyTotals).reduce((a, b) => 
+        dailyTotals[a] < dailyTotals[b] ? a : b, "-");
+
+      const insights = [
+        `📊 Total fuel volume sold: <strong>${total.toLocaleString()} L</strong> over ${days} days`,
+        `🏆 Best performing attendant: <strong>${topAtt}</strong> with ${attendantTotals[topAtt]?.toLocaleString() || 0} L`,
+        `⛽ Most productive pump: <strong>${topPump.replace('PUMP3', 'Pump 3').replace('PUMP ', 'Pump ')}</strong>`,
+        `📈 Average daily volume: <strong>${Math.round(avg).toLocaleString()} L</strong>`,
+        `🔥 Peak volume day: <strong>${formatDisplayDate(bestDay)}</strong> (${dailyTotals[bestDay]?.toLocaleString() || 0} L)`,
+        `📉 Lowest volume day: <strong>${formatDisplayDate(worstDay)}</strong> (${dailyTotals[worstDay]?.toLocaleString() || 0} L)`
+      ];
+
+      document.getElementById('insightsList').innerHTML = insights.map(i => `<li>${i}</li>`).join('');
+    }
+
+    function updateDataTable(filtered) {
+      let html = `
+        <thead>
+          <tr>
+            <th>📅 Date</th>
+            <th>👨‍💼 Pump 1 Attendant</th>
+            <th>📊 Pump 1 Volume</th>
+            <th>👨‍💼 Pump 2 Attendant</th>
+            <th>📊 Pump 2 Volume</th>
+            <th>👨‍💼 Pump 3 Attendant</th>
+            <th>📊 Pump 3 Volume</th>
+            <th>💰 Daily Total</th>
+          </tr>
+        </thead>
+        <tbody>`;
+      
+      filtered.forEach(r => {
+        html += `
+          <tr>
+            <td>${formatDisplayDate(r.date)}</td>
+            <td>${r.pump1.attendant}</td>
+            <td>${r.pump1.value.toLocaleString()} L</td>
+            <td>${r.pump2.attendant}</td>
+            <td>${r.pump2.value.toLocaleString()} L</td>
+            <td>${r.pump3.attendant}</td>
+            <td>${r.pump3.value.toLocaleString()} L</td>
+            <td><strong>${r.total.toLocaleString()} L</strong></td>
+          </tr>`;
+      });
+      
+      html += '</tbody>';
+      document.getElementById('dataTable').innerHTML = html;
+    }
+
+    function updateAnalysis() {
+      const filtered = getFilteredData();
+      const { dailyTotals, attendantTotals, pumpTotals } = updateMetrics(filtered);
+      createCharts(dailyTotals, attendantTotals, pumpTotals);
+      updateInsights(dailyTotals, attendantTotals, pumpTotals);
+      updateDataTable(filtered);
+    }
+
+    function exportData() {
+      const filtered = getFilteredData();
+      let csvContent = "Date,Pump 1 Attendant,Pump 1 Volume,Pump 2 Attendant,Pump 2 Volume,Pump 3 Attendant,Pump 3 Volume,Daily Total\n";
+      
+      filtered.forEach(r => {
+        csvContent += `${r.date},${r.pump1.attendant},${r.pump1.value},${r.pump2.attendant},${r.pump2.value},${r.pump3.attendant},${r.pump3.value},${r.total}\n`;
+      });
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `shell_mangu_fuel_data_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function handleDataSourceChange() {
+      const dataSource = document.getElementById('dataSource').value;
+      const manualInput = document.getElementById('manualDataInput');
+      
+      if (dataSource === 'manual') {
+        manualInput.style.display = 'block';
       } else {
-        header = `<tr><th>Day</th><th>${selectedStaff}</th></tr>`;
-        rows = allData.map(row => {
-          let v = row[selectedStaff];
-          let cls = v < 0 ? "negative" : "positive";
-          return `<tr><td>${row.day}</td><td class='${cls}'>${v.toFixed(2)}</td></tr>`;
-        }).join("");
+        manualInput.style.display = 'none';
+        loadFuelData(); // Try to load from Google Sheets again
       }
-
-      table.innerHTML = header + rows;
     }
 
-    loadData();
+    function loadManualData() {
+      try {
+        const csvText = document.getElementById('csvTextarea').value.trim();
+        if (!csvText) {
+          alert('Please paste your CSV data first');
+          return;
+        }
+
+        document.getElementById('metricsGrid').innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+        
+        console.log('Loading manual CSV data...');
+        const rows = csvToArray(csvText);
+        
+        processedData = [];
+        attendantsSet = new Set();
+
+        rows.forEach((row, index) => {
+          if (!row.DAY || row.DAY === "TOTALS" || row.DAY.includes('PRICE CHANGE') || row.DAY === '') {
+            return;
+          }
+          
+          const date = formatDate(row.DAY);
+          if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) return;
+          
+          // Try different possible column names for your sheet
+          const pump1 = {
+            attendant: (row['PUMP1_ATTENDANT'] || row['Pump1_Attendant'] || row['ATTENDANT1'] || 'Unknown').toString().trim(),
+            value: Math.abs(parseFloat(row['PUMP1_VOLUME'] || row['Pump1_Volume'] || row['VOLUME1'] || 0))
+          };
+          const pump2 = {
+            attendant: (row['PUMP2_ATTENDANT'] || row['Pump2_Attendant'] || row['ATTENDANT2'] || 'Unknown').toString().trim(),
+            value: Math.abs(parseFloat(row['PUMP2_VOLUME'] || row['Pump2_Volume'] || row['VOLUME2'] || 0))
+          };
+          const pump3 = {
+            attendant: (row['PUMP3_ATTENDANT'] || row['Pump3_Attendant'] || row['ATTENDANT3'] || 'Unknown').toString().trim(),
+            value: Math.abs(parseFloat(row['PUMP3_VOLUME'] || row['Pump3_Volume'] || row['VOLUME3'] || 0))
+          };
+          
+          const total = pump1.value + pump2.value + pump3.value;
+          processedData.push({ date, pump1, pump2, pump3, total });
+          
+          [pump1, pump2, pump3].forEach(pump => {
+            if (pump.attendant && pump.attendant !== 'Unknown' && pump.attendant !== '') {
+              attendantsSet.add(pump.attendant);
+            }
+          });
+        });
+
+        if (processedData.length === 0) {
+          throw new Error('No valid data found in the CSV');
+        }
+
+        processedData.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        console.log(`Manual data loaded: ${processedData.length} records`);
+        
+        updateDateRange();
+        populateFilters();
+        updateAnalysis();
+        
+      } catch (error) {
+        console.error('Error loading manual data:', error);
+        alert(`Error loading manual data: ${error.message}`);
+        document.getElementById('metricsGrid').innerHTML = '<div style="color: red; text-align: center;">Error processing manual data</div>';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadFuelData);
   </script>
 </body>
 </html>
-
 
 
