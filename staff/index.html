@@ -1,1 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Staff Shortages Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
+    h1 { color: #333; }
+    .chart-container { width: 100%; max-width: 900px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
+    th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: right; }
+    th { background: #0077cc; color: white; text-align: center; }
+    td.negative { color: red; }
+    td.positive { color: green; }
+  </style>
+</head>
+<body>
+  <h1>Staff Shortages Dashboard — Mangu Shell</h1>
+  <p>Negative numbers = shortages after selling fuel</p>
+
+  <div class="chart-container">
+    <canvas id="shortagesChart"></canvas>
+  </div>
+
+  <h2>Detailed Data</h2>
+  <table id="dataTable"></table>
+
+  <script>
+    // Staff shortages data (September)
+    const data = [
+      { date: "2025-09-01", JOHN: 95.61, DAVID: -919.42, ZACHARIAH: -527.27 },
+      { date: "2025-09-02", THOMAS: 27.15, PAUL: 1.73, MACHARIAH: 26.12 },
+      { date: "2025-09-03", JOHN: -150.59, DAVID: -0.39, NJAGI: 20.34, VICTOR: 6 },
+      { date: "2025-09-04", ZACHARIAH: -367.13, THOMAS: -100.9, PAUL: -22.19 },
+      { date: "2025-09-05", JOHN: -326.19, NJAGI: 11.97, MACHARIAH: 10.97, PETER: -1500 },
+      { date: "2025-09-06", DAVID: -17.16, ZACHARIAH: -105.67, THOMAS: -50.04 },
+      { date: "2025-09-07", NJAGI: -16.09, MACHARIAH: -23.77, VICTOR: -247.34 },
+      { date: "2025-09-08", JOHN: -112, DAVID: -129.15, ZACHARIAH: 4.26 },
+      { date: "2025-09-09", THOMAS: 9.53, PAUL: 0.01, MACHARIAH: 60.15 },
+      { date: "2025-09-10", JOHN: -230.61, DAVID: 186.38, NJAGI: -32937.14 },
+      { date: "2025-09-11", ZACHARIAH: 355.05, THOMAS: 11.96, PAUL: -7.49 },
+      { date: "2025-09-12", JOHN: -52.75, ZACHARIAH: -1130, NJAGI: 22.82, VICTOR: 526.42 },
+      { date: "2025-09-13", JOHN: -8.88, DAVID: -10.4, ZACHARIAH: 0.25 },
+      { date: "2025-09-14", THOMAS: -30.01, PAUL: -18.01, PETER: -889.84 },
+      { date: "2025-09-15", JOHN: -255.16, DAVID: 20.74, ZACHARIAH: 38.69 },
+      { date: "2025-09-16", THOMAS: -0.79, PAUL: -1.38, MACHARIAH: 99.3 },
+      { date: "2025-09-17", JOHN: 2.33, DAVID: 0.15, PETER: -6.85 },
+      { date: "2025-09-18", DAVID: -79.54, ZACHARIAH: -497.12, PAUL: 15.43 },
+      { date: "2025-09-19", JOHN: 13.57, NJAGI: -31.03, PETER: -0.45 },
+      { date: "2025-09-20", DAVID: -6.71, ZACHARIAH: -6.83, THOMAS: 5.37 },
+    ];
+
+    const staff = ["JOHN","DAVID","ZACHARIAH","THOMAS","PAUL","MACHARIAH","NJAGI","VICTOR","PETER"];
+
+    // Chart.js dataset
+    const chartDatasets = staff.map((s, i) => ({
+      label: s,
+      data: data.map(d => d[s] ?? 0),
+      borderColor: `hsl(${i*40},70%,50%)`,
+      fill: false
+    }));
+
+    new Chart(document.getElementById("shortagesChart"), {
+      type: "line",
+      data: {
+        labels: data.map(d => d.date),
+        datasets: chartDatasets
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: "bottom" } },
+        scales: { y: { beginAtZero: false } }
+      }
+    });
+
+    // Build table
+    const table = document.getElementById("dataTable");
+    let header = "<tr><th>Date</th>" + staff.map(s => `<th>${s}</th>`).join("") + "</tr>";
+    let rows = data.map(row => {
+      let cells = staff.map(s => {
+        let v = row[s] ?? 0;
+        let cls = v < 0 ? "negative" : "positive";
+        return `<td class='${cls}'>${v.toFixed(2)}</td>`;
+      }).join("");
+      return `<tr><td>${row.date}</td>${cells}</tr>`;
+    }).join("");
+    table.innerHTML = header + rows;
+  </script>
+</body>
+</html>
 
