@@ -47,7 +47,6 @@
     const staff = ["JOHN","DAVID","ZACHARIAH","THOMAS","PAUL","MACHARIAH","NJAGI","VICTOR","PETER"];
     let chart, allData = [];
 
-    // Parse CSV text → array of objects
     function csvToArray(csv, delimiter = ',') {
       const lines = csv.trim().split('\n');
       const headers = lines[0].split(delimiter).map(h => h.trim());
@@ -77,11 +76,10 @@
       const text = await resp.text();
       const rows = csvToArray(text);
 
-      // Convert and skip TOTALS row
       allData = rows
-        .filter(r => r.DAY && r.DAY !== "TOTALS")
+        .filter(r => r.DAY && r.DAY !== "TOTALS") // 👈 match DAY exactly
         .map(r => {
-          let obj = { day: formatDay(r.DAY) };  // 👈 formatted day
+          let obj = { day: formatDay(r.DAY) };    // 👈 use r.DAY
           staff.forEach(s => obj[s] = parseFloat(r[s]) || 0);
           return obj;
         });
@@ -160,6 +158,7 @@
   </script>
 </body>
 </html>
+
 
 
    
