@@ -2,36 +2,58 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Kiryan Energy Ltd — Dashboard Portal</title>
+  <title>Kiryan Energy Ltd — Mangu Shell Dashboards</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; text-align: center; padding: 50px; }
-    h1 { color: #222; }
+    body { 
+      font-family: Arial, sans-serif; 
+      background: #f4f4f4; 
+      text-align: center; 
+      padding: 50px; 
+    }
+    h1 { color: #222; font-size: 28px; margin-bottom: 10px; }
+    h2 { color: #0077cc; font-size: 20px; margin-top: 0; }
     p { color: #555; }
-    .card-container { display: flex; justify-content: center; gap: 30px; margin-top: 40px; flex-wrap: wrap; }
+    .card-container { 
+      display: flex; 
+      justify-content: center; 
+      gap: 30px; 
+      margin-top: 40px; 
+      flex-wrap: wrap; 
+    }
     .card {
       background: white;
       padding: 30px;
-      width: 260px;
+      width: 280px;
       border-radius: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
       transition: transform 0.2s ease;
     }
     .card:hover { transform: scale(1.05); }
     a { text-decoration: none; color: #0077cc; font-weight: bold; font-size: 18px; }
+    footer { margin-top: 50px; font-size: 13px; color: #777; line-height: 1.5; }
   </style>
 </head>
 <body>
-  <h1>FNWA Energy — Dashboard Portal</h1>
-  <p>Select a dashboard to view:</p>
+  <h1>Kiryan Energy Ltd</h1>
+  <h2>Mangu Shell Service Station — Dashboards Portal</h2>
+  <p>Select a dashboard to view analysis:</p>
 
   <div class="card-container">
     <div class="card">
       <a href="./fuel/">⛽ Fuel Per Pump Analysis</a>
+      <p>Track performance per pump and fuel type.</p>
     </div>
     <div class="card">
       <a href="./staff/">👥 Staff Shortages Dashboard</a>
+      <p>Monitor shortages/excesses after fuel sales.</p>
     </div>
   </div>
+
+  <footer>
+    <p>© 2025 Kiryan Energy Ltd — All Rights Reserved.</p>
+    <p><strong>Confidential:</strong> These dashboards are for official use only and must not be copied, shared, or distributed without prior written permission from Kiryan Energy Ltd.</p>
+  </footer>
 </body>
 </html>
+
 
