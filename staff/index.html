@@ -61,17 +61,30 @@
       });
     }
 
+    // Format DAY like "2025.09.1" → "2025-09-01"
+    function formatDay(dayString) {
+      if (!dayString || dayString === "TOTALS") return null;
+      const parts = dayString.split(".");
+      if (parts.length < 3) return dayString;
+      const year = parts[0];
+      const month = parts[1].padStart(2, "0");
+      const day = parts[2].padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
     async function loadData() {
       const resp = await fetch(csvUrl);
       const text = await resp.text();
       const rows = csvToArray(text);
 
-      // Use DAY column for chart labels
-      allData = rows.map(r => {
-        let obj = { day: r.DAY };  // 👈 pull DAY column
-        staff.forEach(s => obj[s] = parseFloat(r[s]) || 0);
-        return obj;
-      });
+      // Convert and skip TOTALS row
+      allData = rows
+        .filter(r => r.DAY && r.DAY !== "TOTALS")
+        .map(r => {
+          let obj = { day: formatDay(r.DAY) };  // 👈 formatted day
+          staff.forEach(s => obj[s] = parseFloat(r[s]) || 0);
+          return obj;
+        });
 
       populateDropdown();
       renderChart("ALL");
@@ -110,7 +123,7 @@
 
       chart = new Chart(document.getElementById("shortagesChart"), {
         type: "line",
-        data: { labels: allData.map(d => d.day), datasets }, // 👈 use day
+        data: { labels: allData.map(d => d.day), datasets },
         options: { responsive: true, plugins: { legend: { position: "bottom" } } }
       });
 
@@ -147,5 +160,6 @@
   </script>
 </body>
 </html>
+
 
    
