@@ -383,42 +383,91 @@
         }
         
         console.log('CSV data loaded successfully');
+        console.log('Raw CSV (first 500 chars):', text.substring(0, 500));
+        
         const rows = csvToArray(text);
         console.log('Parsed rows:', rows.length);
+        console.log('Column headers found:', Object.keys(rows[0] || {}));
         console.log('Sample rows:', rows.slice(0, 3));
         
         processedData = [];
         attendantsSet = new Set();
 
         rows.forEach((row, index) => {
-          // Skip rows without DAY data or special rows
-          if (!row.DAY || row.DAY === "TOTALS" || row.DAY.includes('PRICE CHANGE') || row.DAY === '') {
+          // Log each row to see the actual structure
+          if (index < 5) {
+            console.log(`Row ${index}:`, row);
+          }
+          
+          // Try to find the date column - could be DAY, Date, or first column
+          let dateValue = row.DAY || row.Date || row.date || Object.values(row)[0];
+          
+          // Skip rows without valid date data
+          if (!dateValue || dateValue === "TOTALS" || dateValue.includes('PRICE CHANGE') || dateValue === '') {
+            console.log(`Skipping row ${index}: no valid date`);
             return;
           }
           
-          const date = formatDate(row.DAY);
+          const date = formatDate(dateValue);
           if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            console.log(`Skipping invalid date: ${row.DAY}`);
+            console.log(`Skipping row ${index}: invalid date format - ${dateValue}`);
             return;
           }
           
-          // Extract pump data - adjust column names based on your actual sheet structure
+          // Get all column names to find pump data
+          const columns = Object.keys(row);
+          console.log(`Row ${index} columns:`, columns);
+          
+          // Try to extract pump data from any available columns
+          // This will help us see what columns actually exist
           const pump1 = {
-            attendant: (row['PUMP1_ATTENDANT'] || row['Pump1_Attendant'] || row['ATTENDANT1'] || 'Unknown').toString().trim(),
-            value: Math.abs(parseFloat(row['PUMP1_VOLUME'] || row['Pump1_Volume'] || row['VOLUME1'] || 0))
+            attendant: 'Unknown',
+            value: 0
           };
-          
           const pump2 = {
-            attendant: (row['PUMP2_ATTENDANT'] || row['Pump2_Attendant'] || row['ATTENDANT2'] || 'Unknown').toString().trim(),
-            value: Math.abs(parseFloat(row['PUMP2_VOLUME'] || row['Pump2_Volume'] || row['VOLUME2'] || 0))
+            attendant: 'Unknown', 
+            value: 0
+          };
+          const pump3 = {
+            attendant: 'Unknown',
+            value: 0
           };
           
-          const pump3 = {
-            attendant: (row['PUMP3_ATTENDANT'] || row['Pump3_Attendant'] || row['ATTENDANT3'] || 'Unknown').toString().trim(),
-            value: Math.abs(parseFloat(row['PUMP3_VOLUME'] || row['Pump3_Volume'] || row['VOLUME3'] || 0))
-          };
+          // Look for pump data in various possible column formats
+          columns.forEach(col => {
+            const colLower = col.toLowerCase();
+            const value = parseFloat(row[col]) || 0;
+            const textValue = (row[col] || '').toString().trim();
+            
+            // Pump 1 data
+            if (colLower.includes('pump1') || colLower.includes('pump 1')) {
+              if (colLower.includes('attendant') || colLower.includes('name')) {
+                pump1.attendant = textValue || 'Unknown';
+              } else if (colLower.includes('volume') || colLower.includes('litre') || !isNaN(value)) {
+                pump1.value = Math.abs(value);
+              }
+            }
+            // Pump 2 data
+            else if (colLower.includes('pump2') || colLower.includes('pump 2')) {
+              if (colLower.includes('attendant') || colLower.includes('name')) {
+                pump2.attendant = textValue || 'Unknown';
+              } else if (colLower.includes('volume') || colLower.includes('litre') || !isNaN(value)) {
+                pump2.value = Math.abs(value);
+              }
+            }
+            // Pump 3 data
+            else if (colLower.includes('pump3') || colLower.includes('pump 3')) {
+              if (colLower.includes('attendant') || colLower.includes('name')) {
+                pump3.attendant = textValue || 'Unknown';
+              } else if (colLower.includes('volume') || colLower.includes('litre') || !isNaN(value)) {
+                pump3.value = Math.abs(value);
+              }
+            }
+          });
           
           const total = pump1.value + pump2.value + pump3.value;
+          
+          console.log(`Row ${index} processed:`, { date, pump1, pump2, pump3, total });
           
           processedData.push({ date, pump1, pump2, pump3, total });
           
@@ -434,7 +483,10 @@
         console.log('Attendants found:', [...attendantsSet]);
         
         if (processedData.length === 0) {
-          throw new Error('No valid fuel data found. Please check your sheet structure and column names.');
+          // Show detailed column information to help debug
+          const sampleRow = rows[0] || {};
+          const availableColumns = Object.keys(sampleRow).join(', ');
+          throw new Error(`No valid fuel data found. Available columns: ${availableColumns}. Please check your sheet structure.`);
         }
 
         // Sort by date
@@ -452,12 +504,8 @@
             <h3 style="color: #e74c3c;">❌ Data Loading Error</h3>
             <p><strong>Error:</strong> ${error.message}</p>
             
-            <h4>🔧 Quick Fix Options:</h4>
-            <ol style="text-align: left;">
-              <li><strong>Use Manual Input:</strong> Switch to "Manual CSV Paste" option above</li>
-              <li><strong>Check Column Names:</strong> Your sheet should have columns like DAY, ATTENDANT1, VOLUME1, etc.</li>
-              <li><strong>Verify Sheet URL:</strong> Make sure gid=${csvUrl.split('gid=')[1]?.split('&')[0]} matches your fuel data tab</li>
-            </ol>
+            <h4>🔧 Debug Information:</h4>
+            <p>Open browser console (F12) to see detailed column information.</p>
             
             <button onclick="loadFuelData()" style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px 5px;">
               🔄 Retry
@@ -835,5 +883,4 @@
   </script>
 </body>
 </html>
-
 
