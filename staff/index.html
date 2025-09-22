@@ -42,43 +42,52 @@
   </footer>
 
   <script>
-    // Staff shortages data
-    const data = [
-      { date: "2025-09-01", JOHN: 95.61, DAVID: -919.42, ZACHARIAH: -527.27 },
-      { date: "2025-09-02", THOMAS: 27.15, PAUL: 1.73, MACHARIAH: 26.12 },
-      { date: "2025-09-03", JOHN: -150.59, DAVID: -0.39, NJAGI: 20.34, VICTOR: 6 },
-      { date: "2025-09-04", ZACHARIAH: -367.13, THOMAS: -100.9, PAUL: -22.19 },
-      { date: "2025-09-05", JOHN: -326.19, NJAGI: 11.97, MACHARIAH: 10.97, PETER: -1500 },
-      { date: "2025-09-06", DAVID: -17.16, ZACHARIAH: -105.67, THOMAS: -50.04 },
-      { date: "2025-09-07", NJAGI: -16.09, MACHARIAH: -23.77, VICTOR: -247.34 },
-      { date: "2025-09-08", JOHN: -112, DAVID: -129.15, ZACHARIAH: 4.26 },
-      { date: "2025-09-09", THOMAS: 9.53, PAUL: 0.01, MACHARIAH: 60.15 },
-      { date: "2025-09-10", JOHN: -230.61, DAVID: 186.38, NJAGI: -32937.14 },
-      { date: "2025-09-11", ZACHARIAH: 355.05, THOMAS: 11.96, PAUL: -7.49 },
-      { date: "2025-09-12", JOHN: -52.75, ZACHARIAH: -1130, NJAGI: 22.82, VICTOR: 526.42 },
-      { date: "2025-09-13", JOHN: -8.88, DAVID: -10.4, ZACHARIAH: 0.25 },
-      { date: "2025-09-14", THOMAS: -30.01, PAUL: -18.01, PETER: -889.84 },
-      { date: "2025-09-15", JOHN: -255.16, DAVID: 20.74, ZACHARIAH: 38.69 },
-      { date: "2025-09-16", THOMAS: -0.79, PAUL: -1.38, MACHARIAH: 99.3 },
-      { date: "2025-09-17", JOHN: 2.33, DAVID: 0.15, PETER: -6.85 },
-      { date: "2025-09-18", DAVID: -79.54, ZACHARIAH: -497.12, PAUL: 15.43 },
-      { date: "2025-09-19", JOHN: 13.57, MACHARAH: -31.03, PETER: -0.45 },
-      { date: "2025-09-20", DAVID: -6.71, ZACHARIAH: -6.83, THOMAS: 5.37 },
-    ];
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRNw7hn2wzYu3ATj3LVB5NT8oKO0PLkyTI_SN7owSvlnoJm0k4mvAW6nclDwF6Trtqsdb3wCMpM9imI/pub?gid=0&single=true&output=csv";
 
     const staff = ["JOHN","DAVID","ZACHARIAH","THOMAS","PAUL","MACHARIAH","NJAGI","VICTOR","PETER"];
+    let chart, allData = [];
 
-    // Populate dropdown
-    const select = document.getElementById("staffSelect");
-    staff.forEach(s => {
-      let opt = document.createElement("option");
-      opt.value = s;
-      opt.textContent = s;
-      select.appendChild(opt);
-    });
+    // Parse CSV text → array of objects
+    function csvToArray(csv, delimiter = ',') {
+      const lines = csv.trim().split('\n');
+      const headers = lines[0].split(delimiter);
+      return lines.slice(1).map(line => {
+        const items = line.split(delimiter);
+        let obj = {};
+        headers.forEach((h, i) => {
+          obj[h.trim()] = items[i] ? items[i].trim() : "";
+        });
+        return obj;
+      });
+    }
 
-    // Chart instance
-    let chart;
+    async function loadData() {
+      const resp = await fetch(csvUrl);
+      const text = await resp.text();
+      const rows = csvToArray(text);
+
+      // Format rows (convert numbers to floats)
+      allData = rows.map(r => {
+        let obj = { date: r.date || r.Date };
+        staff.forEach(s => obj[s] = parseFloat(r[s]) || 0);
+        return obj;
+      });
+
+      populateDropdown();
+      renderChart("ALL");
+    }
+
+    function populateDropdown() {
+      const select = document.getElementById("staffSelect");
+      staff.forEach(s => {
+        let opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        select.appendChild(opt);
+      });
+      select.addEventListener("change", e => renderChart(e.target.value));
+    }
+
     function renderChart(selectedStaff = "ALL") {
       if (chart) chart.destroy();
 
@@ -86,14 +95,14 @@
       if (selectedStaff === "ALL") {
         datasets = staff.map((s, i) => ({
           label: s,
-          data: data.map(d => d[s] ?? 0),
+          data: allData.map(d => d[s] ?? 0),
           borderColor: `hsl(${i*40},70%,50%)`,
           fill: false
         }));
       } else {
         datasets = [{
           label: selectedStaff,
-          data: data.map(d => d[selectedStaff] ?? 0),
+          data: allData.map(d => d[selectedStaff] ?? 0),
           borderColor: "#0077cc",
           fill: false
         }];
@@ -101,31 +110,22 @@
 
       chart = new Chart(document.getElementById("shortagesChart"), {
         type: "line",
-        data: {
-          labels: data.map(d => d.date),
-          datasets: datasets
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { position: "bottom" } },
-          scales: { y: { beginAtZero: false } }
-        }
+        data: { labels: allData.map(d => d.date), datasets },
+        options: { responsive: true, plugins: { legend: { position: "bottom" } } }
       });
 
       renderTable(selectedStaff);
     }
 
-    // Table renderer
     function renderTable(selectedStaff = "ALL") {
       const table = document.getElementById("dataTable");
-      let header;
-      let rows;
+      let header, rows;
 
       if (selectedStaff === "ALL") {
         header = "<tr><th>Date</th>" + staff.map(s => `<th>${s}</th>`).join("") + "</tr>";
-        rows = data.map(row => {
+        rows = allData.map(row => {
           let cells = staff.map(s => {
-            let v = row[s] ?? 0;
+            let v = row[s];
             let cls = v < 0 ? "negative" : "positive";
             return `<td class='${cls}'>${v.toFixed(2)}</td>`;
           }).join("");
@@ -133,8 +133,8 @@
         }).join("");
       } else {
         header = `<tr><th>Date</th><th>${selectedStaff}</th></tr>`;
-        rows = data.map(row => {
-          let v = row[selectedStaff] ?? 0;
+        rows = allData.map(row => {
+          let v = row[selectedStaff];
           let cls = v < 0 ? "negative" : "positive";
           return `<tr><td>${row.date}</td><td class='${cls}'>${v.toFixed(2)}</td></tr>`;
         }).join("");
@@ -143,13 +143,7 @@
       table.innerHTML = header + rows;
     }
 
-    // Initial render
-    renderChart();
-
-    // Dropdown change
-    select.addEventListener("change", e => {
-      renderChart(e.target.value);
-    });
+    loadData();
   </script>
 </body>
 </html>
