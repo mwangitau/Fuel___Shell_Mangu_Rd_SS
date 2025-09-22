@@ -1,1 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FNWA Energy — Dashboard Portal</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; text-align: center; padding: 50px; }
+    h1 { color: #222; }
+    p { color: #555; }
+    .card-container { display: flex; justify-content: center; gap: 30px; margin-top: 40px; flex-wrap: wrap; }
+    .card {
+      background: white;
+      padding: 30px;
+      width: 260px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      transition: transform 0.2s ease;
+    }
+    .card:hover { transform: scale(1.05); }
+    a { text-decoration: none; color: #0077cc; font-weight: bold; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>FNWA Energy — Dashboard Portal</h1>
+  <p>Select a dashboard to view:</p>
+
+  <div class="card-container">
+    <div class="card">
+      <a href="./fuel/">⛽ Fuel Per Pump Analysis</a>
+    </div>
+    <div class="card">
+      <a href="./staff/">👥 Staff Shortages Dashboard</a>
+    </div>
+  </div>
+</body>
+</html>
 
