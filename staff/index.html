@@ -66,12 +66,15 @@
       const text = await resp.text();
       const rows = csvToArray(text);
 
-      // Format rows (convert numbers to floats)
-      allData = rows.map(r => {
-        let obj = { date: r.date || r.Date };
-        staff.forEach(s => obj[s] = parseFloat(r[s]) || 0);
-        return obj;
-      });
+      // use the first column of the sheet as the date column
+const firstHeader = Object.keys(rows[0])[0];  
+
+allData = rows.map(r => {
+  let obj = { date: r[firstHeader] };  // always use first column as date
+  staff.forEach(s => obj[s] = parseFloat(r[s]) || 0);
+  return obj;
+});
+
 
       populateDropdown();
       renderChart("ALL");
