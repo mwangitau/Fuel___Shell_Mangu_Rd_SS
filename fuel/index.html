@@ -488,9 +488,15 @@
           pump3: { attendant: 'Unknown', value: 0 }
         };
         
-        // Find Pump 1 data
-        const pump1Col = allKeys.find(k => k.includes('PUMP 1') || k.includes('PUMP1'));
-        const pump1AttCol = allKeys.find(k => k === 'NAME OF CSA' || (k.includes('CSA') && !k.includes('.1') && !k.includes('.2')));
+        // Based on your screenshot, the structure appears to be:
+        // DAY, NAME OF CSA, PUMP 1, DAY, NAME OF CSA, PUMP 2, DAY, NAME OF CSA, PUMP 3
+        
+        // Find all columns and log them for debugging
+        console.log(`Row ${index} columns and values:`, Object.entries(row).slice(0, 10));
+        
+        // Find Pump 1 data (first occurrence)
+        const pump1Col = allKeys.find(k => k === 'PUMP 1');
+        const pump1AttCol = allKeys.find(k => k === 'NAME OF CSA' && !k.includes('.')); // First NAME OF CSA
         
         if (pump1Col && row[pump1Col]) {
           pumpData.pump1.value = Math.abs(parseFloat(row[pump1Col]) || 0);
@@ -499,9 +505,22 @@
           pumpData.pump1.attendant = row[pump1AttCol].toString().trim();
         }
         
-        // Find Pump 2 data
-        const pump2Col = allKeys.find(k => k.includes('PUMP 2') || k.includes('PUMP2'));
-        const pump2AttCol = allKeys.find(k => k.includes('NAME OF CSA.1') || k.includes('CSA.1'));
+        // Find Pump 2 data (second set of columns)
+        const pump2Col = allKeys.find(k => k === 'PUMP 2');
+        // Look for the second NAME OF CSA column - Google Sheets might name it differently
+        let pump2AttCol = null;
+        const csaColumns = allKeys.filter(k => k.includes('NAME OF CSA'));
+        console.log('All CSA columns found:', csaColumns);
+        
+        if (csaColumns.length >= 2) {
+          pump2AttCol = csaColumns[1]; // Second CSA column
+        } else {
+          // Try alternative column names that Google Sheets might generate
+          pump2AttCol = allKeys.find(k => 
+            k.includes('NAME OF CSA') && 
+            (k.includes('.1') || k.includes('_1') || k !== 'NAME OF CSA')
+          );
+        }
         
         if (pump2Col && row[pump2Col]) {
           pumpData.pump2.value = Math.abs(parseFloat(row[pump2Col]) || 0);
@@ -510,9 +529,20 @@
           pumpData.pump2.attendant = row[pump2AttCol].toString().trim();
         }
         
-        // Find Pump 3 data
-        const pump3Col = allKeys.find(k => k.includes('PUMP 3') || k.includes('PUMP3'));
-        const pump3AttCol = allKeys.find(k => k.includes('NAME OF CSA.2') || k.includes('CSA.2'));
+        // Find Pump 3 data (third set of columns)
+        const pump3Col = allKeys.find(k => k === 'PUMP 3' || k === 'PUMP3');
+        let pump3AttCol = null;
+        
+        if (csaColumns.length >= 3) {
+          pump3AttCol = csaColumns[2]; // Third CSA column
+        } else {
+          // Try alternative column names
+          pump3AttCol = allKeys.find(k => 
+            k.includes('NAME OF CSA') && 
+            (k.includes('.2') || k.includes('_2')) && 
+            k !== pump2AttCol && k !== 'NAME OF CSA'
+          );
+        }
         
         if (pump3Col && row[pump3Col]) {
           pumpData.pump3.value = Math.abs(parseFloat(row[pump3Col]) || 0);
@@ -520,6 +550,9 @@
         if (pump3AttCol && row[pump3AttCol]) {
           pumpData.pump3.attendant = row[pump3AttCol].toString().trim();
         }
+        
+        console.log(`Pump columns found: P1=${pump1Col}, P2=${pump2Col}, P3=${pump3Col}`);
+        console.log(`Attendant columns found: A1=${pump1AttCol}, A2=${pump2AttCol}, A3=${pump3AttCol}`);
         
         const total = pumpData.pump1.value + pumpData.pump2.value + pumpData.pump3.value;
         
