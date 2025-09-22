@@ -70,7 +70,6 @@
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTO3PNP1zG_QTHC6pY0lVTrchtBF36Tc1FKIuyGfBdexGVJNVj34reyTws-5vmGP8cst3YndAdNmB_P/pub?gid=1471167944&single=true&output=csv";
 
     let processedData = [], attendantsSet = new Set();
-    let dailyTotals = {}, attendantTotals = {}, pumpTotals = {"PUMP 1":0,"PUMP 2":0,"PUMP3":0};
 
     function csvToRows(csv, delimiter=',') {
       return csv.trim().split('\n').map(line => line.split(delimiter).map(c => c.trim()));
@@ -85,9 +84,10 @@
       const resp = await fetch(csvUrl);
       const text = await resp.text();
       const rows = csvToRows(text);
-      rows.shift(); // drop header
+      rows.shift(); // header
 
-      processedData=[]; attendantsSet=new Set(); dailyTotals={}; attendantTotals={}; pumpTotals={"PUMP 1":0,"PUMP 2":0,"PUMP3":0};
+      processedData = [];
+      attendantsSet = new Set();
 
       rows.forEach(r=>{
         const date = formatDate(r[0]);
@@ -97,15 +97,7 @@
         const total = pump1.value+pump2.value+pump3.value;
 
         processedData.push({date,pump1,pump2,pump3,total});
-        attendantsSet.add(pump1.attendant); attendantsSet.add(pump2.attendant); attendantsSet.add(pump3.attendant);
-        dailyTotals[date]=(dailyTotals[date]||0)+total;
-
-        [pump1,pump2,pump3].forEach((d,i)=>{
-          if (!attendantTotals[d.attendant]) attendantTotals[d.attendant]=0;
-          attendantTotals[d.attendant]+=d.value;
-          const pumpName=i===0?"PUMP 1":i===1?"PUMP 2":"PUMP3";
-          pumpTotals[pumpName]+=d.value;
-        });
+        [pump1,pump2,pump3].forEach(p=>attendantsSet.add(p.attendant));
       });
 
       populateFilters();
@@ -116,79 +108,106 @@
       const af=document.getElementById('attendantFilter');
       af.innerHTML='<option value="all">All Attendants</option>';
       Array.from(attendantsSet).sort().forEach(att=>{
-        const opt=document.createElement('option'); opt.value=att; opt.textContent=att; af.appendChild(opt);
+        const opt=document.createElement('option');
+        opt.value=att; opt.textContent=att; af.appendChild(opt);
       });
     }
 
-    function updateMetrics() {
-      const totalSales=Object.values(dailyTotals).reduce((a,b)=>a+b,0);
-      const avgDaily=totalSales/Object.keys(dailyTotals).length;
-      const bestDay=Object.keys(dailyTotals).reduce((a,b)=>dailyTotals[a]>dailyTotals[b]?a:b);
-      const topAtt=Object.keys(attendantTotals).reduce((a,b)=>attendantTotals[a]>attendantTotals[b]?a:b);
-      const topPump=Object.keys(pumpTotals).reduce((a,b)=>pumpTotals[a]>pumpTotals[b]?a:b);
+    // Filtering logic
+    function getFilteredData() {
+      const att=document.getElementById('attendantFilter').value;
+      const pump=document.getElementById('pumpFilter').value;
+      return processedData.map(r=>{
+        let pumps={};
+        ["pump1","pump2","pump3"].forEach((key,i)=>{
+          const pName=i===0?"PUMP 1":i===1?"PUMP 2":"PUMP3";
+          pumps[key]=r[key];
+          if ((att!=="all" && r[key].attendant!==att) || (pump!=="all" && pName!==pump)) {
+            pumps[key]={attendant:r[key].attendant,value:0};
+          }
+        });
+        return {date:r.date,...pumps,total:pumps.pump1.value+pumps.pump2.value+pumps.pump3.value};
+      });
+    }
+
+    function updateMetrics(filtered) {
+      const dailyTotals={}, attendantTotals={}, pumpTotals={"PUMP 1":0,"PUMP 2":0,"PUMP3":0};
+      filtered.forEach(r=>{
+        dailyTotals[r.date]=(dailyTotals[r.date]||0)+r.total;
+        [["PUMP 1",r.pump1],["PUMP 2",r.pump2],["PUMP3",r.pump3]].forEach(([name,p])=>{
+          if (!attendantTotals[p.attendant]) attendantTotals[p.attendant]=0;
+          attendantTotals[p.attendant]+=p.value;
+          pumpTotals[name]+=p.value;
+        });
+      });
+      const total=Object.values(dailyTotals).reduce((a,b)=>a+b,0);
+      const avg=total/Object.keys(dailyTotals).length||0;
+      const bestDay=Object.keys(dailyTotals).reduce((a,b)=>dailyTotals[a]>dailyTotals[b]?a:b,"-");
+      const topAtt=Object.keys(attendantTotals).reduce((a,b)=>attendantTotals[a]>attendantTotals[b]?a:b,"-");
+      const topPump=Object.keys(pumpTotals).reduce((a,b)=>pumpTotals[a]>pumpTotals[b]?a:b,"-");
       document.getElementById('metricsGrid').innerHTML=`
-        <div class="metric-card"><div class="metric-value">${totalSales.toLocaleString()} L</div><div class="metric-label">Total Volume Sold</div></div>
-        <div class="metric-card"><div class="metric-value">${Math.round(avgDaily).toLocaleString()} L</div><div class="metric-label">Average Daily Volume</div></div>
+        <div class="metric-card"><div class="metric-value">${total.toLocaleString()} L</div><div class="metric-label">Total Volume Sold</div></div>
+        <div class="metric-card"><div class="metric-value">${Math.round(avg).toLocaleString()} L</div><div class="metric-label">Average Daily Volume</div></div>
         <div class="metric-card"><div class="metric-value">${bestDay}</div><div class="metric-label">Best Sales Day</div></div>
         <div class="metric-card"><div class="metric-value">${topAtt}</div><div class="metric-label">Top Performer</div></div>
         <div class="metric-card"><div class="metric-value">${topPump}</div><div class="metric-label">Best Pump</div></div>`;
+      return {dailyTotals,attendantTotals,pumpTotals};
     }
 
-    function createDailySalesChart() {
-      new Chart(document.getElementById('dailySalesChart').getContext('2d'), {
+    function createCharts(dailyTotals,attendantTotals,pumpTotals) {
+      new Chart(document.getElementById('dailySalesChart').getContext('2d'),{
         type:'line',
         data:{labels:Object.keys(dailyTotals),datasets:[{label:'Daily Volume (L)',data:Object.values(dailyTotals),borderColor:'#667eea',backgroundColor:'rgba(102,126,234,0.1)',tension:0.4,fill:true}]},
-        options:{responsive:true,plugins:{title:{display:true,text:'Daily Fuel Volume Sales Trend'}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v.toLocaleString()+' L'}}}}
+        options:{responsive:true,plugins:{title:{display:true,text:'Daily Fuel Volume Sales Trend'}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v.toLocaleString()+" L"}}}}
       });
-    }
-
-    function createAttendantChart() {
-      const sorted=Object.entries(attendantTotals).sort(([,a],[,b])=>b-a);
-      new Chart(document.getElementById('attendantPerformanceChart').getContext('2d'), {
+      new Chart(document.getElementById('attendantPerformanceChart').getContext('2d'),{
         type:'bar',
-        data:{labels:sorted.map(([n])=>n),datasets:[{label:'Total Volume (L)',data:sorted.map(([,v])=>v),backgroundColor:['#667eea','#764ba2','#f093fb','#f5576c','#4facfe','#00f2fe','#43e97b','#38f9d7']}]},
-        options:{responsive:true,plugins:{title:{display:true,text:'Attendant Performance Comparison'}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v.toLocaleString()+' L'}}}}
+        data:{labels:Object.keys(attendantTotals),datasets:[{label:'Total Volume (L)',data:Object.values(attendantTotals),backgroundColor:'#667eea'}]},
+        options:{responsive:true,plugins:{title:{display:true,text:'Attendant Performance'}}}
       });
-    }
-
-    function createPumpChart() {
-      new Chart(document.getElementById('pumpComparisonChart').getContext('2d'), {
+      new Chart(document.getElementById('pumpComparisonChart').getContext('2d'),{
         type:'doughnut',
         data:{labels:Object.keys(pumpTotals),datasets:[{data:Object.values(pumpTotals),backgroundColor:['#667eea','#764ba2','#f093fb']}]},
-        options:{responsive:true,plugins:{title:{display:true,text:'Volume Sales by Pump (L)'}}}
+        options:{responsive:true,plugins:{title:{display:true,text:'Volume Sales by Pump'}}}
       });
     }
 
-    function updateInsights() {
+    function updateInsights(dailyTotals,attendantTotals,pumpTotals) {
       const total=Object.values(dailyTotals).reduce((a,b)=>a+b,0);
-      const avg=total/Object.keys(dailyTotals).length;
-      const topAtt=Object.keys(attendantTotals).reduce((a,b)=>attendantTotals[a]>attendantTotals[b]?a:b);
-      const topPump=Object.keys(pumpTotals).reduce((a,b)=>pumpTotals[a]>pumpTotals[b]?a:b);
-      const bestDay=Object.keys(dailyTotals).reduce((a,b)=>dailyTotals[a]>dailyTotals[b]?a:b);
+      const avg=total/Object.keys(dailyTotals).length||0;
+      const topAtt=Object.keys(attendantTotals).reduce((a,b)=>attendantTotals[a]>attendantTotals[b]?a:b,"-");
+      const topPump=Object.keys(pumpTotals).reduce((a,b)=>pumpTotals[a]>pumpTotals[b]?a:b,"-");
+      const bestDay=Object.keys(dailyTotals).reduce((a,b)=>dailyTotals[a]>dailyTotals[b]?a:b,"-");
       document.getElementById('insightsList').innerHTML=[
         `Total fuel volume sold: ${total.toLocaleString()} L`,
-        `Best performing attendant: ${topAtt} with ${attendantTotals[topAtt].toLocaleString()} L`,
-        `Most productive pump: ${topPump} with ${pumpTotals[topPump].toLocaleString()} L`,
+        `Best performing attendant: ${topAtt}`,
+        `Most productive pump: ${topPump}`,
         `Average daily volume: ${Math.round(avg).toLocaleString()} L`,
-        `Peak volume day: ${bestDay} with ${dailyTotals[bestDay].toLocaleString()} L`
+        `Peak volume day: ${bestDay}`
       ].map(i=>`<li>${i}</li>`).join('');
     }
 
-    function updateDataTable() {
+    function updateDataTable(filtered) {
       let html=`<thead><tr><th>Date</th><th>Pump 1 Attendant</th><th>Pump 1 Volume</th><th>Pump 2 Attendant</th><th>Pump 2 Volume</th><th>Pump 3 Attendant</th><th>Pump 3 Volume</th><th>Daily Total</th></tr></thead><tbody>`;
-      processedData.forEach(r=>{
+      filtered.forEach(r=>{
         html+=`<tr><td>${r.date}</td><td>${r.pump1.attendant}</td><td>${r.pump1.value.toLocaleString()} L</td><td>${r.pump2.attendant}</td><td>${r.pump2.value.toLocaleString()} L</td><td>${r.pump3.attendant}</td><td>${r.pump3.value.toLocaleString()} L</td><td><strong>${r.total.toLocaleString()} L</strong></td></tr>`;
       });
-      html+='</tbody>'; document.getElementById('dataTable').innerHTML=html;
+      html+='</tbody>';
+      document.getElementById('dataTable').innerHTML=html;
     }
 
     function updateAnalysis() {
-      updateMetrics(); createDailySalesChart(); createAttendantChart(); createPumpChart(); updateInsights(); updateDataTable();
+      const filtered=getFilteredData();
+      const {dailyTotals,attendantTotals,pumpTotals}=updateMetrics(filtered);
+      createCharts(dailyTotals,attendantTotals,pumpTotals);
+      updateInsights(dailyTotals,attendantTotals,pumpTotals);
+      updateDataTable(filtered);
     }
 
     document.addEventListener('DOMContentLoaded', loadFuelData);
   </script>
 </body>
 </html>
+
 
 
