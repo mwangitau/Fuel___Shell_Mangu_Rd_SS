@@ -50,12 +50,12 @@
     // Parse CSV text → array of objects
     function csvToArray(csv, delimiter = ',') {
       const lines = csv.trim().split('\n');
-      const headers = lines[0].split(delimiter);
+      const headers = lines[0].split(delimiter).map(h => h.trim());
       return lines.slice(1).map(line => {
         const items = line.split(delimiter);
         let obj = {};
         headers.forEach((h, i) => {
-          obj[h.trim()] = items[i] ? items[i].trim() : "";
+          obj[h] = items[i] ? items[i].trim() : "";
         });
         return obj;
       });
@@ -66,16 +66,12 @@
       const text = await resp.text();
       const rows = csvToArray(text);
 
-      // use the first column of the sheet as the date column
-const firstHeader = Object.keys(rows[0])[0];  
-
-allData = rows.map(r => {
-  let obj = { day: r.DAY };   // 👈 use DAY column
-  staff.forEach(s => obj[s] = parseFloat(r[s]) || 0);
-  return obj;
-});
-
-
+      // Use DAY column for chart labels
+      allData = rows.map(r => {
+        let obj = { day: r.DAY };  // 👈 pull DAY column
+        staff.forEach(s => obj[s] = parseFloat(r[s]) || 0);
+        return obj;
+      });
 
       populateDropdown();
       renderChart("ALL");
@@ -114,7 +110,7 @@ allData = rows.map(r => {
 
       chart = new Chart(document.getElementById("shortagesChart"), {
         type: "line",
-        data: { labels: allData.map(d => d.Day), datasets },
+        data: { labels: allData.map(d => d.day), datasets }, // 👈 use day
         options: { responsive: true, plugins: { legend: { position: "bottom" } } }
       });
 
@@ -133,14 +129,14 @@ allData = rows.map(r => {
             let cls = v < 0 ? "negative" : "positive";
             return `<td class='${cls}'>${v.toFixed(2)}</td>`;
           }).join("");
-          return `<tr><td>${row.Day}</td>${cells}</tr>`;
+          return `<tr><td>${row.day}</td>${cells}</tr>`;
         }).join("");
       } else {
-        header = `<tr><th>Date</th><th>${selectedStaff}</th></tr>`;
+        header = `<tr><th>Day</th><th>${selectedStaff}</th></tr>`;
         rows = allData.map(row => {
           let v = row[selectedStaff];
           let cls = v < 0 ? "negative" : "positive";
-          return `<tr><td>${row.Day}</td><td class='${cls}'>${v.toFixed(2)}</td></tr>`;
+          return `<tr><td>${row.day}</td><td class='${cls}'>${v.toFixed(2)}</td></tr>`;
         }).join("");
       }
 
@@ -151,3 +147,5 @@ allData = rows.map(r => {
   </script>
 </body>
 </html>
+
+   
