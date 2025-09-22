@@ -13,11 +13,21 @@
     th { background: #0077cc; color: white; text-align: center; }
     td.negative { color: red; }
     td.positive { color: green; }
+    .controls { text-align: center; margin-bottom: 20px; }
+    select { padding: 6px 10px; font-size: 14px; }
+    footer { margin-top: 30px; font-size: 13px; color: #777; line-height: 1.5; text-align: center; }
   </style>
 </head>
 <body>
   <h1>Staff Shortages Dashboard — Mangu Shell</h1>
   <p>Negative numbers = shortages after selling fuel</p>
+
+  <div class="controls">
+    <label for="staffSelect"><strong>View Individual Staff:</strong></label>
+    <select id="staffSelect">
+      <option value="ALL">All Staff</option>
+    </select>
+  </div>
 
   <div class="chart-container">
     <canvas id="shortagesChart"></canvas>
@@ -26,8 +36,13 @@
   <h2>Detailed Data</h2>
   <table id="dataTable"></table>
 
+  <footer>
+    <p>© 2025 Kiryan Energy Ltd — All Rights Reserved.</p>
+    <p><strong>Confidential:</strong> These dashboards are for official use only and must not be copied, shared, or distributed without prior written permission from Kiryan Energy Ltd.</p>
+  </footer>
+
   <script>
-    // Staff shortages data (September)
+    // Staff shortages data
     const data = [
       { date: "2025-09-01", JOHN: 95.61, DAVID: -919.42, ZACHARIAH: -527.27 },
       { date: "2025-09-02", THOMAS: 27.15, PAUL: 1.73, MACHARIAH: 26.12 },
@@ -47,46 +62,94 @@
       { date: "2025-09-16", THOMAS: -0.79, PAUL: -1.38, MACHARIAH: 99.3 },
       { date: "2025-09-17", JOHN: 2.33, DAVID: 0.15, PETER: -6.85 },
       { date: "2025-09-18", DAVID: -79.54, ZACHARIAH: -497.12, PAUL: 15.43 },
-      { date: "2025-09-19", JOHN: 13.57, NJAGI: -31.03, PETER: -0.45 },
+      { date: "2025-09-19", JOHN: 13.57, MACHARAH: -31.03, PETER: -0.45 },
       { date: "2025-09-20", DAVID: -6.71, ZACHARIAH: -6.83, THOMAS: 5.37 },
     ];
 
     const staff = ["JOHN","DAVID","ZACHARIAH","THOMAS","PAUL","MACHARIAH","NJAGI","VICTOR","PETER"];
 
-    // Chart.js dataset
-    const chartDatasets = staff.map((s, i) => ({
-      label: s,
-      data: data.map(d => d[s] ?? 0),
-      borderColor: `hsl(${i*40},70%,50%)`,
-      fill: false
-    }));
-
-    new Chart(document.getElementById("shortagesChart"), {
-      type: "line",
-      data: {
-        labels: data.map(d => d.date),
-        datasets: chartDatasets
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { position: "bottom" } },
-        scales: { y: { beginAtZero: false } }
-      }
+    // Populate dropdown
+    const select = document.getElementById("staffSelect");
+    staff.forEach(s => {
+      let opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      select.appendChild(opt);
     });
 
-    // Build table
-    const table = document.getElementById("dataTable");
-    let header = "<tr><th>Date</th>" + staff.map(s => `<th>${s}</th>`).join("") + "</tr>";
-    let rows = data.map(row => {
-      let cells = staff.map(s => {
-        let v = row[s] ?? 0;
-        let cls = v < 0 ? "negative" : "positive";
-        return `<td class='${cls}'>${v.toFixed(2)}</td>`;
-      }).join("");
-      return `<tr><td>${row.date}</td>${cells}</tr>`;
-    }).join("");
-    table.innerHTML = header + rows;
+    // Chart instance
+    let chart;
+    function renderChart(selectedStaff = "ALL") {
+      if (chart) chart.destroy();
+
+      let datasets;
+      if (selectedStaff === "ALL") {
+        datasets = staff.map((s, i) => ({
+          label: s,
+          data: data.map(d => d[s] ?? 0),
+          borderColor: `hsl(${i*40},70%,50%)`,
+          fill: false
+        }));
+      } else {
+        datasets = [{
+          label: selectedStaff,
+          data: data.map(d => d[selectedStaff] ?? 0),
+          borderColor: "#0077cc",
+          fill: false
+        }];
+      }
+
+      chart = new Chart(document.getElementById("shortagesChart"), {
+        type: "line",
+        data: {
+          labels: data.map(d => d.date),
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: "bottom" } },
+          scales: { y: { beginAtZero: false } }
+        }
+      });
+
+      renderTable(selectedStaff);
+    }
+
+    // Table renderer
+    function renderTable(selectedStaff = "ALL") {
+      const table = document.getElementById("dataTable");
+      let header;
+      let rows;
+
+      if (selectedStaff === "ALL") {
+        header = "<tr><th>Date</th>" + staff.map(s => `<th>${s}</th>`).join("") + "</tr>";
+        rows = data.map(row => {
+          let cells = staff.map(s => {
+            let v = row[s] ?? 0;
+            let cls = v < 0 ? "negative" : "positive";
+            return `<td class='${cls}'>${v.toFixed(2)}</td>`;
+          }).join("");
+          return `<tr><td>${row.date}</td>${cells}</tr>`;
+        }).join("");
+      } else {
+        header = `<tr><th>Date</th><th>${selectedStaff}</th></tr>`;
+        rows = data.map(row => {
+          let v = row[selectedStaff] ?? 0;
+          let cls = v < 0 ? "negative" : "positive";
+          return `<tr><td>${row.date}</td><td class='${cls}'>${v.toFixed(2)}</td></tr>`;
+        }).join("");
+      }
+
+      table.innerHTML = header + rows;
+    }
+
+    // Initial render
+    renderChart();
+
+    // Dropdown change
+    select.addEventListener("change", e => {
+      renderChart(e.target.value);
+    });
   </script>
 </body>
 </html>
-
