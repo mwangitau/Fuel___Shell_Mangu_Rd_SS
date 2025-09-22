@@ -2,66 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Staff Shortages Dashboard</title>
+  <title>Fuel Sales Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
-    h1 { color: #333; }
-    .chart-container { width: 100%; max-width: 900px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
-    th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: right; }
-    th { background: #0077cc; color: white; text-align: center; }
-    td.negative { color: red; }
-    td.positive { color: green; }
-    .controls { text-align: center; margin-bottom: 20px; }
-    select { padding: 6px 10px; font-size: 14px; }
-    footer { margin-top: 30px; font-size: 13px; color: #777; line-height: 1.5; text-align: center; }
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+    h1 { text-align: center; color: #333; }
+    canvas { max-width: 900px; margin: 30px auto; display: block; }
+    footer { margin-top: 30px; font-size: 13px; color: #777; text-align: center; }
   </style>
 </head>
 <body>
-  <h1>Staff Shortages Dashboard — Mangu Shell</h1>
-  <p>Negative numbers = shortages after selling fuel</p>
-
-  <div class="controls">
-    <label for="staffSelect"><strong>View Individual Staff:</strong></label>
-    <select id="staffSelect">
-      <option value="ALL">All Staff</option>
-    </select>
-    <label for="pumpSelect"><strong>View Pump:</strong></label>
-    <select id="pumpSelect">
-      <option value="ALL">All Pumps</option>
-      <option value="Pump 1">Pump 1</option>
-      <option value="Pump 2">Pump 2</option>
-      <option value="Pump 3">Pump 3</option>
-    </select>
-  </div>
-
-  <div class="chart-container">
-    <canvas id="shortagesChart"></canvas>
-  </div>
-
-  <h2>Detailed Data</h2>
-  <table id="dataTable"></table>
+  <h1>Fuel Sales Dashboard</h1>
+  <canvas id="salesChart"></canvas>
 
   <footer>
-    <p>© 2025 Kiryan Energy Ltd — All Rights Reserved.</p>
-    <p><strong>Confidential:</strong> These dashboards are for official use only and must not be copied, shared, or distributed without prior written permission from Kiryan Energy Ltd.</p>
+    <p>© 2025 Kiryan Energy Ltd — Confidential Dashboard</p>
   </footer>
 
   <script>
-    // 👇 Use your published Google Sheet CSV link
-    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?output=csv";
-
-    let chart, allData = [], staffList = [];
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?output=csv";
 
     async function loadData() {
-      const resp = await fetch(csvUrl);
-      const text = await resp.text();
+      const response = await fetch(sheetUrl);
+      const text = await response.text();
+
       const rows = text.split("\n").map(r => r.split(","));
       const data = [];
 
+      // 🔹 Parse Pump 1, Pump 2, Pump 3 blocks
       for (let i = 1; i < rows.length; i++) {
-        const r = rows[i];
+        const r = rows[i].map(v => v.trim()); // trim spaces
         if (r.length < 9) continue;
 
         // Pump 1
@@ -78,99 +48,50 @@
         }
       }
 
-      allData = data;
-      staffList = [...new Set(allData.map(d => d.csa))].filter(Boolean);
-
-      populateDropdowns();
-      renderChart("ALL", "ALL");
+      // 🔹 Filter out empty CSA names
+      return data.filter(d => d.csa && d.csa.toLowerCase() !== "unknown");
     }
 
-    function populateDropdowns() {
-      const select = document.getElementById("staffSelect");
-      staffList.forEach(s => {
-        let opt = document.createElement("option");
-        opt.value = s;
-        opt.textContent = s;
-        select.appendChild(opt);
+    async function drawChart() {
+      const allData = await loadData();
+
+      // 🔹 Group sales by CSA
+      const salesByCSA = {};
+      allData.forEach(d => {
+        if (!salesByCSA[d.csa]) salesByCSA[d.csa] = 0;
+        salesByCSA[d.csa] += d.sales;
       });
 
-      select.addEventListener("change", () => {
-        renderChart(select.value, document.getElementById("pumpSelect").value);
-      });
+      const labels = Object.keys(salesByCSA);
+      const values = Object.values(salesByCSA);
 
-      document.getElementById("pumpSelect").addEventListener("change", e => {
-        renderChart(select.value, e.target.value);
+      const ctx = document.getElementById("salesChart").getContext("2d");
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "Total Sales",
+            data: values,
+            backgroundColor: "rgba(54, 162, 235, 0.6)"
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: true, position: "top" }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: "Sales (Litres)" }
+            }
+          }
+        }
       });
     }
 
-    function renderChart(selectedStaff = "ALL", selectedPump = "ALL") {
-      if (chart) chart.destroy();
-
-      let filtered = allData.filter(d =>
-        (selectedStaff === "ALL" || d.csa === selectedStaff) &&
-        (selectedPump === "ALL" || d.pump === selectedPump)
-      );
-
-      const days = [...new Set(filtered.map(d => d.day))].sort();
-      const datasets = [];
-
-      if (selectedStaff === "ALL") {
-        staffList.forEach((s, i) => {
-          let staffData = days.map(day => {
-            let rec = filtered.find(d => d.day === day && d.csa === s);
-            return rec ? rec.sales : 0;
-          });
-          datasets.push({
-            label: s,
-            data: staffData,
-            borderColor: `hsl(${i*40},70%,50%)`,
-            fill: false
-          });
-        });
-      } else {
-        let staffData = days.map(day => {
-          let rec = filtered.find(d => d.day === day && d.csa === selectedStaff);
-          return rec ? rec.sales : 0;
-        });
-        datasets.push({
-          label: selectedStaff,
-          data: staffData,
-          borderColor: "#0077cc",
-          fill: false
-        });
-      }
-
-      chart = new Chart(document.getElementById("shortagesChart"), {
-        type: "line",
-        data: { labels: days, datasets },
-        options: { responsive: true, plugins: { legend: { position: "bottom" } } }
-      });
-
-      renderTable(filtered, days, selectedStaff);
-    }
-
-    function renderTable(filtered, days, selectedStaff) {
-      const table = document.getElementById("dataTable");
-      let header, rows;
-
-      if (selectedStaff === "ALL") {
-        header = "<tr><th>Day</th><th>Pump</th><th>CSA</th><th>Sales</th></tr>";
-        rows = filtered.map(row => {
-          let cls = row.sales < 0 ? "negative" : "positive";
-          return `<tr><td>${row.day}</td><td>${row.pump}</td><td>${row.csa}</td><td class='${cls}'>${row.sales.toFixed(2)}</td></tr>`;
-        }).join("");
-      } else {
-        header = "<tr><th>Day</th><th>Pump</th><th>Sales</th></tr>";
-        rows = filtered.map(row => {
-          let cls = row.sales < 0 ? "negative" : "positive";
-          return `<tr><td>${row.day}</td><td>${row.pump}</td><td class='${cls}'>${row.sales.toFixed(2)}</td></tr>`;
-        }).join("");
-      }
-
-      table.innerHTML = header + rows;
-    }
-
-    loadData();
+    drawChart();
   </script>
 </body>
 </html>
