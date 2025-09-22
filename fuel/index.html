@@ -386,19 +386,40 @@
             return;
           }
           
-          // Extract pump data using your exact column names from the screenshot
+          // Extract pump data - handle multiple possible column naming patterns
+          const columns = Object.keys(row);
+          console.log(`Row ${index} - Available columns:`, columns);
+          
+          // Find attendant columns (looking for various patterns)
+          const attendant1Col = columns.find(col => 
+            col === 'NAME OF CSA' || 
+            (col.includes('NAME OF CSA') && !col.includes('.'))
+          ) || columns[1]; // fallback to second column
+          
+          const attendant2Col = columns.find(col => 
+            col === 'NAME OF CSA.1' || 
+            col.includes('NAME OF CSA') && (col.includes('.1') || col.includes('2'))
+          ) || columns[3]; // fallback to fourth column
+          
+          const attendant3Col = columns.find(col => 
+            col === 'NAME OF CSA.2' || 
+            col.includes('NAME OF CSA') && (col.includes('.2') || col.includes('3'))
+          ) || columns[5]; // fallback to sixth column
+          
+          console.log(`Attendant columns found: ${attendant1Col}, ${attendant2Col}, ${attendant3Col}`);
+          
           const pump1 = {
-            attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(),
+            attendant: (row[attendant1Col] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 1']) || 0)
           };
           
           const pump2 = {
-            attendant: (row['NAME OF CSA.1'] || 'Unknown').toString().trim(),
+            attendant: (row[attendant2Col] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 2']) || 0)
           };
           
           const pump3 = {
-            attendant: (row['NAME OF CSA.2'] || 'Unknown').toString().trim(),
+            attendant: (row[attendant3Col] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 3']) || 0)
           };
           
