@@ -1,113 +1,584 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Product Dashboard — Kiryan Energy Ltd</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React & ReactDOM -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <!-- Babel for JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- Recharts -->
-  <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
-  <!-- PapaParse for CSV -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shell Mangu Fuel Sales Dashboard - September 2025</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.8.0/Recharts.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.5/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; }
+        .icon { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; }
+        .icon-lg { width: 48px; height: 48px; }
+        .loading-spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
-<body class="bg-gray-100">
-  <div id="root"></div>
+<body>
+    <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
-    const { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer } = Recharts;
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } = Recharts;
 
-    // Use your raw GitHub URL for the CSV
-    const CSV_URL = "./data.csv"; // <-- upload data.csv to the same folder
+        // Icon components
+        const FuelIcon = () => (
+            <svg className="icon icon-lg" viewBox="0 0 24 24">
+                <path d="M3 7V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v2"/>
+                <path d="M3 7v10a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V7"/>
+                <path d="M16 11V7a4 4 0 0 0-8 0v4"/>
+            </svg>
+        );
 
-    const toNumber = v => {
-      if (!v) return 0;
-      const n = String(v).replace(/[,\\s]/g,"");
-      return isNaN(parseFloat(n)) ? 0 : parseFloat(n);
-    }
+        const TrendingUpIcon = () => (
+            <svg className="icon icon-lg" viewBox="0 0 24 24">
+                <path d="M22 7l-8.5 8.5-4-4L2 19"/>
+                <path d="M16 7h6v6"/>
+            </svg>
+        );
 
-    function ProductDashboard() {
-      const [data, setData] = useState([]);
-      const [loading, setLoading] = useState(true);
+        const ActivityIcon = () => (
+            <svg className="icon icon-lg" viewBox="0 0 24 24">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+        );
 
-      useEffect(() => {
-        Papa.parse(CSV_URL, {
-          download: true,
-          header: true,
-          skipEmptyLines: true,
-          complete: (results) => {
-            const rows = results.data.map(r => ({
-              date: r["DATES"] || r[Object.keys(r)[0]],
-              UX: toNumber(r["UX"] || r[Object.keys(r)[1]]),
-              DX: toNumber(r["DX"] || r[Object.keys(r)[2]]),
-              VPOWER: toNumber(r["V-POWER"] || r[Object.keys(r)[3]]),
-            })).filter(r => r.date);
-            setData(rows);
-            setLoading(false);
-          }
-        });
-      }, []);
+        const BarChartIcon = () => (
+            <svg className="icon icon-lg" viewBox="0 0 24 24">
+                <line x1="12" y1="20" x2="12" y2="10"/>
+                <line x1="18" y1="20" x2="18" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="16"/>
+            </svg>
+        );
 
-      const pieData = useMemo(() => {
-        const sum = data.reduce((acc,r) => {
-          acc.UX += r.UX; acc.DX += r.DX; acc.VPOWER += r.VPOWER;
-          return acc;
-        }, {UX:0, DX:0, VPOWER:0});
-        return [
-          { name: "UX", value: sum.UX },
-          { name: "DX", value: sum.DX },
-          { name: "V-POWER", value: sum.VPOWER }
-        ];
-      }, [data]);
+        const TargetIcon = () => (
+            <svg className="icon icon-lg" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="6"/>
+                <circle cx="12" cy="12" r="2"/>
+            </svg>
+        );
 
-      const COLORS = ["#60A5FA","#34D399","#FCA5A5"];
+        const CalendarIcon = () => (
+            <svg className="icon" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+        );
 
-      if (loading) return <div className="p-6 text-center text-lg">Loading data...</div>;
+        const RefreshIcon = () => (
+            <svg className="icon" viewBox="0 0 24 24">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                <path d="M3 21v-5h5"/>
+            </svg>
+        );
 
-      return (
-        <div className="p-6 max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Product Dashboard</h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-4 rounded shadow h-96">
-              <h2 className="mb-2 font-semibold">Line Chart</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={data}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="UX" stroke="#60A5FA" />
-                  <Line type="monotone" dataKey="DX" stroke="#34D399" />
-                  <Line type="monotone" dataKey="VPOWER" stroke="#FCA5A5" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="bg-white p-4 rounded shadow h-96">
-              <h2 className="mb-2 font-semibold">Pie Chart</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={40} outerRadius={70} label>
-                    {pieData.map((entry,index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      );
-    }
+        const FuelSalesDashboard = () => {
+            const [selectedView, setSelectedView] = useState('overview');
+            const [fuelData, setFuelData] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [lastUpdated, setLastUpdated] = useState(null);
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<ProductDashboard />);
-  </script>
+            const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTO3PNP1zG_QTHC6pY0lVTrchtBF36Tc1FKIuyGfBdexGVJNVj34reyTws-5vmGP8cst3YndAdNmB_P/pub?gid=1536720731&single=true&output=csv';
+
+            // Function to parse date from various formats
+            const parseDate = (dateStr) => {
+                if (!dateStr) return null;
+                // Handle formats like "2025.09.01", "2025-09-01", etc.
+                const cleanDate = dateStr.toString().replace(/\./g, '-');
+                return new Date(cleanDate);
+            };
+
+            // Function to format date for display
+            const formatDateLabel = (dateStr) => {
+                const date = parseDate(dateStr);
+                if (!date || isNaN(date)) return dateStr;
+                return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+            };
+
+            // Function to load data from Google Sheets
+            const loadData = async () => {
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    // Using a CORS proxy to fetch the CSV data
+                    const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                    const response = await fetch(proxyUrl + CSV_URL, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }).catch(() => {
+                        // Fallback: try direct fetch (might work in some cases)
+                        return fetch(CSV_URL);
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const csvText = await response.text();
+                    
+                    // Parse CSV using PapaParse
+                    const parsed = Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        dynamicTyping: true,
+                        transformHeader: (header) => header.trim()
+                    });
+
+                    if (parsed.errors.length > 0) {
+                        console.warn('CSV parsing warnings:', parsed.errors);
+                    }
+
+                    // Process the data
+                    const processedData = parsed.data
+                        .filter(row => row.DATES && (row.UX || row.DX || row['V-POWER']))
+                        .map((row, index) => {
+                            const date = parseDate(row.DATES);
+                            return {
+                                date: row.DATES,
+                                dateLabel: formatDateLabel(row.DATES),
+                                day: date ? date.getDate() : index + 1,
+                                UX: parseFloat(row.UX) || 0,
+                                DX: parseFloat(row.DX) || 0,
+                                VP: parseFloat(row['V-POWER']) || 0,
+                                hasData: (parseFloat(row.UX) || 0) > 0 || (parseFloat(row.DX) || 0) > 0 || (parseFloat(row['V-POWER']) || 0) > 0
+                            };
+                        })
+                        .sort((a, b) => {
+                            const dateA = parseDate(a.date);
+                            const dateB = parseDate(b.date);
+                            if (!dateA || !dateB) return 0;
+                            return dateA - dateB;
+                        });
+
+                    setFuelData(processedData);
+                    setLastUpdated(new Date());
+                    
+                } catch (err) {
+                    console.error('Error loading data:', err);
+                    setError(`Failed to load data: ${err.message}`);
+                    
+                    // Fallback to sample data
+                    const fallbackData = [
+                        { date: '2025-09-01', dateLabel: 'Sep 01', day: 1, UX: 3397.52, DX: 3281.81, VP: 266.43, hasData: true },
+                        { date: '2025-09-02', dateLabel: 'Sep 02', day: 2, UX: 3082.91, DX: 2290.15, VP: 130.26, hasData: true },
+                        { date: '2025-09-03', dateLabel: 'Sep 03', day: 3, UX: 2613.10, DX: 2530.29, VP: 105.02, hasData: true }
+                    ];
+                    setFuelData(fallbackData);
+                }
+                
+                setLoading(false);
+            };
+
+            // Load data on component mount
+            useEffect(() => {
+                loadData();
+            }, []);
+
+            // Calculate statistics
+            const stats = useMemo(() => {
+                const daysWithData = fuelData.filter(day => day.hasData);
+                const totalUX = daysWithData.reduce((sum, day) => sum + day.UX, 0);
+                const totalDX = daysWithData.reduce((sum, day) => sum + day.DX, 0);
+                const totalVP = daysWithData.reduce((sum, day) => sum + day.VP, 0);
+                const grandTotal = totalUX + totalDX + totalVP;
+                
+                const avgUX = daysWithData.length > 0 ? totalUX / daysWithData.length : 0;
+                const avgDX = daysWithData.length > 0 ? totalDX / daysWithData.length : 0;
+                const avgVP = daysWithData.length > 0 ? totalVP / daysWithData.length : 0;
+                
+                const maxUX = daysWithData.length > 0 ? Math.max(...daysWithData.map(d => d.UX)) : 0;
+                const maxDX = daysWithData.length > 0 ? Math.max(...daysWithData.map(d => d.DX)) : 0;
+                const maxVP = daysWithData.length > 0 ? Math.max(...daysWithData.map(d => d.VP)) : 0;
+                
+                return {
+                    totals: { UX: totalUX, DX: totalDX, VP: totalVP, total: grandTotal },
+                    averages: { UX: avgUX, DX: avgDX, VP: avgVP },
+                    maximums: { UX: maxUX, DX: maxDX, VP: maxVP },
+                    percentages: {
+                        UX: grandTotal > 0 ? (totalUX / grandTotal * 100) : 0,
+                        DX: grandTotal > 0 ? (totalDX / grandTotal * 100) : 0,
+                        VP: grandTotal > 0 ? (totalVP / grandTotal * 100) : 0
+                    },
+                    daysWithSales: daysWithData.length,
+                    totalDays: fuelData.length
+                };
+            }, [fuelData]);
+
+            // Prepare data for charts with daily totals
+            const chartData = fuelData.map(day => ({
+                ...day,
+                total: day.UX + day.DX + day.VP
+            }));
+
+            // Pie chart data
+            const pieData = [
+                { name: 'UX (Unleaded)', value: stats.totals.UX, color: '#3b82f6' },
+                { name: 'DX (Diesel)', value: stats.totals.DX, color: '#10b981' },
+                { name: 'VP (V-Power)', value: stats.totals.VP, color: '#f59e0b' }
+            ].filter(item => item.value > 0);
+
+            const formatNumber = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            const StatCard = ({ title, value, subtitle, icon: Icon, color }) => (
+                <div className="bg-white rounded-lg shadow-lg p-6 border-l-4" style={{borderLeftColor: color}}>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-600">{title}</p>
+                            <p className="text-2xl font-bold text-gray-900">{typeof value === 'number' ? formatNumber(value) : value}</p>
+                            {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+                        </div>
+                        <Icon />
+                    </div>
+                </div>
+            );
+
+            const CustomTooltip = ({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
+                            <p className="font-medium">{`${label} ${data.hasData ? '' : '(No Sales)'}`}</p>
+                            {data.hasData && payload.map((entry, index) => (
+                                <p key={index} style={{ color: entry.color }}>
+                                    {`${entry.dataKey}: ${formatNumber(entry.value)}`}
+                                </p>
+                            ))}
+                            {data.hasData && (
+                                <p className="font-medium border-t pt-2 mt-2">
+                                    {`Total: ${formatNumber(data.total)}`}
+                                </p>
+                            )}
+                        </div>
+                    );
+                }
+                return null;
+            };
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="loading-spinner mb-4"></div>
+                            <p className="text-gray-600">Loading fuel sales data...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (error && fuelData.length === 0) {
+                return (
+                    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                        <div className="text-center max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+                            <div className="text-red-500 mb-4">
+                                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">Data Loading Error</h3>
+                            <p className="text-gray-600 mb-4">{error}</p>
+                            <button
+                                onClick={loadData}
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 mx-auto"
+                            >
+                                <RefreshIcon />
+                                <span>Retry</span>
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-100 p-6">
+                    <div className="max-w-7xl mx-auto">
+                        {/* Header */}
+                        <div className="mb-8">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Shell Mangu Fuel Sales Dashboard</h1>
+                                    <div className="flex items-center space-x-4 text-gray-600">
+                                        <div className="flex items-center space-x-2">
+                                            <CalendarIcon />
+                                            <span>September 2025</span>
+                                        </div>
+                                        {lastUpdated && (
+                                            <div className="text-sm">
+                                                Last updated: {lastUpdated.toLocaleString()}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={loadData}
+                                    disabled={loading}
+                                    className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+                                >
+                                    <RefreshIcon />
+                                    <span>{loading ? 'Loading...' : 'Refresh Data'}</span>
+                                </button>
+                            </div>
+                            
+                            {error && (
+                                <div className="mt-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700">
+                                    <p className="text-sm">⚠️ Using fallback data due to loading error: {error}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Navigation */}
+                        <div className="mb-6">
+                            <div className="border-b border-gray-200">
+                                <nav className="-mb-px flex space-x-8">
+                                    {[
+                                        { id: 'overview', label: 'Overview', icon: ActivityIcon },
+                                        { id: 'trends', label: 'Trends', icon: TrendingUpIcon },
+                                        { id: 'comparison', label: 'Comparison', icon: BarChartIcon },
+                                        { id: 'distribution', label: 'Distribution', icon: TargetIcon }
+                                    ].map(({ id, label, icon: Icon }) => (
+                                        <button
+                                            key={id}
+                                            onClick={() => setSelectedView(id)}
+                                            className={`${
+                                                selectedView === id
+                                                    ? 'border-blue-500 text-blue-600'
+                                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                            } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2`}
+                                        >
+                                            <Icon />
+                                            <span>{label}</span>
+                                        </button>
+                                    ))}
+                                </nav>
+                            </div>
+                        </div>
+
+                        {/* Overview Tab */}
+                        {selectedView === 'overview' && (
+                            <div className="space-y-6">
+                                {/* Summary Stats */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                    <StatCard
+                                        title="Total UX Sales"
+                                        value={stats.totals.UX}
+                                        subtitle={`${stats.percentages.UX.toFixed(1)}% of total`}
+                                        icon={FuelIcon}
+                                        color="#3b82f6"
+                                    />
+                                    <StatCard
+                                        title="Total DX Sales"
+                                        value={stats.totals.DX}
+                                        subtitle={`${stats.percentages.DX.toFixed(1)}% of total`}
+                                        icon={FuelIcon}
+                                        color="#10b981"
+                                    />
+                                    <StatCard
+                                        title="Total VP Sales"
+                                        value={stats.totals.VP}
+                                        subtitle={`${stats.percentages.VP.toFixed(1)}% of total`}
+                                        icon={FuelIcon}
+                                        color="#f59e0b"
+                                    />
+                                    <StatCard
+                                        title="Grand Total"
+                                        value={stats.totals.total}
+                                        subtitle={`${stats.daysWithSales} days with sales`}
+                                        icon={ActivityIcon}
+                                        color="#6366f1"
+                                    />
+                                </div>
+
+                                {/* Daily Sales Overview */}
+                                <div className="bg-white rounded-lg shadow-lg p-6">
+                                    <h3 className="text-lg font-medium text-gray-900 mb-4">Daily Sales Overview</h3>
+                                    <ResponsiveContainer width="100%" height={400}>
+                                        <AreaChart data={chartData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="dateLabel" />
+                                            <YAxis />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Legend />
+                                            <Area type="monotone" dataKey="UX" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.8} />
+                                            <Area type="monotone" dataKey="DX" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.8} />
+                                            <Area type="monotone" dataKey="VP" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.8} />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Trends Tab */}
+                        {selectedView === 'trends' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-lg shadow-lg p-6">
+                                    <h3 className="text-lg font-medium text-gray-900 mb-4">Fuel Sales Trends</h3>
+                                    <ResponsiveContainer width="100%" height={400}>
+                                        <LineChart data={chartData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="dateLabel" />
+                                            <YAxis />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Legend />
+                                            <Line type="monotone" dataKey="UX" stroke="#3b82f6" strokeWidth={2} />
+                                            <Line type="monotone" dataKey="DX" stroke="#10b981" strokeWidth={2} />
+                                            <Line type="monotone" dataKey="VP" stroke="#f59e0b" strokeWidth={2} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                {/* Daily Averages */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <StatCard
+                                        title="Average UX Sales"
+                                        value={stats.averages.UX}
+                                        subtitle="per day"
+                                        icon={TrendingUpIcon}
+                                        color="#3b82f6"
+                                    />
+                                    <StatCard
+                                        title="Average DX Sales"
+                                        value={stats.averages.DX}
+                                        subtitle="per day"
+                                        icon={TrendingUpIcon}
+                                        color="#10b981"
+                                    />
+                                    <StatCard
+                                        title="Average VP Sales"
+                                        value={stats.averages.VP}
+                                        subtitle="per day"
+                                        icon={TrendingUpIcon}
+                                        color="#f59e0b"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Comparison Tab */}
+                        {selectedView === 'comparison' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-lg shadow-lg p-6">
+                                    <h3 className="text-lg font-medium text-gray-900 mb-4">Daily Fuel Sales Comparison</h3>
+                                    <ResponsiveContainer width="100%" height={400}>
+                                        <BarChart data={chartData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="dateLabel" />
+                                            <YAxis />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Legend />
+                                            <Bar dataKey="UX" fill="#3b82f6" />
+                                            <Bar dataKey="DX" fill="#10b981" />
+                                            <Bar dataKey="VP" fill="#f59e0b" />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                {/* Peak Performance */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <StatCard
+                                        title="Peak UX Day"
+                                        value={stats.maximums.UX}
+                                        subtitle="highest single day"
+                                        icon={BarChartIcon}
+                                        color="#3b82f6"
+                                    />
+                                    <StatCard
+                                        title="Peak DX Day"
+                                        value={stats.maximums.DX}
+                                        subtitle="highest single day"
+                                        icon={BarChartIcon}
+                                        color="#10b981"
+                                    />
+                                    <StatCard
+                                        title="Peak VP Day"
+                                        value={stats.maximums.VP}
+                                        subtitle="highest single day"
+                                        icon={BarChartIcon}
+                                        color="#f59e0b"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Distribution Tab */}
+                        {selectedView === 'distribution' && (
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="bg-white rounded-lg shadow-lg p-6">
+                                        <h3 className="text-lg font-medium text-gray-900 mb-4">Fuel Mix Distribution</h3>
+                                        <ResponsiveContainer width="100%" height={300}>
+                                            <PieChart>
+                                                <Pie
+                                                    data={pieData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    labelLine={false}
+                                                    label={({ name, percent }) => `${name.split(' ')[0]}: ${(percent * 100).toFixed(1)}%`}
+                                                    outerRadius={80}
+                                                    fill="#8884d8"
+                                                    dataKey="value"
+                                                >
+                                                    {pieData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip formatter={(value) => [formatNumber(value), '']} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+
+                                    <div className="bg-white rounded-lg shadow-lg p-6">
+                                        <h3 className="text-lg font-medium text-gray-900 mb-4">Fuel Sales Summary</h3>
+                                        <div className="space-y-4">
+                                            {pieData.map((item) => (
+                                                <div key={item.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-4 h-4 rounded-full" style={{backgroundColor: item.color}}></div>
+                                                        <span className="font-medium">{item.name}</span>
+                                                    </div>
+                                                    <span className="text-lg font-bold">{formatNumber(item.value)}</span>
+                                                </div>
+                                            ))}
+                                            <div className="border-t pt-3 mt-3">
+                                                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                                    <span className="font-bold text-blue-900">Total Sales</span>
+                                                    <span className="text-xl font-bold text-blue-900">{formatNumber(stats.totals.total)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<FuelSalesDashboard />, document.getElementById('root'));
+    </script>
 </body>
 </html>
-
 
 
