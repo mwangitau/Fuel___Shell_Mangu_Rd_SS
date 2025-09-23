@@ -13,8 +13,8 @@
     th { background: #0077cc; color: white; text-align: center; }
     td.negative { color: red; }
     td.positive { color: green; }
-    .controls { text-align: center; margin-bottom: 20px; }
-    select { padding: 6px 10px; font-size: 14px; }
+    .controls { text-align: center; margin-bottom: 20px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    select, input { padding: 6px 10px; font-size: 14px; }
     footer { margin-top: 30px; font-size: 13px; color: #777; line-height: 1.5; text-align: center; }
   </style>
 </head>
@@ -23,9 +23,18 @@
   <p>Negative numbers = shortages after selling fuel</p>
 
   <div class="controls">
-    <label for="staffSelect"><strong>View Individual Staff:</strong></label>
-    <select id="staffSelect">
-      <option value="ALL">All Staff</option>
+    <label><strong>View Staff:</strong></label>
+    <select id="staffSelect"><option value="ALL">All Staff</option></select>
+
+    <label><strong>Start Date:</strong></label>
+    <input type="date" id="startDate">
+    <label><strong>End Date:</strong></label>
+    <input type="date" id="endDate">
+
+    <label><strong>Chart Type:</strong></label>
+    <select id="chartType">
+      <option value="line">Line</option>
+      <option value="bar">Bar</option>
     </select>
   </div>
 
@@ -35,6 +44,9 @@
 
   <h2>Detailed Data</h2>
   <table id="dataTable"></table>
+
+  <h2>Average Shortage per Day</h2>
+  <div id="averages"></div>
 
   <footer>
     <p>© 2025 Kiryan Energy Ltd — All Rights Reserved.</p>
@@ -53,22 +65,16 @@
       return lines.slice(1).map(line => {
         const items = line.split(delimiter);
         let obj = {};
-        headers.forEach((h, i) => {
-          obj[h] = items[i] ? items[i].trim() : "";
-        });
+        headers.forEach((h, i) => obj[h] = items[i] ? items[i].trim() : "");
         return obj;
       });
     }
 
-    // Format DAY like "2025.09.1" → "2025-09-01"
     function formatDay(dayString) {
       if (!dayString || dayString === "TOTALS") return null;
       const parts = dayString.split(".");
       if (parts.length < 3) return dayString;
-      const year = parts[0];
-      const month = parts[1].padStart(2, "0");
-      const day = parts[2].padStart(2, "0");
-      return `${year}-${month}-${day}`;
+      return `${parts[0]}-${parts[1].padStart(2,"0")}-${parts[2].padStart(2,"0")}`;
     }
 
     async function loadData() {
@@ -77,9 +83,9 @@
       const rows = csvToArray(text);
 
       allData = rows
-        .filter(r => r.DAY && r.DAY !== "TOTALS") // 👈 match DAY exactly
+        .filter(r => r.DAY && r.DAY !== "TOTALS")
         .map(r => {
-          let obj = { day: formatDay(r.DAY) };    // 👈 use r.DAY
+          let obj = { day: formatDay(r.DAY) };
           staff.forEach(s => obj[s] = parseFloat(r[s]) || 0);
           return obj;
         });
@@ -92,49 +98,74 @@
       const select = document.getElementById("staffSelect");
       staff.forEach(s => {
         let opt = document.createElement("option");
-        opt.value = s;
-        opt.textContent = s;
+        opt.value = s; opt.textContent = s;
         select.appendChild(opt);
       });
-      select.addEventListener("change", e => renderChart(e.target.value));
+      select.addEventListener("change", () => applyFilters());
+      document.getElementById("chartType").addEventListener("change", () => applyFilters());
+      document.getElementById("startDate").addEventListener("change", () => applyFilters());
+      document.getElementById("endDate").addEventListener("change", () => applyFilters());
     }
 
-    function renderChart(selectedStaff = "ALL") {
+    function applyFilters() {
+      const staffSelect = document.getElementById("staffSelect").value;
+      const chartType = document.getElementById("chartType").value;
+      const startDate = document.getElementById("startDate").value;
+      const endDate = document.getElementById("endDate").value;
+
+      let filteredData = allData.filter(d => {
+        return (!startDate || d.day >= startDate) && (!endDate || d.day <= endDate);
+      });
+
+      renderChart(staffSelect, chartType, filteredData);
+    }
+
+    function renderChart(selectedStaff = "ALL", chartType = "line", data = allData) {
       if (chart) chart.destroy();
 
       let datasets;
       if (selectedStaff === "ALL") {
         datasets = staff.map((s, i) => ({
           label: s,
-          data: allData.map(d => d[s] ?? 0),
+          data: data.map(d => d[s] ?? 0),
           borderColor: `hsl(${i*40},70%,50%)`,
+          backgroundColor: `hsl(${i*40},70%,70%)`,
           fill: false
         }));
       } else {
         datasets = [{
           label: selectedStaff,
-          data: allData.map(d => d[selectedStaff] ?? 0),
+          data: data.map(d => d[selectedStaff] ?? 0),
           borderColor: "#0077cc",
+          backgroundColor: "#66b2ff",
           fill: false
         }];
       }
 
       chart = new Chart(document.getElementById("shortagesChart"), {
-        type: "line",
-        data: { labels: allData.map(d => d.day), datasets },
-        options: { responsive: true, plugins: { legend: { position: "bottom" } } }
+        type: chartType,
+        data: { labels: data.map(d => d.day), datasets },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: "bottom" },
+            tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.formattedValue}` } }
+          },
+          scales: { y: { beginAtZero: true } }
+        }
       });
 
-      renderTable(selectedStaff);
+      renderTable(selectedStaff, data);
+      renderAverages(data);
     }
 
-    function renderTable(selectedStaff = "ALL") {
+    function renderTable(selectedStaff = "ALL", data = allData) {
       const table = document.getElementById("dataTable");
       let header, rows;
 
       if (selectedStaff === "ALL") {
         header = "<tr><th>Day</th>" + staff.map(s => `<th>${s}</th>`).join("") + "</tr>";
-        rows = allData.map(row => {
+        rows = data.map(row => {
           let cells = staff.map(s => {
             let v = row[s];
             let cls = v < 0 ? "negative" : "positive";
@@ -144,14 +175,28 @@
         }).join("");
       } else {
         header = `<tr><th>Day</th><th>${selectedStaff}</th></tr>`;
-        rows = allData.map(row => {
+        rows = data.map(row => {
           let v = row[selectedStaff];
           let cls = v < 0 ? "negative" : "positive";
           return `<tr><td>${row.day}</td><td class='${cls}'>${v.toFixed(2)}</td></tr>`;
         }).join("");
       }
-
       table.innerHTML = header + rows;
+    }
+
+    function renderAverages(data = allData) {
+      const container = document.getElementById("averages");
+      let html = "<table><tr><th>Staff</th><th>Avg Shortage (KES)</th></tr>";
+
+      staff.forEach(s => {
+        const values = data.map(d => d[s]).filter(v => !isNaN(v));
+        const avg = values.length ? values.reduce((a,b)=>a+b,0) / values.length : 0;
+        const cls = avg > 70 ? "negative" : "positive";
+        html += `<tr><td>${s}</td><td class='${cls}'>${avg.toFixed(2)}</td></tr>`;
+      });
+
+      html += "</table>";
+      container.innerHTML = html;
     }
 
     loadData();
