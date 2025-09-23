@@ -273,7 +273,6 @@
         </select>
       </div>
       <button onclick="updateAnalysis()">🔄 Update Analysis</button>
-      <button onclick="exportData()" style="background: linear-gradient(135deg, #27ae60, #2ecc71);">📊 Export Data</button>
     </div>
     
     <div class="chart-container">
@@ -368,7 +367,9 @@
         const rows = csvToArray(text);
         console.log('Parsed rows:', rows.length);
         console.log('Column headers:', Object.keys(rows[0] || {}));
-        console.log('Sample rows:', rows.slice(0, 3));
+        console.log('First row data:', rows[0]);
+        console.log('Second row data:', rows[1]);
+        console.log('Third row data:', rows[2]);
         
         processedData = [];
         attendantsSet = new Set();
