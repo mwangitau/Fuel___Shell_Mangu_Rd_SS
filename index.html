@@ -29,8 +29,21 @@
       transition: transform 0.2s ease;
     }
     .card:hover { transform: scale(1.05); }
-    a { text-decoration: none; color: #0077cc; font-weight: bold; font-size: 18px; }
-    footer { margin-top: 50px; font-size: 13px; color: #777; line-height: 1.5; }
+    a { 
+      text-decoration: none; 
+      color: #0077cc; 
+      font-weight: bold; 
+      font-size: 18px; 
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    footer { 
+      margin-top: 50px; 
+      font-size: 13px; 
+      color: #777; 
+      line-height: 1.5; 
+    }
   </style>
 </head>
 <body>
@@ -40,16 +53,16 @@
 
   <div class="card-container">
     <div class="card">
-      <a href="./fuel/">⛽ Fuel Per Pump Analysis</a>
+      <a href="./Fuel/">⛽ Fuel Per Pump Analysis</a>
       <p>Track performance per pump.</p>
     </div>
     <div class="card">
-      <a href="./staff/">👥 Staff Shortages Dashboard</a>
+      <a href="./Staff/">👥 Staff Shortages Dashboard</a>
       <p>Monitor shortages/excesses after fuel sales.</p>
     </div>
     <div class="card">
-      <a href="./Product/">📦 Product Analysis Dashboard</a>
-      <p>Analyze product performance.</p>
+      <a href="./ProductDashboard/">📦 Product Analysis Dashboard</a>
+      <p>Analyze product performance and inventory.</p>
     </div>
   </div>
 
