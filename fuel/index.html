@@ -275,7 +275,7 @@
       <button onclick="updateAnalysis()">🔄 Update Analysis</button>
     </div>
     
-    <div class="chart-container">
+    <div class="chart-container" style="height: 500px;">
       <canvas id="dailySalesChart"></canvas>
     </div>
     
@@ -532,7 +532,7 @@
         <div class="metric-card">
           <div class="metric-icon">📈</div>
           <div class="metric-value">${Math.round(avg).toLocaleString()} L</div>
-          <div class="metric-label">Average Daily Volume</div>
+          <div class="metric-label">Overall Average Volume</div>
         </div>
         <div class="metric-card">
           <div class="metric-icon">🏆</div>
@@ -586,7 +586,10 @@
           scales: {
             y: { 
               beginAtZero: true, 
-              ticks: { callback: v => v.toLocaleString() + " L" },
+              ticks: { 
+                callback: v => v.toLocaleString() + " L",
+                stepSize: 500
+              },
               grid: { color: 'rgba(0,0,0,0.1)' }
             },
             x: { 
@@ -668,7 +671,7 @@
         `📊 Total fuel volume sold: <strong>${total.toLocaleString()} L</strong> over ${days} days`,
         `🏆 Best performing attendant: <strong>${topAtt}</strong> with ${attendantTotals[topAtt]?.toLocaleString() || 0} L`,
         `⛽ Most productive pump: <strong>${topPump.replace('PUMP3', 'Pump 3').replace('PUMP ', 'Pump ')}</strong>`,
-        `📈 Average daily volume: <strong>${Math.round(avg).toLocaleString()} L</strong>`,
+        `📈 Overall average volume: <strong>${Math.round(avg).toLocaleString()} L</strong>`,
         `🔥 Peak volume day: <strong>${formatDisplayDate(bestDay)}</strong> (${dailyTotals[bestDay]?.toLocaleString() || 0} L)`,
         `📉 Lowest volume day: <strong>${formatDisplayDate(worstDay)}</strong> (${dailyTotals[worstDay]?.toLocaleString() || 0} L)`
       ];
