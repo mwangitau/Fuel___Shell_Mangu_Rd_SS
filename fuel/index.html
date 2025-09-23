@@ -530,13 +530,16 @@
         });
       });
 
-      const total = Object.values(dailyTotals).reduce((a, b) => a + b, 0);
-      const days = Object.keys(dailyTotals).length;
-      const avg = days > 0 ? total / days : 0;
+      const dailyValues = Object.values(dailyTotals);
+      const activeDays = dailyValues.filter(dayTotal => dayTotal > 0);
+      const total = dailyValues.reduce((a, b) => a + b, 0);
+      const avg = activeDays.length > 0 ? total / activeDays.length : 0;
       
       // Log for debugging
       console.log('Daily totals:', dailyTotals);
-      console.log('Total volume:', total, 'Days:', days, 'Average:', avg);
+      console.log('Daily values:', dailyValues);
+      console.log('Active days:', activeDays.length);
+      console.log('Total volume:', total, 'Average:', avg);
       const bestDay = Object.keys(dailyTotals).reduce((a, b) => 
         dailyTotals[a] > dailyTotals[b] ? a : b, Object.keys(dailyTotals)[0] || "-");
       const topAtt = Object.keys(attendantTotals).reduce((a, b) => 
@@ -689,7 +692,7 @@
         dailyTotals[a] < dailyTotals[b] ? a : b, "-");
 
       const insights = [
-        `📊 Total fuel volume sold: <strong>${total.toLocaleString()} L</strong> over ${days} days`,
+        `📊 Total fuel volume sold: <strong>${total.toLocaleString()} L</strong> over ${activeDays.length} active days`,
         `🏆 Best performing attendant: <strong>${topAtt}</strong> with ${attendantTotals[topAtt]?.toLocaleString() || 0} L`,
         `⛽ Most productive pump: <strong>${topPump.replace('PUMP3', 'Pump 3').replace('PUMP ', 'Pump ')}</strong>`,
         `📈 Overall average volume: <strong>${Math.round(avg).toLocaleString()} L</strong>`,
