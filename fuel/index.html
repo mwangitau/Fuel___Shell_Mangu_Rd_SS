@@ -387,33 +387,36 @@
             return;
           }
           
-          // Use the exact column names that Google Sheets exports
-          // Based on your raw data: DAY, NAME OF CSA, PUMP 1, DAY, NAME OF CSA, PUMP 2, DAY, NAME OF CSA, PUMP 3
+          // Your 9-column structure: 3 groups of (DAY, NAME OF CSA, PUMP)
+          // Google Sheets renames duplicates as: DAY, NAME OF CSA, PUMP 1, DAY.1, NAME OF CSA.1, PUMP 2, DAY.2, NAME OF CSA.2, PUMP 3
+          
           const pump1 = {
             attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 1']) || 0)
           };
           
-          // For duplicate column names, Google Sheets typically adds numbers
           const pump2 = {
-            attendant: (row['NAME OF CSA.1'] || row['NAME OF CSA_1'] || row['NAME OF CSA1'] || 'Unknown').toString().trim(),
+            attendant: (row['NAME OF CSA.1'] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 2']) || 0)
           };
           
           const pump3 = {
-            attendant: (row['NAME OF CSA.2'] || row['NAME OF CSA_2'] || row['NAME OF CSA2'] || 'Unknown').toString().trim(),
+            attendant: (row['NAME OF CSA.2'] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 3']) || 0)
           };
           
           const total = pump1.value + pump2.value + pump3.value;
           
-          console.log(`Row ${index} processed:`, { 
-            date, 
-            pump1: `${pump1.attendant}: ${pump1.value}L`,
-            pump2: `${pump2.attendant}: ${pump2.value}L`, 
-            pump3: `${pump3.attendant}: ${pump3.value}L`,
-            total: `${total}L`
-          });
+          // Only log first few rows to avoid console spam
+          if (index < 3) {
+            console.log(`Row ${index} processed:`, { 
+              date, 
+              pump1: `${pump1.attendant}: ${pump1.value}L`,
+              pump2: `${pump2.attendant}: ${pump2.value}L`, 
+              pump3: `${pump3.attendant}: ${pump3.value}L`,
+              total: `${total}L`
+            });
+          }
           
           processedData.push({ date, pump1, pump2, pump3, total });
           
