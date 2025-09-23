@@ -258,6 +258,13 @@
     
     <div class="filter-section">
       <div class="filter-group">
+        <label class="filter-label">Data Source</label>
+        <select id="dataSource" onchange="handleDataSourceChange()">
+          <option value="sheets">Google Sheets (Auto)</option>
+          <option value="manual">Manual CSV Paste</option>
+        </select>
+      </div>
+      <div class="filter-group">
         <label class="filter-label">Attendant Filter</label>
         <select id="attendantFilter">
           <option value="all">All Attendants</option>
@@ -274,6 +281,17 @@
       </div>
       <button onclick="updateAnalysis()">🔄 Update Analysis</button>
       <button onclick="exportData()" style="background: linear-gradient(135deg, #27ae60, #2ecc71);">📊 Export Data</button>
+    </div>
+
+    <div id="manualDataInput" style="display: none; margin-bottom: 25px;">
+      <div class="analysis-section">
+        <h3>📋 Manual CSV Data Input</h3>
+        <p>Copy and paste your CSV data from Google Sheets:</p>
+        <textarea id="csvTextarea" style="width: 100%; height: 200px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; font-family: monospace; font-size: 12px;" placeholder="Paste your CSV data here...&#10;&#10;Format should be:&#10;DAY,Attendant1,Volume1,Attendant2,Volume2,Attendant3,Volume3&#10;2025.09.01,John,1500,Mary,1200,Peter,1800&#10;2025.09.02,John,1600,Mary,1100,Peter,1900"></textarea>
+        <button onclick="loadManualData()" style="margin-top: 10px; background: linear-gradient(135deg, #3498db, #2980b9); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">
+          📊 Load Manual Data
+        </button>
+      </div>
     </div>
     
     <div class="chart-container">
@@ -386,29 +404,23 @@
             return;
           }
           
-          // Handle your restructured sheet with repeated DAY and NAME OF CSA columns
-          const columns = Object.keys(row);
-          console.log(`Row ${index} - Available columns:`, columns);
-          
-          // With your new structure, Google Sheets will likely name the columns as:
-          // DAY, NAME OF CSA, PUMP 1, DAY.1, NAME OF CSA.1, PUMP 2, DAY.2, NAME OF CSA.2, PUMP 3
-          
+          // Extract pump data using your exact column names
           const pump1 = {
-  attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(),
-  value: Math.abs(parseFloat(row['PUMP 1']) || 0)
-};
-
-const pump2 = {
-  attendant: (row['NAME OF CSA.1'] || 'Unknown').toString().trim(),
-  value: Math.abs(parseFloat(row['PUMP 2']) || 0)
-};
-
-const pump3 = {
-  attendant: (row['NAME OF CSA.2'] || 'Unknown').toString().trim(),
-  value: Math.abs(parseFloat(row['PUMP 3']) || 0)
-};
-
-
+            attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(),
+            value: Math.abs(parseFloat(row['PUMP 1']) || 0)
+          };
+          
+          const pump2 = {
+            attendant: (row['NAME OF CSAPUMP 2'] || 'Unknown').toString().trim(),
+            value: Math.abs(parseFloat(row['PUMP 2']) || 0)
+          };
+          
+          const pump3 = {
+            attendant: (row['NAME OF CSAPUMP 3'] || 'Unknown').toString().trim(),
+            value: Math.abs(parseFloat(row['PUMP 3']) || 0)
+          };
+          
+          const total = pump1.value + pump2.value + pump3.value;
           
           console.log(`Row ${index} processed:`, { 
             date, 
@@ -780,17 +792,17 @@ const pump3 = {
           const date = formatDate(row.DAY);
           if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) return;
           
-          // Handle your exact column structure from the screenshot
+          // Handle your exact column structure
           const pump1 = {
             attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 1']) || 0)
           };
           const pump2 = {
-            attendant: (row['NAME OF CSA.1'] || 'Unknown').toString().trim(),
+            attendant: (row['NAME OF CSAPUMP 2'] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 2']) || 0)
           };
           const pump3 = {
-            attendant: (row['NAME OF CSA.2'] || 'Unknown').toString().trim(),
+            attendant: (row['NAME OF CSAPUMP 3'] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 3']) || 0)
           };
           
