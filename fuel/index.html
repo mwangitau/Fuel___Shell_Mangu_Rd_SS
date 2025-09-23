@@ -373,15 +373,32 @@
         attendantsSet = new Set();
 
         rows.forEach((row, index) => {
-          // Skip rows without DAY data or special rows
-          if (!row.DAY || row.DAY === "TOTALS" || row.DAY.includes('PRICE CHANGE') || row.DAY === '' || !row.DAY.match(/\d/)) {
-            console.log(`Skipping row ${index}:`, row.DAY);
+          // Skip rows without DAY data or special rows, but allow PRICE CHANGE rows if they have valid data
+          const dayValue = row.DAY;
+          if (!dayValue || dayValue === "TOTALS" || dayValue === '') {
+            console.log(`Skipping row ${index}:`, dayValue);
             return;
           }
           
-          const date = formatDate(row.DAY);
+          // Extract date from DAY column (handle PRICE CHANGE entries)
+          let dateStr = dayValue;
+          if (dayValue.includes('PRICE CHANGE')) {
+            // Extract date from "PRICE CHANGE YYYY.MM.DD" format
+            const dateMatch = dayValue.match(/(\d{4}\.\d{1,2}\.\d{1,2})/);
+            if (dateMatch) {
+              dateStr = dateMatch[1];
+            } else {
+              console.log(`Skipping row ${index}: No date found in`, dayValue);
+              return;
+            }
+          } else if (!dayValue.match(/\d/)) {
+            console.log(`Skipping row ${index}:`, dayValue);
+            return;
+          }
+          
+          const date = formatDate(dateStr);
           if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            console.log(`Skipping invalid date format: ${row.DAY}`);
+            console.log(`Skipping invalid date format: ${dayValue}`);
             return;
           }
           
@@ -516,6 +533,10 @@
       const total = Object.values(dailyTotals).reduce((a, b) => a + b, 0);
       const days = Object.keys(dailyTotals).length;
       const avg = days > 0 ? total / days : 0;
+      
+      // Log for debugging
+      console.log('Daily totals:', dailyTotals);
+      console.log('Total volume:', total, 'Days:', days, 'Average:', avg);
       const bestDay = Object.keys(dailyTotals).reduce((a, b) => 
         dailyTotals[a] > dailyTotals[b] ? a : b, Object.keys(dailyTotals)[0] || "-");
       const topAtt = Object.keys(attendantTotals).reduce((a, b) => 
