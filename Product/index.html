@@ -2,118 +2,110 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Fuel Dashboard</title>
-  <!-- Tailwind CSS CDN for styling -->
+  <title>Product Dashboard — Kiryan Energy Ltd</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React & ReactDOM CDN -->
+  <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <!-- Babel for JSX support -->
+  <!-- Babel for JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- Recharts UMD build -->
+  <!-- Recharts -->
   <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
   <!-- PapaParse for CSV -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body class="bg-gray-100">
+  <div id="root"></div>
 
-<div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+    const { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer } = Recharts;
 
-<script type="text/babel">
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTO3PNP1zG_QTHC6pY0lVTrchtBF36Tc1FKIuyGfBdexGVJNVj34reyTws-5vmGP8cst3YndAdNmB_P/pub?gid=1536720731&single=true&output=csv";
 
-const { useState, useEffect, useMemo } = React;
-const { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer } = Recharts;
+    const toNumber = v => {
+      if (!v) return 0;
+      const n = String(v).replace(/[,\\s]/g,"");
+      return isNaN(parseFloat(n)) ? 0 : parseFloat(n);
+    }
 
-// CSV URL
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTO3PNP1zG_QTHC6pY0lVTrchtBF36Tc1FKIuyGfBdexGVJNVj34reyTws-5vmGP8cst3YndAdNmB_P/pub?gid=1536720731&single=true&output=csv";
+    function ProductDashboard() {
+      const [data, setData] = useState([]);
+      const [loading, setLoading] = useState(true);
 
-// Helpers
-const toNumber = (v) => {
-  if (v == null) return 0;
-  const n = String(v).replace(/[,\\s]/g, "");
-  const parsed = parseFloat(n);
-  return isNaN(parsed) ? 0 : parsed;
-};
+      useEffect(() => {
+        Papa.parse(CSV_URL, {
+          download: true,
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            const rows = results.data.map(r => ({
+              date: r["DATES"] || r[Object.keys(r)[0]],
+              UX: toNumber(r["UX"] || r[Object.keys(r)[1]]),
+              DX: toNumber(r["DX"] || r[Object.keys(r)[2]]),
+              VPOWER: toNumber(r["V-POWER"] || r[Object.keys(r)[3]]),
+            })).filter(r => r.date);
+            setData(rows);
+            setLoading(false);
+          }
+        });
+      }, []);
 
-function FuelDashboard() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+      const pieData = useMemo(() => {
+        const sum = data.reduce((acc,r) => {
+          acc.UX += r.UX; acc.DX += r.DX; acc.VPOWER += r.VPOWER;
+          return acc;
+        }, {UX:0, DX:0, VPOWER:0});
+        return [
+          { name: "UX", value: sum.UX },
+          { name: "DX", value: sum.DX },
+          { name: "V-POWER", value: sum.VPOWER }
+        ];
+      }, [data]);
 
-  useEffect(() => {
-    Papa.parse(CSV_URL, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const rows = results.data.map((r) => ({
-          date: r["DATES"] || r[Object.keys(r)[0]],
-          UX: toNumber(r["UX"] || r[Object.keys(r)[1]]),
-          DX: toNumber(r["DX"] || r[Object.keys(r)[2]]),
-          VPOWER: toNumber(r["V-POWER"] || r[Object.keys(r)[3]]),
-        })).filter(r => r.date);
-        setData(rows);
-        setLoading(false);
-      }
-    });
-  }, []);
+      const COLORS = ["#60A5FA","#34D399","#FCA5A5"];
 
-  const pieData = useMemo(() => {
-    const sum = data.reduce((acc, r) => {
-      acc.UX += r.UX; acc.DX += r.DX; acc.VPOWER += r.VPOWER;
-      return acc;
-    }, { UX: 0, DX: 0, VPOWER: 0 });
-    return [
-      { name: "UX", value: sum.UX },
-      { name: "DX", value: sum.DX },
-      { name: "V-POWER", value: sum.VPOWER }
-    ];
-  }, [data]);
+      if (loading) return <div className="p-6">Loading data...</div>;
 
-  const COLORS = ["#60A5FA","#34D399","#FCA5A5"];
-
-  if (loading) return <div className="p-6">Loading...</div>;
-
-  return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Fuel Dashboard</h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-4 rounded shadow h-96">
-          <h2 className="mb-2 font-semibold">Line Chart</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="UX" stroke="#60A5FA" />
-              <Line type="monotone" dataKey="DX" stroke="#34D399" />
-              <Line type="monotone" dataKey="VPOWER" stroke="#FCA5A5" />
-            </LineChart>
-          </ResponsiveContainer>
+      return (
+        <div className="p-6 max-w-7xl mx-auto">
+          <h1 className="text-2xl font-bold mb-4">Product Dashboard</h1>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-4 rounded shadow h-96">
+              <h2 className="mb-2 font-semibold">Line Chart</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="UX" stroke="#60A5FA" />
+                  <Line type="monotone" dataKey="DX" stroke="#34D399" />
+                  <Line type="monotone" dataKey="VPOWER" stroke="#FCA5A5" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="bg-white p-4 rounded shadow h-96">
+              <h2 className="mb-2 font-semibold">Pie Chart</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={40} outerRadius={70} label>
+                    {pieData.map((entry,index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
+      );
+    }
 
-        <div className="bg-white p-4 rounded shadow h-96">
-          <h2 className="mb-2 font-semibold">Pie Chart</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={40} outerRadius={70} label>
-                {pieData.map((entry, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<FuelDashboard />);
-
-</script>
-
+    ReactDOM.createRoot(document.getElementById("root")).render(<ProductDashboard />);
+  </script>
 </body>
 </html>
+
 
