@@ -2,20 +2,112 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Test React</title>
+  <title>Product Dashboard — Kiryan Energy Ltd</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel for JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Recharts -->
+  <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+  <!-- PapaParse for CSV -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
-<body>
+<body class="bg-gray-100">
   <div id="root"></div>
+
   <script type="text/babel">
-    function App() {
-      return <h1>Hello React Works!</h1>;
+    const { useState, useEffect, useMemo } = React;
+    const { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer } = Recharts;
+
+    // Use your raw GitHub URL for the CSV
+    const CSV_URL = "./data.csv"; // <-- upload data.csv to the same folder
+
+    const toNumber = v => {
+      if (!v) return 0;
+      const n = String(v).replace(/[,\\s]/g,"");
+      return isNaN(parseFloat(n)) ? 0 : parseFloat(n);
     }
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+    function ProductDashboard() {
+      const [data, setData] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        Papa.parse(CSV_URL, {
+          download: true,
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            const rows = results.data.map(r => ({
+              date: r["DATES"] || r[Object.keys(r)[0]],
+              UX: toNumber(r["UX"] || r[Object.keys(r)[1]]),
+              DX: toNumber(r["DX"] || r[Object.keys(r)[2]]),
+              VPOWER: toNumber(r["V-POWER"] || r[Object.keys(r)[3]]),
+            })).filter(r => r.date);
+            setData(rows);
+            setLoading(false);
+          }
+        });
+      }, []);
+
+      const pieData = useMemo(() => {
+        const sum = data.reduce((acc,r) => {
+          acc.UX += r.UX; acc.DX += r.DX; acc.VPOWER += r.VPOWER;
+          return acc;
+        }, {UX:0, DX:0, VPOWER:0});
+        return [
+          { name: "UX", value: sum.UX },
+          { name: "DX", value: sum.DX },
+          { name: "V-POWER", value: sum.VPOWER }
+        ];
+      }, [data]);
+
+      const COLORS = ["#60A5FA","#34D399","#FCA5A5"];
+
+      if (loading) return <div className="p-6 text-center text-lg">Loading data...</div>;
+
+      return (
+        <div className="p-6 max-w-7xl mx-auto">
+          <h1 className="text-2xl font-bold mb-4">Product Dashboard</h1>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-4 rounded shadow h-96">
+              <h2 className="mb-2 font-semibold">Line Chart</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="UX" stroke="#60A5FA" />
+                  <Line type="monotone" dataKey="DX" stroke="#34D399" />
+                  <Line type="monotone" dataKey="VPOWER" stroke="#FCA5A5" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="bg-white p-4 rounded shadow h-96">
+              <h2 className="mb-2 font-semibold">Pie Chart</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={40} outerRadius={70} label>
+                    {pieData.map((entry,index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<ProductDashboard />);
   </script>
 </body>
 </html>
+
 
 
