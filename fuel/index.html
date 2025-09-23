@@ -387,26 +387,21 @@
             return;
           }
           
-          // Handle your restructured sheet - let's be more flexible with column detection
-          const columns = Object.keys(row);
-          console.log(`Row ${index} - Available columns:`, columns);
-          
-          // Find all "NAME OF CSA" variations dynamically
-          const csaColumns = columns.filter(col => col.includes('NAME OF CSA'));
-          console.log(`CSA columns found:`, csaColumns);
-          
+          // Use the exact column names that Google Sheets exports
+          // Based on your raw data: DAY, NAME OF CSA, PUMP 1, DAY, NAME OF CSA, PUMP 2, DAY, NAME OF CSA, PUMP 3
           const pump1 = {
-            attendant: (row[csaColumns[0]] || row['NAME OF CSA'] || 'Unknown').toString().trim(),
+            attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 1']) || 0)
           };
           
+          // For duplicate column names, Google Sheets typically adds numbers
           const pump2 = {
-            attendant: (row[csaColumns[1]] || row['NAME OF CSA.1'] || 'Unknown').toString().trim(),
+            attendant: (row['NAME OF CSA.1'] || row['NAME OF CSA_1'] || row['NAME OF CSA1'] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 2']) || 0)
           };
           
           const pump3 = {
-            attendant: (row[csaColumns[2]] || row['NAME OF CSA.2'] || 'Unknown').toString().trim(),
+            attendant: (row['NAME OF CSA.2'] || row['NAME OF CSA_2'] || row['NAME OF CSA2'] || 'Unknown').toString().trim(),
             value: Math.abs(parseFloat(row['PUMP 3']) || 0)
           };
           
