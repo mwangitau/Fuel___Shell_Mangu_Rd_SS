@@ -225,6 +225,26 @@
       color: #666;
       margin-bottom: 15px;
     }
+    .debug-section {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 25px;
+      border: 1px solid #dee2e6;
+    }
+    .debug-section h4 {
+      color: #495057;
+      margin-bottom: 10px;
+    }
+    .debug-info {
+      font-family: monospace;
+      font-size: 0.9em;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 5px 0;
+      border-left: 3px solid #007bff;
+    }
     footer {
       margin-top: 40px;
       padding: 25px;
@@ -256,6 +276,12 @@
     <div class="date-range" id="dateRange"></div>
     <div class="metrics-grid" id="metricsGrid"></div>
     
+    <!-- Debug Section -->
+    <div class="debug-section" id="debugSection" style="display: none;">
+      <h4>🔧 Debug Information</h4>
+      <div class="debug-info" id="debugInfo"></div>
+    </div>
+    
     <div class="filter-section">
       <div class="filter-group">
         <label class="filter-label">Attendant Filter</label>
@@ -273,6 +299,7 @@
         </select>
       </div>
       <button onclick="updateAnalysis()">🔄 Update Analysis</button>
+      <button onclick="toggleDebug()">🔧 Toggle Debug</button>
     </div>
     
     <div class="chart-container">
@@ -303,7 +330,7 @@
     <footer>
       <p><strong>© 2025 Kiryan Energy Ltd — All Rights Reserved</strong></p>
       <p><strong>Confidential:</strong> These dashboards are for official use only and must not be copied, shared, or distributed without prior written permission from Kiryan Energy Ltd.</p>
-      <p>Data refreshed automatically • Dashboard v2.1</p>
+      <p>Data refreshed automatically • Dashboard v2.2</p>
     </footer>
   </div>
 
@@ -311,6 +338,7 @@
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?output=csv";
 
     let processedData = [], attendantsSet = new Set(), charts = {};
+    let debugMode = false;
 
     function csvToArray(csv, delimiter = ',') {
       const lines = csv.trim().split('\n');
@@ -326,9 +354,11 @@
     }
 
     function formatDate(str) {
-      // Handle YYYY.MM.DD format (your data format)
-      const parts = str.split(".");
-      if (parts.length < 3) return str;
+      if (!str || str.trim() === '') return null;
+      
+      // Handle YYYY.MM.DD format or DD.MM.YYYY format
+      const parts = str.trim().split(".");
+      if (parts.length < 3) return null;
       
       // If first part is 4 digits (year), it's YYYY.MM.DD format
       if (parts[0].length === 4) {
@@ -349,6 +379,48 @@
       });
     }
 
+    function findColumnVariations(headers, baseName) {
+      // Find all variations of a column name (e.g., "NAME OF CSA", "NAME OF CSA.1", "NAME OF CSA.2")
+      const variations = [];
+      
+      // First, find exact match
+      if (headers.includes(baseName)) {
+        variations.push(baseName);
+      }
+      
+      // Then find numbered variations
+      for (let i = 1; i <= 10; i++) {
+        const variation = `${baseName}.${i}`;
+        if (headers.includes(variation)) {
+          variations.push(variation);
+        }
+      }
+      
+      return variations;
+    }
+
+    function debugLog(message, data = null) {
+      if (debugMode) {
+        console.log(message, data);
+        const debugInfo = document.getElementById('debugInfo');
+        const logEntry = document.createElement('div');
+        logEntry.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+        if (data) {
+          logEntry.innerHTML += `<br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+        debugInfo.appendChild(logEntry);
+      }
+    }
+
+    function toggleDebug() {
+      debugMode = !debugMode;
+      const debugSection = document.getElementById('debugSection');
+      debugSection.style.display = debugMode ? 'block' : 'none';
+      if (!debugMode) {
+        document.getElementById('debugInfo').innerHTML = '';
+      }
+    }
+
     async function loadFuelData() {
       try {
         document.getElementById('metricsGrid').innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
@@ -363,73 +435,107 @@
           throw new Error('Empty response from Google Sheets');
         }
         
-        console.log('CSV data loaded successfully');
+        debugLog('CSV data loaded successfully', { length: text.length });
         const rows = csvToArray(text);
-        console.log('Parsed rows:', rows.length);
-        console.log('Column headers:', Object.keys(rows[0] || {}));
-        console.log('First row data:', rows[0]);
-        console.log('Second row data:', rows[1]);
-        console.log('Third row data:', rows[2]);
+        debugLog('Parsed rows', { count: rows.length, firstRow: rows[0] });
+        
+        if (rows.length === 0) {
+          throw new Error('No data rows found in CSV');
+        }
+        
+        const headers = Object.keys(rows[0]);
+        debugLog('Available headers', headers);
+        
+        // Find column variations
+        const dayColumns = findColumnVariations(headers, 'DAY');
+        const attendantColumns = findColumnVariations(headers, 'NAME OF CSA');
+        const pumpColumns = ['PUMP 1', 'PUMP 2', 'PUMP 3', 'PUMP3']; // Handle both PUMP 3 and PUMP3
+        
+        debugLog('Column mapping', {
+          dayColumns,
+          attendantColumns,
+          pumpColumns: pumpColumns.filter(col => headers.includes(col))
+        });
         
         processedData = [];
         attendantsSet = new Set();
 
         rows.forEach((row, index) => {
           // Skip rows without DAY data or special rows
-          if (!row.DAY || row.DAY === "TOTALS" || row.DAY.includes('PRICE CHANGE') || row.DAY === '' || !row.DAY.match(/\d/)) {
-            console.log(`Skipping row ${index}:`, row.DAY);
+          const dayValue = row[dayColumns[0]] || row.DAY;
+          if (!dayValue || dayValue === "TOTALS" || dayValue.includes('PRICE CHANGE') || 
+              dayValue === '' || !dayValue.match(/\d/)) {
+            debugLog(`Skipping row ${index}`, { reason: 'Invalid day', dayValue });
             return;
           }
           
-          const date = formatDate(row.DAY);
+          const date = formatDate(dayValue);
           if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            console.log(`Skipping invalid date format: ${row.DAY}`);
+            debugLog(`Skipping row ${index}`, { reason: 'Invalid date format', dayValue, date });
             return;
           }
           
-          // Your 9-column structure: 3 groups of (DAY, NAME OF CSA, PUMP)
-          // Google Sheets renames duplicates as: DAY, NAME OF CSA, PUMP 1, DAY.1, NAME OF CSA.1, PUMP 2, DAY.2, NAME OF CSA.2, PUMP 3
+          // Extract pump data with proper column mapping
+          const pumps = [];
           
-          const pump1 = {
-            attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(),
-            value: Math.abs(parseFloat(row['PUMP 1']) || 0)
-          };
+          // Pump 1
+          const pump1Attendant = row[attendantColumns[0]] || row['NAME OF CSA'] || 'Unknown';
+          const pump1Value = Math.abs(parseFloat(row['PUMP 1']) || 0);
+          pumps.push({
+            name: 'PUMP 1',
+            attendant: pump1Attendant.toString().trim(),
+            value: pump1Value
+          });
           
-          const pump2 = {
-            attendant: (row['NAME OF CSA.1'] || 'Unknown').toString().trim(),
-            value: Math.abs(parseFloat(row['PUMP 2']) || 0)
-          };
+          // Pump 2
+          const pump2Attendant = row[attendantColumns[1]] || row['NAME OF CSA.1'] || 'Unknown';
+          const pump2Value = Math.abs(parseFloat(row['PUMP 2']) || 0);
+          pumps.push({
+            name: 'PUMP 2',
+            attendant: pump2Attendant.toString().trim(),
+            value: pump2Value
+          });
           
-          const pump3 = {
-            attendant: (row['NAME OF CSA.2'] || 'Unknown').toString().trim(),
-            value: Math.abs(parseFloat(row['PUMP 3']) || 0)
-          };
+          // Pump 3 (handle both PUMP 3 and PUMP3 column names)
+          const pump3Attendant = row[attendantColumns[2]] || row['NAME OF CSA.2'] || 'Unknown';
+          const pump3Value = Math.abs(parseFloat(row['PUMP 3'] || row['PUMP3']) || 0);
+          pumps.push({
+            name: 'PUMP3',
+            attendant: pump3Attendant.toString().trim(),
+            value: pump3Value
+          });
           
-          const total = pump1.value + pump2.value + pump3.value;
+          const total = pumps.reduce((sum, pump) => sum + pump.value, 0);
           
-          // Only log first few rows to avoid console spam
+          // Log first few rows for debugging
           if (index < 3) {
-            console.log(`Row ${index} processed:`, { 
+            debugLog(`Row ${index} processed`, { 
               date, 
-              pump1: `${pump1.attendant}: ${pump1.value}L`,
-              pump2: `${pump2.attendant}: ${pump2.value}L`, 
-              pump3: `${pump3.attendant}: ${pump3.value}L`,
+              pumps: pumps.map(p => `${p.name}: ${p.attendant} (${p.value}L)`),
               total: `${total}L`
             });
           }
           
-          processedData.push({ date, pump1, pump2, pump3, total });
+          processedData.push({ 
+            date, 
+            pump1: pumps[0], 
+            pump2: pumps[1], 
+            pump3: pumps[2], 
+            total 
+          });
           
-          // Add attendants to set
-          [pump1, pump2, pump3].forEach(pump => {
+          // Add attendants to set (exclude 'Unknown' and empty values)
+          pumps.forEach(pump => {
             if (pump.attendant && pump.attendant !== 'Unknown' && pump.attendant !== '') {
               attendantsSet.add(pump.attendant);
             }
           });
         });
 
-        console.log(`Processing complete. Valid rows: ${processedData.length}`);
-        console.log('Attendants found:', [...attendantsSet]);
+        debugLog('Processing complete', {
+          validRows: processedData.length,
+          attendants: [...attendantsSet]
+        });
         
         if (processedData.length === 0) {
           throw new Error('No valid fuel data found after processing all rows.');
@@ -453,8 +559,8 @@
             <button onclick="loadFuelData()" style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px 5px;">
               🔄 Retry
             </button>
-            <button onclick="document.getElementById('dataSource').value='manual'; handleDataSourceChange();" style="background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px 5px;">
-              📋 Use Manual Input
+            <button onclick="toggleDebug(); loadFuelData();" style="background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px 5px;">
+              🔧 Retry with Debug
             </button>
           </div>
         `;
@@ -638,193 +744,4 @@
       charts.pump = new Chart(document.getElementById('pumpComparisonChart').getContext('2d'), {
         type: 'doughnut',
         data: {
-          labels: Object.keys(pumpTotals).map(p => p.replace('PUMP3', 'Pump 3').replace('PUMP ', 'Pump ')),
-          datasets: [{
-            data: Object.values(pumpTotals),
-            backgroundColor: ['#667eea', '#764ba2', '#f093fb'],
-            borderWidth: 3,
-            borderColor: '#ffffff'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            title: { display: true, text: 'Volume Distribution by Pump', font: { size: 16, weight: 'bold' } },
-            legend: { position: 'bottom' }
-          }
-        }
-      });
-    }
-
-    function updateInsights(dailyTotals, attendantTotals, pumpTotals) {
-      const total = Object.values(dailyTotals).reduce((a, b) => a + b, 0);
-      const days = Object.keys(dailyTotals).length;
-      const avg = days > 0 ? total / days : 0;
-      const topAtt = Object.keys(attendantTotals).reduce((a, b) => 
-        attendantTotals[a] > attendantTotals[b] ? a : b, "-");
-      const topPump = Object.keys(pumpTotals).reduce((a, b) => 
-        pumpTotals[a] > pumpTotals[b] ? a : b, "-");
-      const bestDay = Object.keys(dailyTotals).reduce((a, b) => 
-        dailyTotals[a] > dailyTotals[b] ? a : b, "-");
-      const worstDay = Object.keys(dailyTotals).reduce((a, b) => 
-        dailyTotals[a] < dailyTotals[b] ? a : b, "-");
-
-      const insights = [
-        `📊 Total fuel volume sold: <strong>${total.toLocaleString()} L</strong> over ${days} days`,
-        `🏆 Best performing attendant: <strong>${topAtt}</strong> with ${attendantTotals[topAtt]?.toLocaleString() || 0} L`,
-        `⛽ Most productive pump: <strong>${topPump.replace('PUMP3', 'Pump 3').replace('PUMP ', 'Pump ')}</strong>`,
-        `📈 Average daily volume: <strong>${Math.round(avg).toLocaleString()} L</strong>`,
-        `🔥 Peak volume day: <strong>${formatDisplayDate(bestDay)}</strong> (${dailyTotals[bestDay]?.toLocaleString() || 0} L)`,
-        `📉 Lowest volume day: <strong>${formatDisplayDate(worstDay)}</strong> (${dailyTotals[worstDay]?.toLocaleString() || 0} L)`
-      ];
-
-      document.getElementById('insightsList').innerHTML = insights.map(i => `<li>${i}</li>`).join('');
-    }
-
-    function updateDataTable(filtered) {
-      let html = `
-        <thead>
-          <tr>
-            <th>📅 Date</th>
-            <th>👨‍💼 Pump 1 Attendant</th>
-            <th>📊 Pump 1 Volume</th>
-            <th>👨‍💼 Pump 2 Attendant</th>
-            <th>📊 Pump 2 Volume</th>
-            <th>👨‍💼 Pump 3 Attendant</th>
-            <th>📊 Pump 3 Volume</th>
-            <th>💰 Daily Total</th>
-          </tr>
-        </thead>
-        <tbody>`;
-      
-      filtered.forEach(r => {
-        html += `
-          <tr>
-            <td>${formatDisplayDate(r.date)}</td>
-            <td>${r.pump1.attendant}</td>
-            <td>${r.pump1.value.toLocaleString()} L</td>
-            <td>${r.pump2.attendant}</td>
-            <td>${r.pump2.value.toLocaleString()} L</td>
-            <td>${r.pump3.attendant}</td>
-            <td>${r.pump3.value.toLocaleString()} L</td>
-            <td><strong>${r.total.toLocaleString()} L</strong></td>
-          </tr>`;
-      });
-      
-      html += '</tbody>';
-      document.getElementById('dataTable').innerHTML = html;
-    }
-
-    function updateAnalysis() {
-      const filtered = getFilteredData();
-      const { dailyTotals, attendantTotals, pumpTotals } = updateMetrics(filtered);
-      createCharts(dailyTotals, attendantTotals, pumpTotals);
-      updateInsights(dailyTotals, attendantTotals, pumpTotals);
-      updateDataTable(filtered);
-    }
-
-    function exportData() {
-      const filtered = getFilteredData();
-      let csvContent = "Date,Pump 1 Attendant,Pump 1 Volume,Pump 2 Attendant,Pump 2 Volume,Pump 3 Attendant,Pump 3 Volume,Daily Total\n";
-      
-      filtered.forEach(r => {
-        csvContent += `${r.date},${r.pump1.attendant},${r.pump1.value},${r.pump2.attendant},${r.pump2.value},${r.pump3.attendant},${r.pump3.value},${r.total}\n`;
-      });
-      
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `shell_mangu_fuel_data_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    function handleDataSourceChange() {
-      const dataSource = document.getElementById('dataSource').value;
-      const manualInput = document.getElementById('manualDataInput');
-      
-      if (dataSource === 'manual') {
-        manualInput.style.display = 'block';
-      } else {
-        manualInput.style.display = 'none';
-        loadFuelData(); // Try to load from Google Sheets again
-      }
-    }
-
-    function loadManualData() {
-      try {
-        const csvText = document.getElementById('csvTextarea').value.trim();
-        if (!csvText) {
-          alert('Please paste your CSV data first');
-          return;
-        }
-
-        document.getElementById('metricsGrid').innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
-        
-        console.log('Loading manual CSV data...');
-        const rows = csvToArray(csvText);
-        console.log('Manual data - Column headers:', Object.keys(rows[0] || {}));
-        
-        processedData = [];
-        attendantsSet = new Set();
-
-        rows.forEach((row, index) => {
-          if (!row.DAY || row.DAY === "TOTALS" || row.DAY.includes('PRICE CHANGE') || row.DAY === '' || !row.DAY.match(/\d/)) {
-            return;
-          }
-          
-          const date = formatDate(row.DAY);
-          if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) return;
-          
-          // Handle your exact column structure from the screenshot
-          const pump1 = {
-            attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(),
-            value: Math.abs(parseFloat(row['PUMP 1']) || 0)
-          };
-          const pump2 = {
-            attendant: (row['NAME OF CSA.1'] || 'Unknown').toString().trim(),
-            value: Math.abs(parseFloat(row['PUMP 2']) || 0)
-          };
-          const pump3 = {
-            attendant: (row['NAME OF CSA.2'] || 'Unknown').toString().trim(),
-            value: Math.abs(parseFloat(row['PUMP 3']) || 0)
-          };
-          
-          const total = pump1.value + pump2.value + pump3.value;
-          processedData.push({ date, pump1, pump2, pump3, total });
-          
-          [pump1, pump2, pump3].forEach(pump => {
-            if (pump.attendant && pump.attendant !== 'Unknown' && pump.attendant !== '') {
-              attendantsSet.add(pump.attendant);
-            }
-          });
-        });
-
-        if (processedData.length === 0) {
-          throw new Error('No valid data found in the CSV');
-        }
-
-        processedData.sort((a, b) => new Date(a.date) - new Date(b.date));
-        
-        console.log(`Manual data loaded: ${processedData.length} records`);
-        console.log('Attendants found:', [...attendantsSet]);
-        
-        updateDateRange();
-        populateFilters();
-        updateAnalysis();
-        
-      } catch (error) {
-        console.error('Error loading manual data:', error);
-        alert(`Error loading manual data: ${error.message}`);
-        document.getElementById('metricsGrid').innerHTML = '<div style="color: red; text-align: center;">Error processing manual data</div>';
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', loadFuelData);
-  </script>
-</body>
-</html>
+          labels: Object.keys(pumpTotals).map(p => p.replace('PUMP3', 'Pump 3
