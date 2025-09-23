@@ -744,4 +744,93 @@
       charts.pump = new Chart(document.getElementById('pumpComparisonChart').getContext('2d'), {
         type: 'doughnut',
         data: {
-          labels: Object.keys(pumpTotals).map(p => p.replace('PUMP3', 'Pump 3
+          labels: Object.keys(pumpTotals).map(p => p.replace('PUMP3', 'Pump 3').replace('PUMP ', 'Pump ')),
+          datasets: [{
+            data: Object.values(pumpTotals),
+            backgroundColor: ['#667eea', '#764ba2', '#f093fb'],
+            borderWidth: 3,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: { display: true, text: 'Volume Distribution by Pump', font: { size: 16, weight: 'bold' } },
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+    }
+
+    function updateInsights(dailyTotals, attendantTotals, pumpTotals) {
+      const total = Object.values(dailyTotals).reduce((a, b) => a + b, 0);
+      const days = Object.keys(dailyTotals).length;
+      const avg = days > 0 ? total / days : 0;
+      const topAtt = Object.keys(attendantTotals).reduce((a, b) => 
+        attendantTotals[a] > attendantTotals[b] ? a : b, "-");
+      const topPump = Object.keys(pumpTotals).reduce((a, b) => 
+        pumpTotals[a] > pumpTotals[b] ? a : b, "-");
+      const bestDay = Object.keys(dailyTotals).reduce((a, b) => 
+        dailyTotals[a] > dailyTotals[b] ? a : b, "-");
+      const worstDay = Object.keys(dailyTotals).reduce((a, b) => 
+        dailyTotals[a] < dailyTotals[b] ? a : b, "-");
+
+      const insights = [
+        `📊 Total fuel volume sold: <strong>${total.toLocaleString()} L</strong> over ${days} days`,
+        `🏆 Best performing attendant: <strong>${topAtt}</strong> with ${attendantTotals[topAtt]?.toLocaleString() || 0} L`,
+        `⛽ Most productive pump: <strong>${topPump.replace('PUMP3', 'Pump 3').replace('PUMP ', 'Pump ')}</strong>`,
+        `📈 Average daily volume: <strong>${Math.round(avg).toLocaleString()} L</strong>`,
+        `🔥 Peak volume day: <strong>${formatDisplayDate(bestDay)}</strong> (${dailyTotals[bestDay]?.toLocaleString() || 0} L)`,
+        `📉 Lowest volume day: <strong>${formatDisplayDate(worstDay)}</strong> (${dailyTotals[worstDay]?.toLocaleString() || 0} L)`
+      ];
+
+      document.getElementById('insightsList').innerHTML = insights.map(i => `<li>${i}</li>`).join('');
+    }
+
+    function updateDataTable(filtered) {
+      let html = `
+        <thead>
+          <tr>
+            <th>📅 Date</th>
+            <th>👨‍💼 Pump 1 Attendant</th>
+            <th>📊 Pump 1 Volume</th>
+            <th>👨‍💼 Pump 2 Attendant</th>
+            <th>📊 Pump 2 Volume</th>
+            <th>👨‍💼 Pump 3 Attendant</th>
+            <th>📊 Pump 3 Volume</th>
+            <th>💰 Daily Total</th>
+          </tr>
+        </thead>
+        <tbody>`;
+      
+      filtered.forEach(r => {
+        html += `
+          <tr>
+            <td>${formatDisplayDate(r.date)}</td>
+            <td>${r.pump1.attendant}</td>
+            <td>${r.pump1.value.toLocaleString()} L</td>
+            <td>${r.pump2.attendant}</td>
+            <td>${r.pump2.value.toLocaleString()} L</td>
+            <td>${r.pump3.attendant}</td>
+            <td>${r.pump3.value.toLocaleString()} L</td>
+            <td><strong>${r.total.toLocaleString()} L</strong></td>
+          </tr>`;
+      });
+      
+      html += '</tbody>';
+      document.getElementById('dataTable').innerHTML = html;
+    }
+
+    function updateAnalysis() {
+      const filtered = getFilteredData();
+      const { dailyTotals, attendantTotals, pumpTotals } = updateMetrics(filtered);
+      createCharts(dailyTotals, attendantTotals, pumpTotals);
+      updateInsights(dailyTotals, attendantTotals, pumpTotals);
+      updateDataTable(filtered);
+    }
+
+    document.addEventListener('DOMContentLoaded', loadFuelData);
+  </script>
+</body>
+</html>
