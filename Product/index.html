@@ -240,10 +240,10 @@
 
             <!-- Chart Navigation -->
             <div class="tabs">
-                <button class="tab active" onclick="showChart('performance')">📈 Performance Trends</button>
-                <button class="tab" onclick="showChart('gains')">💹 Daily Gains/Losses</button>
-                <button class="tab" onclick="showChart('breakdown')">🥧 Category Breakdown</button>
-                <button class="tab" onclick="showChart('comparison')">📊 Category Comparison</button>
+                <button class="tab active" onclick="showChart('performance', this)">📈 Performance Trends</button>
+                <button class="tab" onclick="showChart('gains', this)">💹 Daily Gains/Losses</button>
+                <button class="tab" onclick="showChart('breakdown', this)">🥧 Category Breakdown</button>
+                <button class="tab" onclick="showChart('comparison', this)">📊 Category Comparison</button>
             </div>
 
             <!-- Charts -->
@@ -656,10 +656,24 @@
             });
         }
 
-        function showChart(chartType) {
+        function showChart(chartType, element) {
             // Update tabs
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            if (element) {
+                element.classList.add('active');
+            } else {
+                // If no element provided, find the tab by chart type
+                const tabMap = {
+                    'performance': 0,
+                    'gains': 1,
+                    'breakdown': 2,
+                    'comparison': 3
+                };
+                const tabs = document.querySelectorAll('.tab');
+                if (tabs[tabMap[chartType]]) {
+                    tabs[tabMap[chartType]].classList.add('active');
+                }
+            }
 
             // Hide all charts
             document.getElementById('performanceChart').style.display = 'none';
