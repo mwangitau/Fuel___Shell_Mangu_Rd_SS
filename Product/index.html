@@ -1,778 +1,694 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Product Analysis Dashboard - Kiryan Energy Ltd</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pump Sales Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/1.30.1/date_fns.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    body { 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-      min-height: 100vh;
-      color: white;
-      overflow-x: auto;
-    }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
 
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 30px;
-      backdrop-filter: blur(20px);
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 20px;
-      margin-top: 20px;
-    }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-    .header {
-      text-align: center;
-      margin-bottom: 40px;
-      animation: fadeInDown 1s ease-out;
-    }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
 
-    .header h1 {
-      font-size: 36px;
-      margin-bottom: 10px;
-      background: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f);
-      background-size: 400% 400%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: gradientShift 3s ease-in-out infinite;
-    }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
 
-    @keyframes gradientShift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
 
-    @keyframes fadeInDown {
-      from { transform: translateY(-30px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
+        .refresh-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px auto;
+            display: block;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
 
-    .loading {
-      text-align: center;
-      padding: 40px;
-      font-size: 18px;
-    }
+        .refresh-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
 
-    .error {
-      background: rgba(255, 0, 0, 0.2);
-      border: 1px solid rgba(255, 0, 0, 0.5);
-      padding: 20px;
-      border-radius: 10px;
-      margin: 20px 0;
-    }
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            margin: 20px 0;
+        }
 
-    .summary-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-      margin-bottom: 40px;
-    }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
 
-    .summary-card {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      padding: 25px;
-      border-radius: 15px;
-      text-align: center;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      animation: fadeInUp 0.8s ease-out;
-    }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease;
+        }
 
-    .summary-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
 
-    .summary-card h3 {
-      font-size: 18px;
-      margin-bottom: 15px;
-      opacity: 0.9;
-    }
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
 
-    .summary-value {
-      font-size: 32px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 1rem;
+            font-weight: 500;
+        }
 
-    .summary-subtitle {
-      font-size: 14px;
-      opacity: 0.7;
-    }
+        .stat-change {
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
 
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-      gap: 30px;
-      margin-bottom: 40px;
-    }
+        .positive {
+            background: rgba(46, 204, 113, 0.1);
+            color: #27ae60;
+        }
 
-    .product-card {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(15px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 20px;
-      padding: 30px;
-      transition: all 0.3s ease;
-      animation: fadeInUp 1s ease-out;
-    }
+        .negative {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+        }
 
-    .product-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-    }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
 
-    .product-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 25px;
-    }
+        .chart-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
 
-    .product-icon {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      margin-right: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      font-weight: bold;
-    }
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
 
-    .dx-card .product-icon { background: linear-gradient(45deg, #2d2d2d, #4a4a4a); }
-    .ux-card .product-icon { background: linear-gradient(45deg, #22c55e, #16a34a); }
-    .vp-card .product-icon { background: linear-gradient(45deg, #ef4444, #dc2626); }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
 
-    .product-stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
+        .tab {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+        }
 
-    .stat-item {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 15px;
-      border-radius: 10px;
-      text-align: center;
-    }
+        .tab.active {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
 
-    .stat-value {
-      font-size: 24px;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
 
-    .stat-label {
-      font-size: 12px;
-      opacity: 0.7;
-    }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
 
-    .trend-indicator {
-      display: inline-block;
-      padding: 5px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: bold;
-      margin-top: 10px;
-    }
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
 
-    .trend-positive {
-      background: rgba(34, 197, 94, 0.3);
-      color: #22c55e;
-    }
+        .error {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+            border: 1px solid rgba(231, 76, 60, 0.2);
+        }
 
-    .trend-negative {
-      background: rgba(239, 68, 68, 0.3);
-      color: #ef4444;
-    }
-
-    .chart-container {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(15px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 20px;
-      padding: 30px;
-      margin-bottom: 30px;
-      animation: fadeInUp 1.2s ease-out;
-    }
-
-    .chart-title {
-      font-size: 24px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    .chart {
-      width: 100%;
-      height: 400px;
-      margin-bottom: 20px;
-    }
-
-    .data-table {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(15px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 20px;
-      padding: 30px;
-      margin-top: 30px;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-
-    th, td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    th {
-      background: rgba(255, 255, 255, 0.1);
-      font-weight: bold;
-    }
-
-    tr:hover {
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .refresh-btn {
-      background: linear-gradient(45deg, #667eea, #764ba2);
-      border: none;
-      color: white;
-      padding: 15px 30px;
-      border-radius: 25px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin: 20px auto;
-      display: block;
-    }
-
-    .refresh-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-    }
-
-    @keyframes fadeInUp {
-      from { transform: translateY(30px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-
-    .mini-chart {
-      width: 100%;
-      height: 100px;
-      margin-top: 15px;
-    }
-
-    @media (max-width: 768px) {
-      .container { padding: 15px; }
-      .product-grid { grid-template-columns: 1fr; }
-      .summary-cards { grid-template-columns: 1fr; }
-      .product-stats { grid-template-columns: 1fr; }
-    }
-  </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+        .last-updated {
+            text-align: center;
+            color: white;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>🏢 Product Sales Analysis Dashboard</h1>
-      <h2>Kiryan Energy Ltd - Mangu Shell Service Station</h2>
-      <p>Real-time analysis of DX (Diesel), UX (Unleaded), and V-Power sales performance</p>
+    <div class="container">
+        <div class="header">
+            <h1>🛢️ Pump Sales Dashboard</h1>
+            <p>Real-time Sales Performance Analytics</p>
+            <div class="last-updated" id="lastUpdated"></div>
+        </div>
+
+        <button class="refresh-btn" onclick="loadData()">
+            🔄 Refresh Data
+        </button>
+
+        <div class="loading" id="loading" style="display: none;">
+            Loading data from Google Sheets...
+        </div>
+
+        <div class="error" id="error" style="display: none;"></div>
+
+        <div id="dashboard" style="display: none;">
+            <!-- Key Metrics -->
+            <div class="stats-grid" id="statsGrid">
+                <!-- Stats will be populated here -->
+            </div>
+
+            <!-- Chart Navigation -->
+            <div class="tabs">
+                <button class="tab active" onclick="showChart('performance')">📈 Performance Trends</button>
+                <button class="tab" onclick="showChart('gains')">💹 Daily Gains/Losses</button>
+                <button class="tab" onclick="showChart('breakdown')">🥧 Category Breakdown</button>
+                <button class="tab" onclick="showChart('comparison')">📊 Category Comparison</button>
+            </div>
+
+            <!-- Charts -->
+            <div class="chart-container" id="performanceChart">
+                <div class="chart-title">Daily Performance Trends</div>
+                <div class="chart-wrapper">
+                    <canvas id="performanceCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container" id="gainsChart" style="display: none;">
+                <div class="chart-title">Daily Gains/Losses Analysis</div>
+                <div class="chart-wrapper">
+                    <canvas id="gainsCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="grid-2" id="otherCharts" style="display: none;">
+                <div class="chart-container">
+                    <div class="chart-title">Total Sales Breakdown</div>
+                    <div class="chart-wrapper">
+                        <canvas id="pieCanvas"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Category Performance</div>
+                    <div class="chart-wrapper">
+                        <canvas id="barCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container" id="comparisonChart" style="display: none;">
+                <div class="chart-title">Category Performance Comparison</div>
+                <div class="chart-wrapper">
+                    <canvas id="comparisonCanvas"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <button class="refresh-btn" onclick="loadData()">🔄 Refresh Data</button>
+    <script>
+        let salesData = [];
+        let charts = {};
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1227672918&single=true&output=csv';
 
-    <div id="loading" class="loading">
-      <h3>📊 Loading sales data...</h3>
-      <p>Fetching latest product performance metrics</p>
-    </div>
-
-    <div id="error" class="error" style="display: none;">
-      <h3>❌ Error Loading Data</h3>
-      <p id="errorMessage"></p>
-    </div>
-
-    <div id="dashboard" style="display: none;">
-      <!-- Summary Cards -->
-      <div class="summary-cards">
-        <div class="summary-card">
-          <h3>📅 Analysis Period</h3>
-          <div class="summary-value" id="analysisPeriod">-</div>
-          <div class="summary-subtitle">Days of data</div>
-        </div>
-        <div class="summary-card">
-          <h3>💰 Total Revenue</h3>
-          <div class="summary-value" id="totalRevenue">-</div>
-          <div class="summary-subtitle">All products combined</div>
-        </div>
-        <div class="summary-card">
-          <h3>⛽ Average Daily Sales</h3>
-          <div class="summary-value" id="avgDailySales">-</div>
-          <div class="summary-subtitle">Litres per day</div>
-        </div>
-        <div class="summary-card">
-          <h3>📈 Best Performing Day</h3>
-          <div class="summary-value" id="bestDay">-</div>
-          <div class="summary-subtitle">Highest sales volume</div>
-        </div>
-      </div>
-
-      <!-- Product Cards -->
-      <div class="product-grid">
-        <div class="product-card dx-card">
-          <div class="product-header">
-            <div class="product-icon">DX</div>
-            <div>
-              <h3>Diesel (Black)</h3>
-              <p>Premium diesel fuel</p>
-            </div>
-          </div>
-          <div class="product-stats">
-            <div class="stat-item">
-              <div class="stat-value" id="dxTotal">-</div>
-              <div class="stat-label">Total Sold (L)</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value" id="dxAvg">-</div>
-              <div class="stat-label">Daily Average (L)</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value" id="dxShare">-</div>
-              <div class="stat-label">Market Share</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value" id="dxLossGain">-</div>
-              <div class="stat-label">Loss/Gain (L)</div>
-            </div>
-          </div>
-          <div class="trend-indicator" id="dxTrend">-</div>
-          <canvas class="mini-chart" id="dxChart"></canvas>
-        </div>
-
-        <div class="product-card ux-card">
-          <div class="product-header">
-            <div class="product-icon">UX</div>
-            <div>
-              <h3>Unleaded (Green)</h3>
-              <p>Premium unleaded petrol</p>
-            </div>
-          </div>
-          <div class="product-stats">
-            <div class="stat-item">
-              <div class="stat-value" id="uxTotal">-</div>
-              <div class="stat-label">Total Sold (L)</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value" id="uxAvg">-</div>
-              <div class="stat-label">Daily Average (L)</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value" id="uxShare">-</div>
-              <div class="stat-label">Market Share</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value" id="uxLossGain">-</div>
-              <div class="stat-label">Loss/Gain (L)</div>
-            </div>
-          </div>
-          <div class="trend-indicator" id="uxTrend">-</div>
-          <canvas class="mini-chart" id="uxChart"></canvas>
-        </div>
-
-        <div class="product-card vp-card">
-          <div class="product-header">
-            <div class="product-icon">VP</div>
-            <div>
-              <h3>V-Power (Red)</h3>
-              <p>Shell V-Power premium fuel</p>
-            </div>
-          </div>
-          <div class="product-stats">
-            <div class="stat-item">
-              <div class="stat-value" id="vpTotal">-</div>
-              <div class="stat-label">Total Sold (L)</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value" id="vpAvg">-</div>
-              <div class="stat-label">Daily Average (L)</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value" id="vpShare">-</div>
-              <div class="stat-label">Market Share</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value" id="vpLossGain">-</div>
-              <div class="stat-label">Loss/Gain (L)</div>
-            </div>
-          </div>
-          <div class="trend-indicator" id="vpTrend">-</div>
-          <canvas class="mini-chart" id="vpChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Main Sales Chart -->
-      <div class="chart-container">
-        <h3 class="chart-title">📊 Daily Sales Performance Comparison</h3>
-        <canvas class="chart" id="mainChart"></canvas>
-      </div>
-
-      <!-- Loss/Gain Chart -->
-      <div class="chart-container">
-        <h3 class="chart-title">📈 Daily Loss/Gain Analysis</h3>
-        <canvas class="chart" id="lossGainChart"></canvas>
-      </div>
-
-      <!-- Data Table -->
-      <div class="data-table">
-        <h3>📋 Detailed Sales Data</h3>
-        <div style="overflow-x: auto;">
-          <table id="dataTable">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>UX Sales (L)</th>
-                <th>DX Sales (L)</th>
-                <th>V-Power Sales (L)</th>
-                <th>Total Sales (L)</th>
-                <th>UX Loss/Gain</th>
-                <th>DX Loss/Gain</th>
-                <th>VP Loss/Gain</th>
-                <th>Total Loss/Gain</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody">
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    let salesData = [];
-    let mainChart, lossGainChart;
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTO3PNP1zG_QTHC6pY0lVTrchtBF36Tc1FKIuyGfBdexGVJNVj34reyTws-5vmGP8cst3YndAdNmB_P/pub?gid=1536720731&single=true&output=csv';
-
-    async function loadData() {
-      try {
-        document.getElementById('loading').style.display = 'block';
-        document.getElementById('error').style.display = 'none';
-        document.getElementById('dashboard').style.display = 'none';
-
-        const response = await fetch(csvUrl);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const csvText = await response.text();
-        const rows = csvText.split('\n').filter(row => row.trim());
-        
-        // Skip header row and parse data
-        salesData = [];
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          if (row.trim()) {
-            const columns = parseCSVRow(row);
-            if (columns.length >= 9) {
-              const data = {
-                date: columns[0],
-                ux: parseFloat(columns[1]?.replace(/,/g, '') || 0),
-                dx: parseFloat(columns[2]?.replace(/,/g, '') || 0),
-                vpower: parseFloat(columns[3]?.replace(/,/g, '') || 0),
-                total: parseFloat(columns[4]?.replace(/,/g, '') || 0),
-                uxLossGain: parseFloat(columns[5]?.replace(/,/g, '') || 0),
-                dxLossGain: parseFloat(columns[6]?.replace(/,/g, '') || 0),
-                vpLossGain: parseFloat(columns[7]?.replace(/,/g, '') || 0),
-                totalLossGain: parseFloat(columns[8]?.replace(/,/g, '') || 0)
-              };
-              
-              // Only add rows with valid data
-              if (data.date && !isNaN(data.total) && data.total > 0) {
-                salesData.push(data);
-              }
-            }
-          }
+        function parseNumber(str) {
+            if (!str || str.trim() === '') return 0;
+            return parseFloat(str.replace(/[",\s]/g, '')) || 0;
         }
 
-        if (salesData.length === 0) {
-          throw new Error('No valid sales data found in the spreadsheet');
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
         }
 
-        updateDashboard();
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('dashboard').style.display = 'block';
-
-      } catch (error) {
-        console.error('Error loading data:', error);
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error').style.display = 'block';
-        document.getElementById('errorMessage').textContent = `Failed to load data: ${error.message}`;
-      }
-    }
-
-    function parseCSVRow(row) {
-      const result = [];
-      let current = '';
-      let inQuotes = false;
-      
-      for (let i = 0; i < row.length; i++) {
-        const char = row[i];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          result.push(current.trim());
-          current = '';
-        } else {
-          current += char;
+        function formatDate(dateStr) {
+            try {
+                const parts = dateStr.split('.');
+                if (parts.length === 3) {
+                    return `${parts[1]}/${parts[2]}`;
+                }
+                return dateStr;
+            } catch (e) {
+                return dateStr;
+            }
         }
-      }
-      result.push(current.trim());
-      return result;
-    }
 
-    function updateDashboard() {
-      // Calculate summary statistics
-      const totalUX = salesData.reduce((sum, day) => sum + day.ux, 0);
-      const totalDX = salesData.reduce((sum, day) => sum + day.dx, 0);
-      const totalVP = salesData.reduce((sum, day) => sum + day.vpower, 0);
-      const grandTotal = totalUX + totalDX + totalVP;
-      const avgDailySales = grandTotal / salesData.length;
-      
-      const totalUXLoss = salesData.reduce((sum, day) => sum + day.uxLossGain, 0);
-      const totalDXLoss = salesData.reduce((sum, day) => sum + day.dxLossGain, 0);
-      const totalVPLoss = salesData.reduce((sum, day) => sum + day.vpLossGain, 0);
+        async function loadData() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const dashboard = document.getElementById('dashboard');
+            
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            dashboard.style.display = 'none';
 
-      // Find best performing day
-      const bestDayData = salesData.reduce((max, day) => day.total > max.total ? day : max, salesData[0]);
-      
-      // Update summary cards
-      document.getElementById('analysisPeriod').textContent = salesData.length;
-      document.getElementById('totalRevenue').textContent = grandTotal.toLocaleString() + 'L';
-      document.getElementById('avgDailySales').textContent = avgDailySales.toFixed(0) + 'L';
-      document.getElementById('bestDay').textContent = bestDayData.date;
+            try {
+                const response = await fetch(SHEET_URL);
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const csvText = await response.text();
+                const lines = csvText.trim().split('\n');
+                
+                if (lines.length < 2) throw new Error('Invalid data format');
 
-      // Update product cards
-      updateProductCard('dx', totalDX, totalDX / salesData.length, (totalDX / grandTotal * 100), totalDXLoss);
-      updateProductCard('ux', totalUX, totalUX / salesData.length, (totalUX / grandTotal * 100), totalUXLoss);
-      updateProductCard('vp', totalVP, totalVP / salesData.length, (totalVP / grandTotal * 100), totalVPLoss);
+                // Process data
+                salesData = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line || line.includes(',,,')) continue;
 
-      // Create charts
-      createMainChart();
-      createLossGainChart();
-      createMiniCharts();
-      
-      // Update table
-      updateTable();
-    }
+                    const cols = line.split(',');
+                    if (cols.length < 8) continue;
 
-    function updateProductCard(product, total, avg, share, lossGain) {
-      const prefix = product.toLowerCase();
-      document.getElementById(prefix + 'Total').textContent = total.toLocaleString() + 'L';
-      document.getElementById(prefix + 'Avg').textContent = avg.toFixed(0) + 'L';
-      document.getElementById(prefix + 'Share').textContent = share.toFixed(1) + '%';
-      document.getElementById(prefix + 'LossGain').textContent = (lossGain >= 0 ? '+' : '') + lossGain.toFixed(1) + 'L';
-      
-      const trendElement = document.getElementById(prefix + 'Trend');
-      if (lossGain >= 0) {
-        trendElement.textContent = '📈 Gaining';
-        trendElement.className = 'trend-indicator trend-positive';
-      } else {
-        trendElement.textContent = '📉 Loss';
-        trendElement.className = 'trend-indicator trend-negative';
-      }
-    }
+                    const date = cols[0];
+                    const ux = parseNumber(cols[1]);
+                    const dx = parseNumber(cols[2]);
+                    const vpower = parseNumber(cols[3]);
+                    const total = parseNumber(cols[4]);
 
-    function createMainChart() {
-      const ctx = document.getElementById('mainChart').getContext('2d');
-      
-      if (mainChart) {
-        mainChart.destroy();
-      }
-      
-      mainChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: salesData.map(d => d.date),
-          datasets: [
-            {
-              label: 'UX (Unleaded)',
-              data: salesData.map(d => d.ux),
-              borderColor: '#22c55e',
-              backgroundColor: 'rgba(34, 197, 94, 0.1)',
-              tension: 0.4,
-              fill: true
-            },
-            {
-              label: 'DX (Diesel)',
-              data: salesData.map(d => d.dx),
-              borderColor: '#4a4a4a',
-              backgroundColor: 'rgba(74, 74, 74, 0.1)',
-              tension: 0.4,
-              fill: true
-            },
-            {
-              label: 'V-Power',
-              data: salesData.map(d => d.vpower),
-              borderColor: '#ef4444',
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              tension: 0.4,
-              fill: true
+                    // Skip invalid entries
+                    if (!date || total <= 0) continue;
+
+                    salesData.push({
+                        date: date,
+                        displayDate: formatDate(date),
+                        UX: ux,
+                        DX: dx,
+                        VPOWER: vpower,
+                        TOTAL: total,
+                        UX_GAIN: parseNumber(cols[5]),
+                        DX_GAIN: parseNumber(cols[6]),
+                        VP_GAIN: parseNumber(cols[7]),
+                        TOTAL_GAIN: parseNumber(cols[8])
+                    });
+                }
+
+                if (salesData.length === 0) {
+                    throw new Error('No valid data found');
+                }
+
+                updateStats();
+                createCharts();
+                showChart('performance');
+                
+                loading.style.display = 'none';
+                dashboard.style.display = 'block';
+
+                // Update last updated time
+                const now = new Date();
+                document.getElementById('lastUpdated').textContent = 
+                    `Last updated: ${now.toLocaleString()}`;
+
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = `Error loading data: ${err.message}`;
+                console.error('Error:', err);
             }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              labels: { color: 'white' }
-            }
-          },
-          scales: {
-            x: {
-              ticks: { color: 'white' },
-              grid: { color: 'rgba(255, 255, 255, 0.1)' }
-            },
-            y: {
-              ticks: { color: 'white' },
-              grid: { color: 'rgba(255, 255, 255, 0.1)' }
-            }
-          }
         }
-      });
-    }
 
-    function createLossGainChart() {
-      const ctx = document.getElementById('lossGainChart').getContext('2d');
-      
-      if (lossGainChart) {
-        lossGainChart.destroy();
-      }
-      
-      lossGainChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: salesData.map(d => d.date),
-          datasets: [
-            {
-              label: 'UX Loss/Gain',
-              data: salesData.map(d => d.uxLossGain),
-              backgroundColor: 'rgba(34, 197, 94, 0.7)',
-              borderColor: '#22c55e'
-            },
-            {
-              label: 'DX Loss/Gain',
-              data: salesData.map(d => d.dxLossGain),
-              backgroundColor: 'rgba(74, 74, 74, 0.7)',
-              borderColor: '#4a4a4a'
-            },
-            {
-              label: 'VP Loss/Gain',
-              data: salesData.map(d => d.vpLossGain),
-              backgroundColor: 'rgba(239, 68, 68, 0.7)',
-              borderColor: '#ef4444'
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              labels: { color: 'white' }
-            }
-          },
-          scales: {
-            x: {
-              ticks: { color: 'white' },
-              grid: { color: 'rgba(255, 255, 255, 0.1)' }
-            },
-            y: {
-              ticks: { color: 'white' },
-              grid: { color: 'rgba(255, 255, 255, 0.1)' }
-            }
-          }
+        function updateStats() {
+            const totalUX = salesData.reduce((sum, d) => sum + d.UX, 0);
+            const totalDX = salesData.reduce((sum, d) => sum + d.DX, 0);
+            const totalVP = salesData.reduce((sum, d) => sum + d.VPOWER, 0);
+            const totalGains = salesData.reduce((sum, d) => sum + d.TOTAL_GAIN, 0);
+            const avgDaily = salesData.reduce((sum, d) => sum + d.TOTAL, 0) / salesData.length;
+            
+            const positiveGainDays = salesData.filter(d => d.TOTAL_GAIN > 0).length;
+            const winRate = (positiveGainDays / salesData.length) * 100;
+
+            const stats = [
+                {
+                    label: 'Total UX Sales',
+                    value: formatCurrency(totalUX),
+                    change: salesData.length > 1 ? salesData[salesData.length - 1].UX_GAIN : 0
+                },
+                {
+                    label: 'Total DX Sales',
+                    value: formatCurrency(totalDX),
+                    change: salesData.length > 1 ? salesData[salesData.length - 1].DX_GAIN : 0
+                },
+                {
+                    label: 'Total V-Power Sales',
+                    value: formatCurrency(totalVP),
+                    change: salesData.length > 1 ? salesData[salesData.length - 1].VP_GAIN : 0
+                },
+                {
+                    label: 'Daily Average',
+                    value: formatCurrency(avgDaily),
+                    change: null
+                },
+                {
+                    label: 'Total Gains/Losses',
+                    value: formatCurrency(totalGains),
+                    change: totalGains
+                },
+                {
+                    label: 'Win Rate',
+                    value: `${winRate.toFixed(1)}%`,
+                    change: winRate > 50 ? 1 : -1
+                }
+            ];
+
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = stats.map(stat => `
+                <div class="stat-card">
+                    <div class="stat-value">${stat.value}</div>
+                    <div class="stat-label">${stat.label}</div>
+                    ${stat.change !== null ? `
+                        <div class="stat-change ${stat.change > 0 ? 'positive' : 'negative'}">
+                            ${stat.change > 0 ? '↗' : '↘'} ${stat.change > 0 ? '+' : ''}${typeof stat.change === 'number' && stat.change !== 1 && stat.change !== -1 ? formatCurrency(Math.abs(stat.change)) : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
         }
-      });
-    }
 
-    function createMiniCharts() {
-      // Create mini charts for each product
-      createMiniChart('dxChart', salesData.map(d => d.dx), '#4a4a4a');
-      createMiniChart('uxChart', salesData.map(d => d.ux), '#22c55e');
-      createMiniChart('vpChart', salesData.map(d => d.vpower), '#ef4444');
-    }
+        function createCharts() {
+            // Destroy existing charts
+            Object.values(charts).forEach(chart => chart?.destroy());
+            charts = {};
 
-    function createMiniChart(canvasId, data, color) {
-      const ctx = document.getElementById(canvasId).getContext('2d');
-      
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: salesData.map(d => d.date),
-          datasets: [{
-            data: data,
-            borderColor: color,
-            backgroundColor: color + '20',
-            tension: 0.4,
-            fill: true,
-            pointRadius: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
-          scales: {
-            x: { display: false },
-            y: { display: false }
-          },
-          elements: {
-            point: { radius: 0 }
-          }
+            const colors = {
+                UX: '#3b82f6',
+                DX: '#10b981',
+                VPOWER: '#f59e0b',
+                TOTAL: '#8b5cf6'
+            };
+
+            // Performance Chart
+            const performanceCtx = document.getElementById('performanceCanvas').getContext('2d');
+            charts.performance = new Chart(performanceCtx, {
+                type: 'line',
+                data: {
+                    labels: salesData.map(d => d.displayDate),
+                    datasets: [
+                        {
+                            label: 'UX',
+                            data: salesData.map(d => d.UX),
+                            borderColor: colors.UX,
+                            backgroundColor: colors.UX + '20',
+                            tension: 0.4,
+                            fill: false
+                        },
+                        {
+                            label: 'DX',
+                            data: salesData.map(d => d.DX),
+                            borderColor: colors.DX,
+                            backgroundColor: colors.DX + '20',
+                            tension: 0.4,
+                            fill: false
+                        },
+                        {
+                            label: 'V-Power',
+                            data: salesData.map(d => d.VPOWER),
+                            borderColor: colors.VPOWER,
+                            backgroundColor: colors.VPOWER + '20',
+                            tension: 0.4,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Gains Chart
+            const gainsCtx = document.getElementById('gainsCanvas').getContext('2d');
+            charts.gains = new Chart(gainsCtx, {
+                type: 'bar',
+                data: {
+                    labels: salesData.map(d => d.displayDate),
+                    datasets: [
+                        {
+                            label: 'Total Gain/Loss',
+                            data: salesData.map(d => d.TOTAL_GAIN),
+                            backgroundColor: salesData.map(d => d.TOTAL_GAIN > 0 ? '#10b981' : '#ef4444'),
+                            borderColor: salesData.map(d => d.TOTAL_GAIN > 0 ? '#059669' : '#dc2626'),
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Pie Chart
+            const totalUX = salesData.reduce((sum, d) => sum + d.UX, 0);
+            const totalDX = salesData.reduce((sum, d) => sum + d.DX, 0);
+            const totalVP = salesData.reduce((sum, d) => sum + d.VPOWER, 0);
+
+            const pieCtx = document.getElementById('pieCanvas').getContext('2d');
+            charts.pie = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['UX', 'DX', 'V-Power'],
+                    datasets: [{
+                        data: [totalUX, totalDX, totalVP],
+                        backgroundColor: [colors.UX, colors.DX, colors.VPOWER],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Bar Chart
+            const barCtx = document.getElementById('barCanvas').getContext('2d');
+            charts.bar = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['UX', 'DX', 'V-Power'],
+                    datasets: [{
+                        label: 'Total Sales',
+                        data: [totalUX, totalDX, totalVP],
+                        backgroundColor: [colors.UX, colors.DX, colors.VPOWER],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Comparison Chart
+            const comparisonCtx = document.getElementById('comparisonCanvas').getContext('2d');
+            charts.comparison = new Chart(comparisonCtx, {
+                type: 'line',
+                data: {
+                    labels: salesData.map(d => d.displayDate),
+                    datasets: [
+                        {
+                            label: 'Total Performance',
+                            data: salesData.map(d => d.TOTAL),
+                            borderColor: colors.TOTAL,
+                            backgroundColor: colors.TOTAL + '20',
+                            tension: 0.4,
+                            fill: true,
+                            borderWidth: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
-      });
-    }
 
-    function updateTable() {
-      const tableBody = document.getElementById('tableBody');
-      tableBody.innerHTML = '';
-      
-      salesData.forEach(day => {
-        const row = tableBody.insertRow();
-        row.insertCell(0).textContent = day.date;
-        row.insertCell(1).textContent = day.ux.toLocaleString() + 'L';
-        row.insertCell(2).textContent = day.dx.toLocaleString() + 'L';
-        row.insertCell(3).textContent = day.vpower.toLocaleString() + 'L';
-        row.insertCell(4).textContent = day.total.toLocaleString() + 'L';
-        row.insertCell(5).textContent = (day.uxLossGain >= 0 ? '+' : '') + day.uxLossGain.toFixed(1) + 'L';
-        row.insertCell(6).textContent = (day.dxLossGain >= 0 ? '+' : '') + day.dxLossGain.toFixed(1) + 'L';
-        row.insertCell(7).textContent = (day.vpLossGain >= 0 ? '+' : '') + day.vpLossGain.toFixed(1) + 'L';
-        row.insertCell(8).textContent = (day.totalLossGain >= 0 ? '+' : '') + day.totalLossGain.toFixed(1) + 'L';
-      });
-    }
+        function showChart(chartType) {
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
 
-    // Load data when page loads
-    document.addEventListener('DOMContentLoaded', loadData);
-  </script>
+            // Hide all charts
+            document.getElementById('performanceChart').style.display = 'none';
+            document.getElementById('gainsChart').style.display = 'none';
+            document.getElementById('otherCharts').style.display = 'none';
+            document.getElementById('comparisonChart').style.display = 'none';
+
+            // Show selected chart
+            switch(chartType) {
+                case 'performance':
+                    document.getElementById('performanceChart').style.display = 'block';
+                    break;
+                case 'gains':
+                    document.getElementById('gainsChart').style.display = 'block';
+                    break;
+                case 'breakdown':
+                    document.getElementById('otherCharts').style.display = 'block';
+                    break;
+                case 'comparison':
+                    document.getElementById('comparisonChart').style.display = 'block';
+                    break;
+            }
+        }
+
+        // Auto-refresh every 30 minutes
+        setInterval(loadData, 30 * 60 * 1000);
+
+        // Initial load
+        loadData();
+    </script>
 </body>
 </html>
