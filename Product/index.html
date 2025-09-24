@@ -292,16 +292,16 @@
 
         function parseNumber(str) {
             if (!str || str.trim() === '') return 0;
-            return parseFloat(str.replace(/[",\s]/g, '')) || 0;
+            // Handle numbers with quotes and commas properly
+            const cleaned = str.replace(/["'\s]/g, '').replace(/,/g, '');
+            return parseFloat(cleaned) || 0;
         }
 
-        function formatCurrency(amount) {
+        function formatLiters(amount) {
             return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
-            }).format(amount);
+            }).format(amount) + ' L';
         }
 
         function formatDate(dateStr) {
@@ -338,9 +338,26 @@
                 salesData = [];
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
-                    if (!line || line.includes(',,,')) continue;
+                    if (!line || line.includes(',,,') || line.includes(',,,,')) continue;
 
-                    const cols = line.split(',');
+                    // Split the CSV line properly handling quoted values
+                    const cols = [];
+                    let current = '';
+                    let inQuotes = false;
+                    
+                    for (let j = 0; j < line.length; j++) {
+                        const char = line[j];
+                        if (char === '"') {
+                            inQuotes = !inQuotes;
+                        } else if (char === ',' && !inQuotes) {
+                            cols.push(current.trim());
+                            current = '';
+                        } else {
+                            current += char;
+                        }
+                    }
+                    cols.push(current.trim()); // Add the last column
+                    
                     if (cols.length < 8) continue;
 
                     const date = cols[0];
@@ -349,8 +366,8 @@
                     const vpower = parseNumber(cols[3]);
                     const total = parseNumber(cols[4]);
 
-                    // Skip invalid entries
-                    if (!date || total <= 0) continue;
+                    // Skip invalid entries or summary rows
+                    if (!date || total <= 0 || date.includes('2025.09.31') || !date.includes('2025')) continue;
 
                     salesData.push({
                         date: date,
@@ -403,27 +420,27 @@
             const stats = [
                 {
                     label: 'Total UX Sales',
-                    value: formatCurrency(totalUX),
+                    value: formatLiters(totalUX),
                     change: salesData.length > 1 ? salesData[salesData.length - 1].UX_GAIN : 0
                 },
                 {
                     label: 'Total DX Sales',
-                    value: formatCurrency(totalDX),
+                    value: formatLiters(totalDX),
                     change: salesData.length > 1 ? salesData[salesData.length - 1].DX_GAIN : 0
                 },
                 {
                     label: 'Total V-Power Sales',
-                    value: formatCurrency(totalVP),
+                    value: formatLiters(totalVP),
                     change: salesData.length > 1 ? salesData[salesData.length - 1].VP_GAIN : 0
                 },
                 {
                     label: 'Daily Average',
-                    value: formatCurrency(avgDaily),
+                    value: formatLiters(avgDaily),
                     change: null
                 },
                 {
                     label: 'Total Gains/Losses',
-                    value: formatCurrency(totalGains),
+                    value: formatLiters(totalGains),
                     change: totalGains
                 },
                 {
@@ -440,7 +457,7 @@
                     <div class="stat-label">${stat.label}</div>
                     ${stat.change !== null ? `
                         <div class="stat-change ${stat.change > 0 ? 'positive' : 'negative'}">
-                            ${stat.change > 0 ? '↗' : '↘'} ${stat.change > 0 ? '+' : ''}${typeof stat.change === 'number' && stat.change !== 1 && stat.change !== -1 ? formatCurrency(Math.abs(stat.change)) : ''}
+                            ${stat.change > 0 ? '↗' : '↘'} ${stat.change > 0 ? '+' : ''}${typeof stat.change === 'number' && stat.change !== 1 && stat.change !== -1 ? formatLiters(Math.abs(stat.change)) : ''}
                         </div>
                     ` : ''}
                 </div>
@@ -453,10 +470,10 @@
             charts = {};
 
             const colors = {
-                UX: '#3b82f6',
-                DX: '#10b981',
-                VPOWER: '#f59e0b',
-                TOTAL: '#8b5cf6'
+                UX: '#10b981',      // Green
+                DX: '#1f2937',      // Black/Dark Gray  
+                VPOWER: '#ef4444',  // Red
+                TOTAL: '#8b5cf6'    // Purple
             };
 
             // Performance Chart
@@ -509,7 +526,7 @@
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    return formatCurrency(value);
+                                    return formatLiters(value);
                                 }
                             }
                         }
@@ -546,7 +563,7 @@
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    return formatCurrency(value);
+                                    return formatLiters(value);
                                 }
                             }
                         }
@@ -608,7 +625,7 @@
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    return formatCurrency(value);
+                                    return formatLiters(value);
                                 }
                             }
                         }
@@ -647,7 +664,7 @@
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    return formatCurrency(value);
+                                    return formatLiters(value);
                                 }
                             }
                         }
