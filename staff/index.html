@@ -418,9 +418,8 @@
           <div class="control-group">
             <label>📈 Chart Type</label>
             <select id="chartType">
-              <option value="line">Line Chart</option>
               <option value="bar">Bar Chart</option>
-              <option value="area">Area Chart</option>
+              <option value="line">Line Chart</option>
             </select>
           </div>
           
@@ -446,7 +445,6 @@
           <div class="chart-header">
             <h3 class="chart-title">📊 Shortage Trends Over Time</h3>
             <div class="chart-controls">
-              <button class="btn-chart active" onclick="toggleChartAnimation()">🎬 Animation</button>
               <button class="btn-chart" onclick="exportChart()">💾 Export</button>
               <button class="btn-chart" onclick="toggleFullscreen()">🔍 Fullscreen</button>
             </div>
@@ -482,7 +480,6 @@
     const staff = ["JOHN","DAVID","ZACHARIAH","THOMAS","PAUL","MACHARIAH","NJAGI","VICTOR","PETER"];
     
     let chart, allData = [], filteredData = [];
-    let animationEnabled = true;
     let searchTimeout;
 
     // Color scheme for staff members
@@ -602,7 +599,7 @@
 
     function resetFilters() {
       document.getElementById("staffSelect").value = "ALL";
-      document.getElementById("chartType").value = "line";
+      document.getElementById("chartType").value = "bar";
       document.getElementById("searchBox").value = "";
       setDefaultDates();
       filteredData = [...allData];
@@ -703,12 +700,11 @@
           label: s,
           data: filteredData.map(d => ({ x: d.day, y: d[s] })),
           borderColor: staffColors[i],
-          backgroundColor: chartType === 'area' ? 
-            `${staffColors[i]}33` : staffColors[i],
-          fill: chartType === 'area',
-          tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
+          backgroundColor: staffColors[i],
+          fill: false,
+          tension: 0,
+          pointRadius: 3,
+          pointHoverRadius: 5,
           borderWidth: 2
         }));
       } else {
@@ -716,25 +712,22 @@
           label: selectedStaff,
           data: filteredData.map(d => ({ x: d.day, y: d[selectedStaff] })),
           borderColor: "#0077cc",
-          backgroundColor: chartType === 'area' ? "#0077cc33" : "#0077cc",
-          fill: chartType === 'area',
-          tension: 0.4,
-          pointRadius: 5,
-          pointHoverRadius: 8,
-          borderWidth: 3
+          backgroundColor: "#0077cc",
+          fill: false,
+          tension: 0,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          borderWidth: 2
         }];
       }
 
       chart = new Chart(document.getElementById("shortagesChart"), {
-        type: chartType === 'area' ? 'line' : chartType,
+        type: chartType,
         data: { datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: {
-            duration: animationEnabled ? 1000 : 0,
-            easing: 'easeInOutQuart'
-          },
+          animation: false,
           interaction: {
             intersect: false,
             mode: 'index'
@@ -747,9 +740,12 @@
               ticks: { color: '#6c757d' }
             },
             y: {
+              min: -180,
+              max: 180,
               grid: { color: '#e9ecef' },
               ticks: { 
                 color: '#6c757d',
+                stepSize: 30,
                 callback: function(value) {
                   return 'KES ' + value.toFixed(0);
                 }
@@ -761,7 +757,7 @@
               position: "bottom",
               labels: { 
                 usePointStyle: true,
-                padding: 20,
+                padding: 15,
                 color: '#495057'
               }
             },
@@ -819,14 +815,36 @@
     }
 
     function filterTable(searchTerm) {
-      const rows = document.querySelectorAll("#dataTable tbody tr");
-      const term = searchTerm.toLowerCase();
+      const table = document.getElementById("dataTable");
+      const tbody = table.querySelector("tbody");
+      const rows = tbody.querySelectorAll("tr");
+      const term = searchTerm.toLowerCase().trim();
+      
+      if (!term) {
+        // Show all rows if search is empty
+        rows.forEach(row => {
+          row.style.display = "";
+        });
+        return;
+      }
       
       rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        if (text.includes(term)) {
+        const cells = row.querySelectorAll("td");
+        let found = false;
+        
+        cells.forEach(cell => {
+          const cellText = cell.textContent.toLowerCase();
+          if (cellText.includes(term)) {
+            found = true;
+          }
+        });
+        
+        if (found) {
           row.style.display = "";
-          row.style.animation = "highlight 1s ease-out";
+          row.classList.add('highlight-row');
+          setTimeout(() => {
+            row.classList.remove('highlight-row');
+          }, 2000);
         } else {
           row.style.display = "none";
         }
@@ -946,7 +964,5 @@
   </script>
 </body>
 </html>
-
-
 
    
