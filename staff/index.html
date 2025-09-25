@@ -445,7 +445,6 @@
           <div class="chart-header">
             <h3 class="chart-title">📊 Shortage Trends Over Time</h3>
             <div class="chart-controls">
-              <button class="btn-chart" onclick="exportChart()">💾 Export</button>
               <button class="btn-chart" onclick="toggleFullscreen()">🔍 Fullscreen</button>
             </div>
           </div>
@@ -960,10 +959,6 @@
             e.preventDefault();
             resetFilters();
             break;
-          case 'e':
-            e.preventDefault();
-            exportChart();
-            break;
           case 'f':
             e.preventDefault();
             document.getElementById('searchBox').focus();
@@ -981,5 +976,4 @@
   </script>
 </body>
 </html>
-
    
