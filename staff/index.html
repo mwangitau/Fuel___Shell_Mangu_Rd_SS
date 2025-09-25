@@ -740,14 +740,31 @@
               ticks: { color: '#6c757d' }
             },
             y: {
-              min: -180,
-              max: 180,
-              grid: { color: '#e9ecef' },
+              grid: { 
+                color: function(context) {
+                  // Highlight the acceptable range (-180 to +180)
+                  if (context.tick.value === -180 || context.tick.value === 180) {
+                    return '#dc3545'; // Red line for limits
+                  }
+                  if (context.tick.value >= -180 && context.tick.value <= 180) {
+                    return '#28a745'; // Green grid for acceptable range
+                  }
+                  return '#e9ecef'; // Default gray for exceeding limits
+                }
+              },
               ticks: { 
-                color: '#6c757d',
-                stepSize: 30,
+                color: function(context) {
+                  // Color code the tick labels
+                  if (context.tick.value >= -180 && context.tick.value <= 180) {
+                    return '#28a745'; // Green for acceptable range
+                  }
+                  return '#dc3545'; // Red for exceeding company limits
+                },
                 callback: function(value) {
-                  return 'KES ' + value.toFixed(0);
+                  const label = 'KES ' + value.toFixed(0);
+                  if (value === 180) return label + ' (LIMIT)';
+                  if (value === -180) return label + ' (LIMIT)';
+                  return label;
                 }
               }
             }
