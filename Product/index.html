@@ -181,6 +181,35 @@
             gap: 30px;
         }
 
+        .category-selectors {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .category-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .category-checkbox:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .category-checkbox input[type="checkbox"] {
+            margin: 0;
+        }
+
         @media (max-width: 768px) {
             .grid-2 {
                 grid-template-columns: 1fr;
@@ -192,6 +221,12 @@
             
             .stats-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .category-selectors {
+                justify-content: flex-start;
+                overflow-x: auto;
+                padding-bottom: 10px;
             }
         }
 
@@ -255,7 +290,7 @@
             </div>
 
             <div class="chart-container" id="gainsChart" style="display: none;">
-                <div class="chart-title">Daily Gains/Losses Analysis</div>
+                <div class="chart-title">Daily Gains/Losses Analysis by Category</div>
                 <div class="chart-wrapper">
                     <canvas id="gainsCanvas"></canvas>
                 </div>
@@ -278,6 +313,24 @@
 
             <div class="chart-container" id="comparisonChart" style="display: none;">
                 <div class="chart-title">Category Performance Comparison</div>
+                <div class="category-selectors">
+                    <label class="category-checkbox">
+                        <input type="checkbox" id="uxCheck" checked onchange="updateComparisonChart()">
+                        <span style="color: #10b981;">■</span> UX
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" id="dxCheck" checked onchange="updateComparisonChart()">
+                        <span style="color: #1f2937;">■</span> DX
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" id="vpowerCheck" checked onchange="updateComparisonChart()">
+                        <span style="color: #ef4444;">■</span> V-Power
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" id="totalCheck" onchange="updateComparisonChart()">
+                        <span style="color: #8b5cf6;">■</span> Total
+                    </label>
+                </div>
                 <div class="chart-wrapper">
                     <canvas id="comparisonCanvas"></canvas>
                 </div>
@@ -413,9 +466,6 @@
             const totalVP = salesData.reduce((sum, d) => sum + d.VPOWER, 0);
             const totalGains = salesData.reduce((sum, d) => sum + d.TOTAL_GAIN, 0);
             const avgDaily = salesData.reduce((sum, d) => sum + d.TOTAL, 0) / salesData.length;
-            
-            const positiveGainDays = salesData.filter(d => d.TOTAL_GAIN > 0).length;
-            const winRate = (positiveGainDays / salesData.length) * 100;
 
             const stats = [
                 {
@@ -442,11 +492,6 @@
                     label: 'Total Gains/Losses',
                     value: formatLiters(totalGains),
                     change: totalGains
-                },
-                {
-                    label: 'Win Rate',
-                    value: `${winRate.toFixed(1)}%`,
-                    change: winRate > 50 ? 1 : -1
                 }
             ];
 
@@ -457,7 +502,7 @@
                     <div class="stat-label">${stat.label}</div>
                     ${stat.change !== null ? `
                         <div class="stat-change ${stat.change > 0 ? 'positive' : 'negative'}">
-                            ${stat.change > 0 ? '↗' : '↘'} ${stat.change > 0 ? '+' : ''}${typeof stat.change === 'number' && stat.change !== 1 && stat.change !== -1 ? formatLiters(Math.abs(stat.change)) : ''}
+                            ${stat.change > 0 ? '↗' : '↘'} ${stat.change > 0 ? '+' : ''}${typeof stat.change === 'number' ? formatLiters(Math.abs(stat.change)) : ''}
                         </div>
                     ` : ''}
                 </div>
@@ -534,7 +579,7 @@
                 }
             });
 
-            // Gains Chart
+            // Gains Chart - Separated by Category
             const gainsCtx = document.getElementById('gainsCanvas').getContext('2d');
             charts.gains = new Chart(gainsCtx, {
                 type: 'bar',
@@ -542,10 +587,24 @@
                     labels: salesData.map(d => d.displayDate),
                     datasets: [
                         {
-                            label: 'Total Gain/Loss',
-                            data: salesData.map(d => d.TOTAL_GAIN),
-                            backgroundColor: salesData.map(d => d.TOTAL_GAIN > 0 ? '#10b981' : '#ef4444'),
-                            borderColor: salesData.map(d => d.TOTAL_GAIN > 0 ? '#059669' : '#dc2626'),
+                            label: 'UX Gain/Loss',
+                            data: salesData.map(d => d.UX_GAIN),
+                            backgroundColor: colors.UX + '80',
+                            borderColor: colors.UX,
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'DX Gain/Loss',
+                            data: salesData.map(d => d.DX_GAIN),
+                            backgroundColor: colors.DX + '80',
+                            borderColor: colors.DX,
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'V-Power Gain/Loss',
+                            data: salesData.map(d => d.VP_GAIN),
+                            backgroundColor: colors.VPOWER + '80',
+                            borderColor: colors.VPOWER,
                             borderWidth: 1
                         }
                     ]
@@ -555,7 +614,7 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: false
+                            position: 'top'
                         }
                     },
                     scales: {
@@ -633,23 +692,28 @@
                 }
             });
 
-            // Comparison Chart
+            // Comparison Chart - With selectable categories
+            createComparisonChart();
+        }
+
+        function createComparisonChart() {
+            if (charts.comparison) {
+                charts.comparison.destroy();
+            }
+
+            const colors = {
+                UX: '#10b981',
+                DX: '#1f2937',
+                VPOWER: '#ef4444',
+                TOTAL: '#8b5cf6'
+            };
+
             const comparisonCtx = document.getElementById('comparisonCanvas').getContext('2d');
             charts.comparison = new Chart(comparisonCtx, {
                 type: 'line',
                 data: {
                     labels: salesData.map(d => d.displayDate),
-                    datasets: [
-                        {
-                            label: 'Total Performance',
-                            data: salesData.map(d => d.TOTAL),
-                            borderColor: colors.TOTAL,
-                            backgroundColor: colors.TOTAL + '20',
-                            tension: 0.4,
-                            fill: true,
-                            borderWidth: 3
-                        }
-                    ]
+                    datasets: []
                 },
                 options: {
                     responsive: true,
@@ -671,6 +735,69 @@
                     }
                 }
             });
+
+            updateComparisonChart();
+        }
+
+        function updateComparisonChart() {
+            if (!charts.comparison) return;
+
+            const colors = {
+                UX: '#10b981',
+                DX: '#1f2937',
+                VPOWER: '#ef4444',
+                TOTAL: '#8b5cf6'
+            };
+
+            const datasets = [];
+
+            if (document.getElementById('uxCheck').checked) {
+                datasets.push({
+                    label: 'UX',
+                    data: salesData.map(d => d.UX),
+                    borderColor: colors.UX,
+                    backgroundColor: colors.UX + '20',
+                    tension: 0.4,
+                    fill: false
+                });
+            }
+
+            if (document.getElementById('dxCheck').checked) {
+                datasets.push({
+                    label: 'DX',
+                    data: salesData.map(d => d.DX),
+                    borderColor: colors.DX,
+                    backgroundColor: colors.DX + '20',
+                    tension: 0.4,
+                    fill: false
+                });
+            }
+
+            if (document.getElementById('vpowerCheck').checked) {
+                datasets.push({
+                    label: 'V-Power',
+                    data: salesData.map(d => d.VPOWER),
+                    borderColor: colors.VPOWER,
+                    backgroundColor: colors.VPOWER + '20',
+                    tension: 0.4,
+                    fill: false
+                });
+            }
+
+            if (document.getElementById('totalCheck').checked) {
+                datasets.push({
+                    label: 'Total',
+                    data: salesData.map(d => d.TOTAL),
+                    borderColor: colors.TOTAL,
+                    backgroundColor: colors.TOTAL + '20',
+                    tension: 0.4,
+                    fill: false,
+                    borderWidth: 3
+                });
+            }
+
+            charts.comparison.data.datasets = datasets;
+            charts.comparison.update();
         }
 
         function showChart(chartType, element) {
