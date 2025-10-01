@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Afrigas Sales Dashboard - September 2025</title>
+    <title>Gas Sales Dashboard - September 2025</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -29,6 +29,12 @@
             text-align: center;
             color: white;
             margin-bottom: 30px;
+            animation: fadeIn 0.8s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .header h1 {
@@ -40,6 +46,30 @@
         .header p {
             font-size: 1.2em;
             opacity: 0.9;
+        }
+        
+        .refresh-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+        
+        .refresh-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 7px 20px rgba(0,0,0,0.3);
+        }
+        
+        .refresh-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         
         .stats-grid {
@@ -54,11 +84,26 @@
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: slideUp 0.5s ease-out forwards;
+            opacity: 0;
         }
         
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+        .stat-card:nth-child(5) { animation-delay: 0.5s; }
+        .stat-card:nth-child(6) { animation-delay: 0.6s; }
+        
         .stat-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
         }
         
         .stat-card h3 {
@@ -88,11 +133,22 @@
             margin-bottom: 30px;
         }
         
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
         .chart-card {
             background: white;
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .chart-card:hover {
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
         }
         
         .chart-card h2 {
@@ -126,6 +182,7 @@
             font-weight: 600;
             position: sticky;
             top: 0;
+            z-index: 10;
         }
         
         tr:hover {
@@ -139,46 +196,81 @@
             padding: 50px;
         }
         
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         .error {
             background: #ff6b6b;
             color: white;
             padding: 20px;
             border-radius: 10px;
             text-align: center;
-            margin: 20px 0;
+            margin: 20px auto;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .error h3 {
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+        
+        .last-updated {
+            text-align: center;
+            color: white;
+            font-size: 0.9em;
+            margin-top: 10px;
+            opacity: 0.8;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔥 Afrigas Sales Dashboard</h1>
+            <h1>🔥 Gas Sales Dashboard</h1>
             <p>September 2025 Performance Overview</p>
+            <button class="refresh-btn" onclick="loadData()" id="refreshBtn">🔄 Refresh Data</button>
+            <div class="last-updated" id="lastUpdated"></div>
         </div>
         
-        <div id="loading" class="loading">Loading data...</div>
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading data...</p>
+        </div>
         <div id="error" style="display: none;"></div>
         <div id="dashboard" style="display: none;">
             <div class="stats-grid" id="statsGrid"></div>
             
             <div class="charts-grid">
                 <div class="chart-card">
-                    <h2>Daily Sales Trend (Total KGs)</h2>
+                    <h2>📈 Daily Sales Trend (Total KGs)</h2>
                     <canvas id="dailyTrendChart"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h2>Product Distribution</h2>
+                    <h2>🎯 Product Distribution</h2>
                     <canvas id="productDistChart"></canvas>
                 </div>
             </div>
             
             <div class="chart-card" style="margin-bottom: 30px;">
-                <h2>Product Performance Over Time</h2>
+                <h2>📊 Product Performance Over Time</h2>
                 <canvas id="productTrendChart"></canvas>
             </div>
             
             <div class="table-card">
-                <h2>Detailed Sales Data</h2>
+                <h2>📋 Detailed Sales Data</h2>
                 <table id="dataTable"></table>
             </div>
         </div>
@@ -188,19 +280,48 @@
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1346158160&single=true&output=csv';
         
         let salesData = [];
+        let charts = {};
         
         function loadData() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '⏳ Loading...';
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'none';
+            
             Papa.parse(CSV_URL, {
                 download: true,
                 header: true,
                 dynamicTyping: true,
                 skipEmptyLines: true,
+                transformHeader: (header) => header.trim(),
                 complete: function(results) {
-                    salesData = results.data;
+                    if (results.errors.length > 0) {
+                        console.warn('CSV parsing warnings:', results.errors);
+                    }
+                    
+                    salesData = results.data.filter(row => {
+                        const firstCol = Object.keys(row)[0];
+                        return row[firstCol] && row[firstCol].toString().trim() !== '';
+                    });
+                    
+                    if (salesData.length === 0) {
+                        showError('No valid data found in the spreadsheet. Please check the data format.');
+                        refreshBtn.disabled = false;
+                        refreshBtn.textContent = '🔄 Refresh Data';
+                        return;
+                    }
+                    
                     processAndDisplayData();
+                    refreshBtn.disabled = false;
+                    refreshBtn.textContent = '🔄 Refresh Data';
                 },
                 error: function(error) {
-                    showError('Failed to load data: ' + error.message);
+                    showError('Failed to load data: ' + error.message + '. Please check your internet connection and try again.');
+                    refreshBtn.disabled = false;
+                    refreshBtn.textContent = '🔄 Refresh Data';
                 }
             });
         }
@@ -208,6 +329,25 @@
         function processAndDisplayData() {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
+            
+            // Update last updated time
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = 
+                'Last updated: ' + now.toLocaleString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+            
+            // Destroy existing charts before creating new ones
+            Object.values(charts).forEach(chart => {
+                if (chart && typeof chart.destroy === 'function') {
+                    chart.destroy();
+                }
+            });
+            charts = {};
             
             // Calculate statistics
             const stats = calculateStats();
@@ -225,10 +365,11 @@
         function calculateStats() {
             let total6kg = 0, total13kg = 0, total45kg = 0, totalKgs = 0;
             let totalRefills = 0, totalEmpties = 0;
+            let dailyKgs = [];
             
             salesData.forEach(row => {
                 const cols = Object.keys(row);
-                const productType = row[cols[0]] || '';
+                const productType = (row[cols[0]] || '').toString().toUpperCase();
                 
                 cols.slice(1).forEach(col => {
                     const val = parseFloat(row[col]) || 0;
@@ -239,12 +380,17 @@
                     if (productType.includes('EMPTY')) totalEmpties += val;
                 });
                 
-                if (productType.includes('TOTAL KGS')) {
+                if (productType.includes('TOTAL KGS') || productType.includes('TOTAL KG')) {
                     cols.slice(1, -1).forEach(col => {
-                        totalKgs += parseFloat(row[col]) || 0;
+                        const val = parseFloat(row[col]) || 0;
+                        totalKgs += val;
+                        if (val > 0) dailyKgs.push(val);
                     });
                 }
             });
+            
+            const avgDailyKgs = dailyKgs.length > 0 ? totalKgs / dailyKgs.length : 0;
+            const maxDailyKgs = dailyKgs.length > 0 ? Math.max(...dailyKgs) : 0;
             
             return {
                 total6kg,
@@ -253,7 +399,10 @@
                 totalKgs,
                 totalRefills,
                 totalEmpties,
-                totalUnits: totalRefills + totalEmpties
+                totalUnits: totalRefills + totalEmpties,
+                avgDailyKgs,
+                maxDailyKgs,
+                daysWithSales: dailyKgs.length
             };
         }
         
@@ -267,27 +416,27 @@
                 </div>
                 <div class="stat-card">
                     <h3>Total Units</h3>
-                    <div class="value">${stats.totalUnits}</div>
+                    <div class="value">${stats.totalUnits.toLocaleString()}</div>
                     <div class="label">All Products</div>
                 </div>
                 <div class="stat-card">
                     <h3>6KG Cylinders</h3>
-                    <div class="value">${stats.total6kg}</div>
+                    <div class="value">${stats.total6kg.toLocaleString()}</div>
                     <div class="label">Units Sold</div>
                 </div>
                 <div class="stat-card">
                     <h3>13KG Cylinders</h3>
-                    <div class="value">${stats.total13kg}</div>
+                    <div class="value">${stats.total13kg.toLocaleString()}</div>
                     <div class="label">Units Sold</div>
                 </div>
                 <div class="stat-card">
                     <h3>45KG Cylinders</h3>
-                    <div class="value">${stats.total45kg}</div>
+                    <div class="value">${stats.total45kg.toLocaleString()}</div>
                     <div class="label">Units Sold</div>
                 </div>
                 <div class="stat-card">
                     <h3>Avg Daily KGs</h3>
-                    <div class="value">${Math.round(stats.totalKgs / 30)}</div>
+                    <div class="value">${Math.round(stats.avgDailyKgs).toLocaleString()}</div>
                     <div class="label">Per Day</div>
                 </div>
             `;
@@ -299,20 +448,21 @@
             
             const totalKgsRow = salesData.find(row => {
                 const firstCol = Object.keys(row)[0];
-                return (row[firstCol] || '').includes('TOTAL KGS');
+                const value = (row[firstCol] || '').toString().toUpperCase();
+                return value.includes('TOTAL KGS') || value.includes('TOTAL KG');
             });
             
             if (totalKgsRow) {
                 const cols = Object.keys(totalKgsRow);
                 cols.slice(1, -1).forEach(col => {
-                    const date = col.replace('2025.09.', '');
+                    const date = col.replace('2025.09.', '').replace('2025-09-', '');
                     dates.push('Sep ' + date);
                     kgs.push(parseFloat(totalKgsRow[col]) || 0);
                 });
             }
             
             const ctx = document.getElementById('dailyTrendChart').getContext('2d');
-            new Chart(ctx, {
+            charts.dailyTrend = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: dates,
@@ -322,17 +472,45 @@
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Total: ' + context.parsed.y.toLocaleString() + ' KGs';
+                                }
+                            }
+                        }
                     },
                     scales: {
-                        y: { beginAtZero: true }
+                        y: { 
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + ' KGs';
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
                     }
                 }
             });
@@ -342,20 +520,41 @@
             const stats = calculateStats();
             
             const ctx = document.getElementById('productDistChart').getContext('2d');
-            new Chart(ctx, {
+            charts.productDist = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: ['6KG', '13KG', '45KG'],
                     datasets: [{
                         data: [stats.total6kg, stats.total13kg, stats.total45kg],
-                        backgroundColor: ['#667eea', '#764ba2', '#f093fb']
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb'],
+                        borderWidth: 0,
+                        hoverOffset: 10
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
                     plugins: {
-                        legend: { position: 'bottom' }
+                        legend: { 
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return label + ': ' + value.toLocaleString() + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
                     }
                 }
             });
@@ -371,16 +570,16 @@
             const dateColumns = cols.slice(1, -1);
             
             dateColumns.forEach(col => {
-                const date = col.replace('2025.09.', '');
+                const date = col.replace('2025.09.', '').replace('2025-09-', '');
                 dates.push('Sep ' + date);
                 
                 let kg6 = 0, kg13 = 0, kg45 = 0;
                 salesData.forEach(row => {
-                    const productType = row[cols[0]] || '';
+                    const productType = (row[cols[0]] || '').toString().toUpperCase();
                     const val = parseFloat(row[col]) || 0;
                     
                     if (productType.includes('6KG') && productType.includes('REFILL')) kg6 += val;
-                    if (productType.includes('13KG') && productType.includes('REFIL')) kg13 += val;
+                    if (productType.includes('13KG') && (productType.includes('REFILL') || productType.includes('REFIL'))) kg13 += val;
                     if (productType.includes('45KG') && productType.includes('REFILL')) kg45 += val;
                 });
                 
@@ -390,7 +589,7 @@
             });
             
             const ctx = document.getElementById('productTrendChart').getContext('2d');
-            new Chart(ctx, {
+            charts.productTrend = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: dates,
@@ -415,9 +614,25 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' units';
+                                }
+                            }
+                        }
+                    },
                     scales: {
                         x: { stacked: false },
-                        y: { beginAtZero: true }
+                        y: { 
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            }
+                        }
                     }
                 }
             });
@@ -426,6 +641,11 @@
         function createDataTable() {
             const table = document.getElementById('dataTable');
             let html = '<thead><tr>';
+            
+            if (salesData.length === 0) {
+                table.innerHTML = '<tr><td>No data available</td></tr>';
+                return;
+            }
             
             const cols = Object.keys(salesData[0]);
             cols.forEach(col => {
@@ -436,8 +656,16 @@
             salesData.forEach(row => {
                 html += '<tr>';
                 cols.forEach(col => {
-                    const val = row[col];
-                    html += `<td>${val !== undefined && val !== null ? val : ''}</td>`;
+                    let val = row[col];
+                    if (val !== undefined && val !== null) {
+                        // Format numbers with commas
+                        if (typeof val === 'number') {
+                            val = val.toLocaleString();
+                        }
+                    } else {
+                        val = '';
+                    }
+                    html += `<td>${val}</td>`;
                 });
                 html += '</tr>';
             });
@@ -450,12 +678,12 @@
             document.getElementById('loading').style.display = 'none';
             const errorDiv = document.getElementById('error');
             errorDiv.className = 'error';
-            errorDiv.textContent = message;
+            errorDiv.innerHTML = `<h3>⚠️ Error</h3><p>${message}</p>`;
             errorDiv.style.display = 'block';
         }
         
         // Load data on page load
-        loadData();
+        window.addEventListener('load', loadData);
     </script>
 </body>
 </html>
