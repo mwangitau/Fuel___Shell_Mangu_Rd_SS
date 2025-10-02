@@ -707,4 +707,28 @@
           <tr>
             <td>${formatDisplayDate(r.date)}</td>
             <td>${r.pump1.attendant}</td>
-            <td>${r.pump1.
+            <td>${r.pump1.value.toLocaleString()} L</td>
+            <td>${r.pump2.attendant}</td>
+            <td>${r.pump2.value.toLocaleString()} L</td>
+            <td>${r.pump3.attendant}</td>
+            <td>${r.pump3.value.toLocaleString()} L</td>
+            <td><strong>${r.total.toLocaleString()} L</strong></td>
+          </tr>`;
+      });
+      
+      html += `</tbody>`;
+      document.getElementById('dataTable').innerHTML = html;
+    }
+
+    function updateAnalysis() {
+      const filtered = getFilteredData();
+      const { dailyTotals, attendantTotals, pumpTotals } = updateMetrics(filtered);
+      createCharts(dailyTotals, attendantTotals, pumpTotals);
+      updateInsights(dailyTotals, attendantTotals, pumpTotals);
+      updateDataTable(filtered);
+    }
+
+    window.onload = () => loadFuelData();
+  </script>
+</body>
+</html>
