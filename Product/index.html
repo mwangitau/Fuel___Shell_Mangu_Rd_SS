@@ -460,7 +460,6 @@
             dashboard.style.display = 'none';
 
             try {
-                // Load all months
                 for (const [month, url] of Object.entries(SHEET_URLS)) {
                     allData[month] = await loadMonthData(month, url);
                 }
@@ -880,4 +879,15 @@
                     break;
                 case 'breakdown':
                     document.getElementById('otherCharts').style.display = 'block';
-                    break
+                    break;
+                case 'comparison':
+                    document.getElementById('comparisonChart').style.display = 'block';
+                    break;
+            }
+        }
+
+        setInterval(loadData, 30 * 60 * 1000);
+        loadData();
+    </script>
+</body>
+</html>
