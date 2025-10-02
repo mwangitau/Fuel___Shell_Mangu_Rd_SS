@@ -258,6 +258,14 @@
     
     <div class="filter-section">
       <div class="filter-group">
+        <label class="filter-label">📅 Month</label>
+        <select id="monthFilter" onchange="loadFuelData()">
+          <option value="combined">Combined (All Months)</option>
+          <option value="september">September 2024</option>
+          <option value="august">August 2024</option>
+        </select>
+      </div>
+      <div class="filter-group">
         <label class="filter-label">Attendant Filter</label>
         <select id="attendantFilter">
           <option value="all">All Attendants</option>
@@ -308,7 +316,11 @@
   </div>
 
   <script>
-    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?output=csv";
+    // Data sources for different months
+    const dataSources = {
+      august: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?output=csv",
+      september: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1064673143&output=csv"
+    };
 
     let processedData = [], attendantsSet = new Set(), charts = {};
 
@@ -353,94 +365,21 @@
       try {
         document.getElementById('metricsGrid').innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
         
-        const response = await fetch(csvUrl);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const text = await response.text();
-        if (!text || text.trim() === '') {
-          throw new Error('Empty response from Google Sheets');
-        }
-        
-        console.log('CSV data loaded successfully');
-        const rows = csvToArray(text);
-        console.log('Parsed rows:', rows.length);
-        console.log('Column headers:', Object.keys(rows[0] || {}));
-        console.log('First row data:', rows[0]);
-        
+        const selectedMonth = document.getElementById('monthFilter').value;
         processedData = [];
         attendantsSet = new Set();
-
-        rows.forEach((row, index) => {
-          // Skip rows without DAY data or special rows, but allow PRICE CHANGE rows if they have valid data
-          const dayValue = row.DAY;
-          if (!dayValue || dayValue === "TOTALS" || dayValue === '') {
-            console.log(`Skipping row ${index}:`, dayValue);
-            return;
+        
+        // Load data based on selection
+        if (selectedMonth === 'combined') {
+          // Load all months
+          for (const [month, url] of Object.entries(dataSources)) {
+            await loadMonthData(url, month);
           }
-          
-          // Extract date from DAY column (handle PRICE CHANGE entries)
-          let dateStr = dayValue;
-          if (dayValue.includes('PRICE CHANGE')) {
-            // Extract date from "PRICE CHANGE YYYY.MM.DD" format
-            const dateMatch = dayValue.match(/(\d{4}\.\d{1,2}\.\d{1,2})/);
-            if (dateMatch) {
-              dateStr = dateMatch[1];
-            } else {
-              console.log(`Skipping row ${index}: No date found in`, dayValue);
-              return;
-            }
-          } else if (!dayValue.match(/\d/)) {
-            console.log(`Skipping row ${index}:`, dayValue);
-            return;
-          }
-          
-          const date = formatDate(dateStr);
-          if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            console.log(`Skipping invalid date format: ${dayValue}`);
-            return;
-          }
-          
-          // Simple column structure - adjust these names to match your actual Google Sheets columns
-          const pump1 = {
-            attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(),
-            value: Math.abs(parseFloat(row['PUMP 1']) || 0)
-          };
-          
-          const pump2 = {
-            attendant: (row['NAME OF CSA.1'] || 'Unknown').toString().trim(),
-            value: Math.abs(parseFloat(row['PUMP 2']) || 0)
-          };
-          
-          const pump3 = {
-            attendant: (row['NAME OF CSA.2'] || 'Unknown').toString().trim(),
-            value: Math.abs(parseFloat(row['PUMP 3']) || 0)
-          };
-          
-          const total = pump1.value + pump2.value + pump3.value;
-          
-          // Only log first few rows to avoid console spam
-          if (index < 3) {
-            console.log(`Row ${index} processed:`, { 
-              date, 
-              pump1: `${pump1.attendant}: ${pump1.value}L`,
-              pump2: `${pump2.attendant}: ${pump2.value}L`, 
-              pump3: `${pump3.attendant}: ${pump3.value}L`,
-              total: `${total}L`
-            });
-          }
-          
-          processedData.push({ date, pump1, pump2, pump3, total });
-          
-          // Add attendants to set
-          [pump1, pump2, pump3].forEach(pump => {
-            if (pump.attendant && pump.attendant !== 'Unknown' && pump.attendant !== '') {
-              attendantsSet.add(pump.attendant);
-            }
-          });
-        });
-
+        } else {
+          // Load single month
+          await loadMonthData(dataSources[selectedMonth], selectedMonth);
+        }
+        
         console.log(`Processing complete. Valid rows: ${processedData.length}`);
         console.log('Attendants found:', [...attendantsSet]);
         
@@ -474,11 +413,85 @@
       }
     }
 
+    async function loadMonthData(csvUrl, monthName) {
+      const response = await fetch(csvUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText} for ${monthName}`);
+      }
+      
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        throw new Error(`Empty response from Google Sheets for ${monthName}`);
+      }
+      
+      console.log(`CSV data loaded successfully for ${monthName}`);
+      const rows = csvToArray(text);
+      console.log(`Parsed rows for ${monthName}:`, rows.length);
+      console.log('Column headers:', Object.keys(rows[0] || {}));
+      console.log('First row data:', rows[0]);
+      
+      rows.forEach((row, index) => {
+        // Skip rows without DAY data or special rows, but allow PRICE CHANGE rows if they have valid data
+        const dayValue = row.DAY;
+        if (!dayValue || dayValue === "TOTALS" || dayValue === '') {
+          return;
+        }
+        
+        // Extract date from DAY column (handle PRICE CHANGE entries)
+        let dateStr = dayValue;
+        if (dayValue.includes('PRICE CHANGE')) {
+          // Extract date from "PRICE CHANGE YYYY.MM.DD" format
+          const dateMatch = dayValue.match(/(\d{4}\.\d{1,2}\.\d{1,2})/);
+          if (dateMatch) {
+            dateStr = dateMatch[1];
+          } else {
+            return;
+          }
+        } else if (!dayValue.match(/\d/)) {
+          return;
+        }
+        
+        const date = formatDate(dateStr);
+        if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          return;
+        }
+        
+        // Simple column structure - adjust these names to match your actual Google Sheets columns
+        const pump1 = {
+          attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(),
+          value: Math.abs(parseFloat(row['PUMP 1']) || 0)
+        };
+        
+        const pump2 = {
+          attendant: (row['NAME OF CSA.1'] || 'Unknown').toString().trim(),
+          value: Math.abs(parseFloat(row['PUMP 2']) || 0)
+        };
+        
+        const pump3 = {
+          attendant: (row['NAME OF CSA.2'] || 'Unknown').toString().trim(),
+          value: Math.abs(parseFloat(row['PUMP 3']) || 0)
+        };
+        
+        const total = pump1.value + pump2.value + pump3.value;
+        
+        processedData.push({ date, pump1, pump2, pump3, total });
+        
+        // Add attendants to set
+        [pump1, pump2, pump3].forEach(pump => {
+          if (pump.attendant && pump.attendant !== 'Unknown' && pump.attendant !== '') {
+            attendantsSet.add(pump.attendant);
+          }
+        });
+      });
+    }
+
     function updateDateRange() {
       if (processedData.length > 0) {
         const startDate = formatDisplayDate(processedData[0].date);
         const endDate = formatDisplayDate(processedData[processedData.length - 1].date);
-        document.getElementById('dateRange').innerHTML = `📅 Data Range: ${startDate} - ${endDate} (${processedData.length} days)`;
+        const selectedMonth = document.getElementById('monthFilter').value;
+        const monthLabel = selectedMonth === 'combined' ? 'All Months' : selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1);
+        document.getElementById('dateRange').innerHTML = `📅 ${monthLabel} - Data Range: ${startDate} - ${endDate} (${processedData.length} days)`;
       }
     }
 
@@ -536,7 +549,6 @@
       const avg = activeDays.length > 0 ? total / activeDays.length : 0;
       const days = activeDays.length;
       
-      // Log for debugging
       console.log('Daily totals:', dailyTotals);
       console.log('Daily values:', dailyValues);
       console.log('Active days:', activeDays.length);
@@ -697,56 +709,4 @@
         `🏆 Best performing attendant: <strong>${topAtt}</strong> with ${attendantTotals[topAtt]?.toLocaleString() || 0} L`,
         `⛽ Most productive pump: <strong>${topPump.replace('PUMP3', 'Pump 3').replace('PUMP ', 'Pump ')}</strong>`,
         `📈 Overall average volume: <strong>${Math.round(avg).toLocaleString()} L</strong>`,
-        `🔥 Peak volume day: <strong>${formatDisplayDate(bestDay)}</strong> (${dailyTotals[bestDay]?.toLocaleString() || 0} L)`,
-        `📉 Lowest volume day: <strong>${formatDisplayDate(worstDay)}</strong> (${dailyTotals[worstDay]?.toLocaleString() || 0} L)`
-      ];
-
-      document.getElementById('insightsList').innerHTML = insights.map(i => `<li>${i}</li>`).join('');
-    }
-
-    function updateDataTable(filtered) {
-      let html = `
-        <thead>
-          <tr>
-            <th>📅 Date</th>
-            <th>👨‍💼 Pump 1 Attendant</th>
-            <th>📊 Pump 1 Volume</th>
-            <th>👨‍💼 Pump 2 Attendant</th>
-            <th>📊 Pump 2 Volume</th>
-            <th>👨‍💼 Pump 3 Attendant</th>
-            <th>📊 Pump 3 Volume</th>
-            <th>💰 Daily Total</th>
-          </tr>
-        </thead>
-        <tbody>`;
-      
-      filtered.forEach(r => {
-        html += `
-          <tr>
-            <td>${formatDisplayDate(r.date)}</td>
-            <td>${r.pump1.attendant}</td>
-            <td>${r.pump1.value.toLocaleString()} L</td>
-            <td>${r.pump2.attendant}</td>
-            <td>${r.pump2.value.toLocaleString()} L</td>
-            <td>${r.pump3.attendant}</td>
-            <td>${r.pump3.value.toLocaleString()} L</td>
-            <td><strong>${r.total.toLocaleString()} L</strong></td>
-          </tr>`;
-      });
-      
-      html += '</tbody>';
-      document.getElementById('dataTable').innerHTML = html;
-    }
-
-    function updateAnalysis() {
-      const filtered = getFilteredData();
-      const { dailyTotals, attendantTotals, pumpTotals } = updateMetrics(filtered);
-      createCharts(dailyTotals, attendantTotals, pumpTotals);
-      updateInsights(dailyTotals, attendantTotals, pumpTotals);
-      updateDataTable(filtered);
-    }
-
-    document.addEventListener('DOMContentLoaded', loadFuelData);
-  </script>
-</body>
-</html>
+        `🔥 Peak volume day: <strong>${formatDisplayDate(best
