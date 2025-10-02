@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pump Sales Dashboard</title>
+    <title>Pump Sales Dashboard - Multi-Month</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/1.30.1/date_fns.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -43,6 +42,37 @@
             opacity: 0.9;
         }
 
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .month-selector {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .month-selector.active {
+            background: #4CAF50;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .month-selector:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
         .refresh-btn {
             background: #4CAF50;
             color: white;
@@ -51,8 +81,6 @@
             border-radius: 25px;
             cursor: pointer;
             font-size: 16px;
-            margin: 20px auto;
-            display: block;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
@@ -206,30 +234,6 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
-        .category-checkbox input[type="checkbox"] {
-            margin: 0;
-        }
-
-        @media (max-width: 768px) {
-            .grid-2 {
-                grid-template-columns: 1fr;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .category-selectors {
-                justify-content: flex-start;
-                overflow-x: auto;
-                padding-bottom: 10px;
-            }
-        }
-
         .error {
             background: rgba(231, 76, 60, 0.1);
             color: #e74c3c;
@@ -247,19 +251,36 @@
             opacity: 0.8;
             margin-top: 10px;
         }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🛢️ Pump Sales Dashboard</h1>
-            <p>Real-time Sales Performance Analytics</p>
+            <p>Multi-Month Sales Performance Analytics</p>
             <div class="last-updated" id="lastUpdated"></div>
         </div>
 
-        <button class="refresh-btn" onclick="loadData()">
-            🔄 Refresh Data
-        </button>
+        <div class="controls">
+            <button class="month-selector" onclick="selectMonth('august', this)" data-month="august">August 2025</button>
+            <button class="month-selector active" onclick="selectMonth('september', this)" data-month="september">September 2025</button>
+            <button class="month-selector" onclick="selectMonth('all', this)" data-month="all">All Months</button>
+            <button class="refresh-btn" onclick="loadData()">🔄 Refresh</button>
+        </div>
 
         <div class="loading" id="loading" style="display: none;">
             Loading data from Google Sheets...
@@ -268,12 +289,8 @@
         <div class="error" id="error" style="display: none;"></div>
 
         <div id="dashboard" style="display: none;">
-            <!-- Key Metrics -->
-            <div class="stats-grid" id="statsGrid">
-                <!-- Stats will be populated here -->
-            </div>
+            <div class="stats-grid" id="statsGrid"></div>
 
-            <!-- Chart Navigation -->
             <div class="tabs">
                 <button class="tab active" onclick="showChart('performance', this)">📈 Performance Trends</button>
                 <button class="tab" onclick="showChart('gains', this)">💹 Daily Gains/Losses</button>
@@ -281,7 +298,6 @@
                 <button class="tab" onclick="showChart('comparison', this)">📊 Category Comparison</button>
             </div>
 
-            <!-- Charts -->
             <div class="chart-container" id="performanceChart">
                 <div class="chart-title">Daily Performance Trends</div>
                 <div class="chart-wrapper">
@@ -339,13 +355,18 @@
     </div>
 
     <script>
+        const SHEET_URLS = {
+            august: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1227672918&single=true&output=csv',
+            september: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1064673143&single=true&output=csv'
+        };
+
+        let allData = {};
+        let currentMonth = 'september';
         let salesData = [];
         let charts = {};
-        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1227672918&single=true&output=csv';
 
         function parseNumber(str) {
             if (!str || str.trim() === '') return 0;
-            // Handle numbers with quotes and commas properly
             const cleaned = str.replace(/["'\s]/g, '').replace(/,/g, '');
             return parseFloat(cleaned) || 0;
         }
@@ -369,6 +390,66 @@
             }
         }
 
+        async function loadMonthData(month, url) {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Failed to fetch ${month} data`);
+            
+            const csvText = await response.text();
+            const lines = csvText.trim().split('\n');
+            
+            if (lines.length < 2) throw new Error('Invalid data format');
+
+            const monthData = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line || line.includes(',,,') || line.includes(',,,,')) continue;
+
+                const cols = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        cols.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                cols.push(current.trim());
+                
+                if (cols.length < 8) continue;
+
+                const date = cols[0];
+                const ux = parseNumber(cols[1]);
+                const dx = parseNumber(cols[2]);
+                const vpower = parseNumber(cols[3]);
+                const total = parseNumber(cols[4]);
+
+                if (!date || total <= 0 || !date.includes('2025')) continue;
+
+                monthData.push({
+                    date: date,
+                    displayDate: formatDate(date),
+                    fullDate: date,
+                    month: month,
+                    UX: ux,
+                    DX: dx,
+                    VPOWER: vpower,
+                    TOTAL: total,
+                    UX_GAIN: parseNumber(cols[5]),
+                    DX_GAIN: parseNumber(cols[6]),
+                    VP_GAIN: parseNumber(cols[7]),
+                    TOTAL_GAIN: parseNumber(cols[8])
+                });
+            }
+
+            return monthData;
+        }
+
         async function loadData() {
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
@@ -379,75 +460,16 @@
             dashboard.style.display = 'none';
 
             try {
-                const response = await fetch(SHEET_URL);
-                if (!response.ok) throw new Error('Failed to fetch data');
-                
-                const csvText = await response.text();
-                const lines = csvText.trim().split('\n');
-                
-                if (lines.length < 2) throw new Error('Invalid data format');
-
-                // Process data
-                salesData = [];
-                for (let i = 1; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    if (!line || line.includes(',,,') || line.includes(',,,,')) continue;
-
-                    // Split the CSV line properly handling quoted values
-                    const cols = [];
-                    let current = '';
-                    let inQuotes = false;
-                    
-                    for (let j = 0; j < line.length; j++) {
-                        const char = line[j];
-                        if (char === '"') {
-                            inQuotes = !inQuotes;
-                        } else if (char === ',' && !inQuotes) {
-                            cols.push(current.trim());
-                            current = '';
-                        } else {
-                            current += char;
-                        }
-                    }
-                    cols.push(current.trim()); // Add the last column
-                    
-                    if (cols.length < 8) continue;
-
-                    const date = cols[0];
-                    const ux = parseNumber(cols[1]);
-                    const dx = parseNumber(cols[2]);
-                    const vpower = parseNumber(cols[3]);
-                    const total = parseNumber(cols[4]);
-
-                    // Skip invalid entries or summary rows
-                    if (!date || total <= 0 || date.includes('2025.09.31') || !date.includes('2025')) continue;
-
-                    salesData.push({
-                        date: date,
-                        displayDate: formatDate(date),
-                        UX: ux,
-                        DX: dx,
-                        VPOWER: vpower,
-                        TOTAL: total,
-                        UX_GAIN: parseNumber(cols[5]),
-                        DX_GAIN: parseNumber(cols[6]),
-                        VP_GAIN: parseNumber(cols[7]),
-                        TOTAL_GAIN: parseNumber(cols[8])
-                    });
+                // Load all months
+                for (const [month, url] of Object.entries(SHEET_URLS)) {
+                    allData[month] = await loadMonthData(month, url);
                 }
 
-                if (salesData.length === 0) {
-                    throw new Error('No valid data found');
-                }
-
-                updateStats();
-                createCharts();
-                showChart('performance');
+                updateDisplayData();
                 
                 loading.style.display = 'none';
                 dashboard.style.display = 'block';
 
-                // Update last updated time
                 const now = new Date();
                 document.getElementById('lastUpdated').textContent = 
                     `Last updated: ${now.toLocaleString()}`;
@@ -458,6 +480,39 @@
                 error.textContent = `Error loading data: ${err.message}`;
                 console.error('Error:', err);
             }
+        }
+
+        function selectMonth(month, element) {
+            currentMonth = month;
+            
+            document.querySelectorAll('.month-selector').forEach(btn => 
+                btn.classList.remove('active')
+            );
+            element.classList.add('active');
+            
+            updateDisplayData();
+        }
+
+        function updateDisplayData() {
+            if (currentMonth === 'all') {
+                salesData = [];
+                for (const month in allData) {
+                    salesData = salesData.concat(allData[month]);
+                }
+                salesData.sort((a, b) => a.fullDate.localeCompare(b.fullDate));
+            } else {
+                salesData = allData[currentMonth] || [];
+            }
+
+            if (salesData.length === 0) {
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 'No data available for selected period';
+                return;
+            }
+
+            updateStats();
+            createCharts();
+            showChart('performance');
         }
 
         function updateStats() {
@@ -502,7 +557,7 @@
                     <div class="stat-label">${stat.label}</div>
                     ${stat.change !== null ? `
                         <div class="stat-change ${stat.change > 0 ? 'positive' : 'negative'}">
-                            ${stat.change > 0 ? '↗' : '↘'} ${stat.change > 0 ? '+' : ''}${typeof stat.change === 'number' ? formatLiters(Math.abs(stat.change)) : ''}
+                            ${stat.change > 0 ? '↗' : '↘'} ${stat.change > 0 ? '+' : ''}${formatLiters(Math.abs(stat.change))}
                         </div>
                     ` : ''}
                 </div>
@@ -510,18 +565,16 @@
         }
 
         function createCharts() {
-            // Destroy existing charts
             Object.values(charts).forEach(chart => chart?.destroy());
             charts = {};
 
             const colors = {
-                UX: '#10b981',      // Green
-                DX: '#1f2937',      // Black/Dark Gray  
-                VPOWER: '#ef4444',  // Red
-                TOTAL: '#8b5cf6'    // Purple
+                UX: '#10b981',
+                DX: '#1f2937',
+                VPOWER: '#ef4444',
+                TOTAL: '#8b5cf6'
             };
 
-            // Performance Chart
             const performanceCtx = document.getElementById('performanceCanvas').getContext('2d');
             charts.performance = new Chart(performanceCtx, {
                 type: 'line',
@@ -579,7 +632,6 @@
                 }
             });
 
-            // Gains Chart - Separated by Category
             const gainsCtx = document.getElementById('gainsCanvas').getContext('2d');
             charts.gains = new Chart(gainsCtx, {
                 type: 'bar',
@@ -630,7 +682,6 @@
                 }
             });
 
-            // Pie Chart
             const totalUX = salesData.reduce((sum, d) => sum + d.UX, 0);
             const totalDX = salesData.reduce((sum, d) => sum + d.DX, 0);
             const totalVP = salesData.reduce((sum, d) => sum + d.VPOWER, 0);
@@ -658,7 +709,6 @@
                 }
             });
 
-            // Bar Chart
             const barCtx = document.getElementById('barCanvas').getContext('2d');
             charts.bar = new Chart(barCtx, {
                 type: 'bar',
@@ -692,7 +742,6 @@
                 }
             });
 
-            // Comparison Chart - With selectable categories
             createComparisonChart();
         }
 
@@ -801,12 +850,10 @@
         }
 
         function showChart(chartType, element) {
-            // Update tabs
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             if (element) {
                 element.classList.add('active');
             } else {
-                // If no element provided, find the tab by chart type
                 const tabMap = {
                     'performance': 0,
                     'gains': 1,
@@ -819,13 +866,11 @@
                 }
             }
 
-            // Hide all charts
             document.getElementById('performanceChart').style.display = 'none';
             document.getElementById('gainsChart').style.display = 'none';
             document.getElementById('otherCharts').style.display = 'none';
             document.getElementById('comparisonChart').style.display = 'none';
 
-            // Show selected chart
             switch(chartType) {
                 case 'performance':
                     document.getElementById('performanceChart').style.display = 'block';
@@ -835,18 +880,4 @@
                     break;
                 case 'breakdown':
                     document.getElementById('otherCharts').style.display = 'block';
-                    break;
-                case 'comparison':
-                    document.getElementById('comparisonChart').style.display = 'block';
-                    break;
-            }
-        }
-
-        // Auto-refresh every 30 minutes
-        setInterval(loadData, 30 * 60 * 1000);
-
-        // Initial load
-        loadData();
-    </script>
-</body>
-</html>
+                    break
