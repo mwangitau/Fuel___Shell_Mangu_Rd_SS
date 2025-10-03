@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pump Sales Dashboard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
@@ -252,14 +251,14 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>⛽ Pump Sales Dashboard</h1>
+            <h1>Pump Sales Dashboard</h1>
             <p>Sales analytics for UX (Unleaded), DX (Diesel) & V-Power</p>
         </div>
 
         <div class="controls">
             <div class="month-selector">
-                <button class="month-btn active" data-month="september">September 2025</button>
-                <button class="month-btn" data-month="august">August 2025</button>
+                <button class="month-btn active" data-month="september">September 2024</button>
+                <button class="month-btn" data-month="august">August 2024</button>
             </div>
             <div class="price-inputs">
                 <div class="price-input-group">
@@ -304,12 +303,12 @@
             </div>
 
             <div class="product-stats">
-                <h2>📊 Product Performance</h2>
+                <h2>Product Performance</h2>
                 <div class="product-grid" id="productGrid"></div>
             </div>
 
             <div class="chart-container">
-                <h2>📈 Daily Sales Trend</h2>
+                <h2>Daily Sales Trend</h2>
                 <div class="toggle-view">
                     <button class="toggle-btn active" data-view="litres">View Litres</button>
                     <button class="toggle-btn" data-view="revenue">View Revenue</button>
@@ -320,7 +319,7 @@
             </div>
 
             <div class="chart-container">
-                <h2>🥧 Distribution by Product</h2>
+                <h2>Distribution by Product</h2>
                 <div class="toggle-view">
                     <button class="toggle-btn active" data-view="litres-pie">View Litres</button>
                     <button class="toggle-btn" data-view="revenue-pie">View Revenue</button>
@@ -334,8 +333,8 @@
 
     <script>
         const DATA_URLS = {
-            september: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1763262818&single=true&output=csv',
-            august: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1227672918&single=true&output=csv'
+            august: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1227672918&single=true&output=csv',
+            september: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1763262818&single=true&output=csv'
         };
 
         let currentMonth = 'september';
@@ -365,49 +364,74 @@
             }).format(value);
         }
 
-        function loadData(month) {
+        function csvToArray(csv, delimiter = ',') {
+            const lines = csv.trim().split('\n');
+            const headers = lines[0].split(delimiter).map(h => h.trim());
+            return lines.slice(1).map(line => {
+                const items = line.split(delimiter);
+                let obj = {};
+                headers.forEach((h, i) => {
+                    obj[h] = items[i] ? items[i].trim() : "";
+                });
+                return obj;
+            });
+        }
+
+        async function loadData(month) {
             document.getElementById('loading').style.display = 'block';
             document.getElementById('dashboard').style.display = 'none';
             document.getElementById('error').style.display = 'none';
 
-            Papa.parse(DATA_URLS[month], {
-                download: true,
-                header: true,
-                dynamicTyping: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    try {
-                        salesData = results.data.filter(row => row.DATES && row.TOTAL);
-                        if (salesData.length === 0) {
-                            throw new Error('No valid data found');
-                        }
-                        processData();
-                        renderDashboard();
-                        document.getElementById('loading').style.display = 'none';
-                        document.getElementById('dashboard').style.display = 'block';
-                    } catch (err) {
-                        showError('Error processing data: ' + err.message);
-                    }
-                },
-                error: function(err) {
-                    showError('Error loading data: ' + err.message);
+            try {
+                const response = await fetch(DATA_URLS[month]);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-            });
+                
+                const text = await response.text();
+                if (!text || text.trim() === '') {
+                    throw new Error('Empty response from Google Sheets');
+                }
+                
+                const rows = csvToArray(text);
+                salesData = [];
+                
+                rows.forEach(row => {
+                    if (!row.DATES || row.DATES === '' || row.DATES === 'TOTALS') return;
+                    
+                    const ux = Math.abs(parseFloat(row.UX) || 0);
+                    const dx = Math.abs(parseFloat(row.DX) || 0);
+                    const vPower = Math.abs(parseFloat(row['V-POWER']) || 0);
+                    const total = ux + dx + vPower;
+                    
+                    if (total > 0) {
+                        salesData.push({
+                            DATES: row.DATES,
+                            UX: ux,
+                            DX: dx,
+                            'V-POWER': vPower,
+                            TOTAL: total
+                        });
+                    }
+                });
+                
+                if (salesData.length === 0) {
+                    throw new Error('No valid data found in the spreadsheet');
+                }
+                
+                renderDashboard();
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                
+            } catch (err) {
+                showError('Error loading data: ' + err.message);
+            }
         }
 
         function showError(message) {
             document.getElementById('error').textContent = message;
             document.getElementById('error').style.display = 'block';
             document.getElementById('loading').style.display = 'none';
-        }
-
-        function processData() {
-            salesData.forEach(row => {
-                row.UX = parseFloat(row.UX) || 0;
-                row.DX = parseFloat(row.DX) || 0;
-                row['V-POWER'] = parseFloat(row['V-POWER']) || 0;
-                row.TOTAL = parseFloat(row.TOTAL) || 0;
-            });
         }
 
         function updatePrices() {
