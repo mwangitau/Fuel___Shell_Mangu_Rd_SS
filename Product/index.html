@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Product Dashboard — Kiryan Energy Ltd</title>
+  <title>Interactive Product Dashboard — Kiryan Energy Ltd</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- React & ReactDOM -->
@@ -22,10 +22,10 @@
     const { useState, useEffect, useMemo } = React;
     const { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer } = Recharts;
 
-    const CSV_URLS = [
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1227672918&single=true&output=csv", // August
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1763262818&single=true&output=csv"  // September
-    ];
+    const CSV_URLS = {
+      August: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1227672918&single=true&output=csv",
+      September: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1763262818&single=true&output=csv"
+    };
 
     const toNumber = v => {
       if (!v) return 0;
@@ -34,11 +34,13 @@
     }
 
     function ProductDashboard() {
-      const [data, setData] = useState([]);
+      const [dataByMonth, setDataByMonth] = useState({});
       const [loading, setLoading] = useState(true);
+      const [selectedMonth, setSelectedMonth] = useState("Both");
+      const [selectedProducts, setSelectedProducts] = useState(["UX","DX","VPOWER"]);
 
       useEffect(() => {
-        Promise.all(CSV_URLS.map(url =>
+        Promise.all(Object.entries(CSV_URLS).map(([month,url]) =>
           new Promise(resolve => {
             Papa.parse(url, {
               download: true,
@@ -47,21 +49,28 @@
               complete: (results) => {
                 const rows = results.data.map(r => ({
                   date: r["DATES"] || r[Object.keys(r)[0]],
-                  UX: toNumber(r["UX"] || r[Object.keys(r)[1]]),
-                  DX: toNumber(r["DX"] || r[Object.keys(r)[2]]),
-                  VPOWER: toNumber(r["V-POWER"] || r[Object.keys(r)[3]]),
+                  UX: toNumber(r["UX"] || r["Ux"] || r[Object.keys(r)[1]]),
+                  DX: toNumber(r["DX"] || r["Dx"] || r[Object.keys(r)[2]]),
+                  VPOWER: toNumber(r["V-POWER"] || r["VPOWER"] || r[Object.keys(r)[3]]),
                 })).filter(r => r.date);
-                resolve(rows);
+                resolve([month, rows]);
               }
             });
           })
         )).then(allData => {
-          // Combine August + September
-          const combined = [].concat(...allData);
-          setData(combined);
+          const mapped = {};
+          allData.forEach(([month,rows]) => mapped[month] = rows);
+          setDataByMonth(mapped);
           setLoading(false);
         });
       }, []);
+
+      const data = useMemo(() => {
+        if (selectedMonth === "Both") {
+          return [].concat(dataByMonth["August"] || [], dataByMonth["September"] || []);
+        }
+        return dataByMonth[selectedMonth] || [];
+      }, [dataByMonth, selectedMonth]);
 
       const pieData = useMemo(() => {
         const sum = data.reduce((acc,r) => {
@@ -77,11 +86,39 @@
 
       const COLORS = ["#60A5FA","#34D399","#FCA5A5"];
 
-      if (loading) return <div className="p-6">Loading data...</div>;
+      if (loading) return <div className="p-6 text-lg">⏳ Loading data...</div>;
 
       return (
         <div className="p-6 max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Product Dashboard (Aug + Sep)</h1>
+          <h1 className="text-2xl font-bold mb-6">Interactive Product Dashboard</h1>
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-4 mb-6">
+            <div>
+              <label className="font-semibold mr-2">Month:</label>
+              <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="border px-2 py-1 rounded">
+                <option value="Both">Both</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+              </select>
+            </div>
+            <div>
+              <label className="font-semibold mr-2">Products:</label>
+              {["UX","DX","VPOWER"].map(p => (
+                <label key={p} className="mr-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedProducts.includes(p)}
+                    onChange={e => {
+                      if (e.target.checked) setSelectedProducts([...selectedProducts, p]);
+                      else setSelectedProducts(selectedProducts.filter(x => x !== p));
+                    }}
+                  /> {p}
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* Line Chart */}
@@ -94,9 +131,9 @@
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="UX" stroke="#60A5FA" />
-                  <Line type="monotone" dataKey="DX" stroke="#34D399" />
-                  <Line type="monotone" dataKey="VPOWER" stroke="#FCA5A5" />
+                  {selectedProducts.includes("UX") && <Line type="monotone" dataKey="UX" stroke="#60A5FA" />}
+                  {selectedProducts.includes("DX") && <Line type="monotone" dataKey="DX" stroke="#34D399" />}
+                  {selectedProducts.includes("VPOWER") && <Line type="monotone" dataKey="VPOWER" stroke="#FCA5A5" />}
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -123,4 +160,5 @@
   </script>
 </body>
 </html>
+
 
