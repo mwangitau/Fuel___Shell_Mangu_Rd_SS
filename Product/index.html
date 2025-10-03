@@ -37,11 +37,19 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
+        .controls {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
         .month-selector {
             display: flex;
             justify-content: center;
             gap: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .month-btn {
@@ -50,21 +58,52 @@
             border: none;
             border-radius: 25px;
             cursor: pointer;
-            background: white;
+            background: #f0f0f0;
             color: #667eea;
             font-weight: bold;
             transition: all 0.3s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .month-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+            background: #e0e0e0;
         }
 
         .month-btn.active {
-            background: #764ba2;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+        }
+
+        .price-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .price-input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .price-input-group label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .price-input-group input {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .price-input-group input:focus {
+            outline: none;
+            border-color: #667eea;
         }
 
         .loading {
@@ -129,7 +168,7 @@
 
         .product-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
         }
 
@@ -186,18 +225,56 @@
             margin: 20px 0;
             text-align: center;
         }
+
+        .toggle-view {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .toggle-btn {
+            padding: 8px 20px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            background: #f0f0f0;
+            color: #667eea;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn.active {
+            background: #667eea;
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>⛽ Pump Sales Dashboard</h1>
-            <p>Real-time sales analytics for UX, DX & V-Power</p>
+            <p>Sales analytics for UX (Unleaded), DX (Diesel) & V-Power</p>
         </div>
 
-        <div class="month-selector">
-            <button class="month-btn active" data-month="september">September 2025</button>
-            <button class="month-btn" data-month="august">August 2025</button>
+        <div class="controls">
+            <div class="month-selector">
+                <button class="month-btn active" data-month="september">September 2025</button>
+                <button class="month-btn" data-month="august">August 2025</button>
+            </div>
+            <div class="price-inputs">
+                <div class="price-input-group">
+                    <label for="uxPrice">UX Price (KES/Litre)</label>
+                    <input type="number" id="uxPrice" value="180.00" step="0.01" min="0">
+                </div>
+                <div class="price-input-group">
+                    <label for="dxPrice">DX Price (KES/Litre)</label>
+                    <input type="number" id="dxPrice" value="165.00" step="0.01" min="0">
+                </div>
+                <div class="price-input-group">
+                    <label for="vPowerPrice">V-Power Price (KES/Litre)</label>
+                    <input type="number" id="vPowerPrice" value="195.00" step="0.01" min="0">
+                </div>
+            </div>
         </div>
 
         <div id="loading" class="loading">Loading data...</div>
@@ -205,19 +282,19 @@
         <div id="dashboard" style="display: none;">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <h3>Total Sales</h3>
-                    <div class="value" id="totalSales">0</div>
-                    <div class="label">All Products</div>
+                    <h3>Total Volume</h3>
+                    <div class="value" id="totalLitres">0</div>
+                    <div class="label">Litres Sold</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Average Daily Sales</h3>
-                    <div class="value" id="avgDailySales">0</div>
-                    <div class="label">Per Day</div>
+                    <h3>Total Revenue</h3>
+                    <div class="value" id="totalRevenue">0</div>
+                    <div class="label">From All Products</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Best Selling Product</h3>
-                    <div class="value" id="topProduct">-</div>
-                    <div class="label">By Revenue</div>
+                    <h3>Average Daily Volume</h3>
+                    <div class="value" id="avgDailyLitres">0</div>
+                    <div class="label">Litres per Day</div>
                 </div>
                 <div class="stat-card">
                     <h3>Days of Data</h3>
@@ -233,13 +310,21 @@
 
             <div class="chart-container">
                 <h2>📈 Daily Sales Trend</h2>
+                <div class="toggle-view">
+                    <button class="toggle-btn active" data-view="litres">View Litres</button>
+                    <button class="toggle-btn" data-view="revenue">View Revenue</button>
+                </div>
                 <div class="chart-wrapper">
                     <canvas id="salesChart"></canvas>
                 </div>
             </div>
 
             <div class="chart-container">
-                <h2>🥧 Revenue Distribution by Product</h2>
+                <h2>🥧 Distribution by Product</h2>
+                <div class="toggle-view">
+                    <button class="toggle-btn active" data-view="litres-pie">View Litres</button>
+                    <button class="toggle-btn" data-view="revenue-pie">View Revenue</button>
+                </div>
                 <div class="chart-wrapper">
                     <canvas id="pieChart"></canvas>
                 </div>
@@ -256,6 +341,14 @@
         let currentMonth = 'september';
         let salesData = [];
         let charts = {};
+        let currentView = 'litres';
+        let currentPieView = 'litres-pie';
+
+        const prices = {
+            ux: 180,
+            dx: 165,
+            vPower: 195
+        };
 
         function formatCurrency(value) {
             return new Intl.NumberFormat('en-KE', {
@@ -317,41 +410,76 @@
             });
         }
 
+        function updatePrices() {
+            prices.ux = parseFloat(document.getElementById('uxPrice').value) || 180;
+            prices.dx = parseFloat(document.getElementById('dxPrice').value) || 165;
+            prices.vPower = parseFloat(document.getElementById('vPowerPrice').value) || 195;
+            if (salesData.length > 0) {
+                renderDashboard();
+            }
+        }
+
         function renderDashboard() {
-            const totalSales = salesData.reduce((sum, row) => sum + row.TOTAL, 0);
-            const uxTotal = salesData.reduce((sum, row) => sum + row.UX, 0);
-            const dxTotal = salesData.reduce((sum, row) => sum + row.DX, 0);
-            const vPowerTotal = salesData.reduce((sum, row) => sum + row['V-POWER'], 0);
-            const avgDaily = totalSales / salesData.length;
+            const totalLitres = salesData.reduce((sum, row) => sum + row.TOTAL, 0);
+            const uxLitres = salesData.reduce((sum, row) => sum + row.UX, 0);
+            const dxLitres = salesData.reduce((sum, row) => sum + row.DX, 0);
+            const vPowerLitres = salesData.reduce((sum, row) => sum + row['V-POWER'], 0);
+            
+            const uxRevenue = uxLitres * prices.ux;
+            const dxRevenue = dxLitres * prices.dx;
+            const vPowerRevenue = vPowerLitres * prices.vPower;
+            const totalRevenue = uxRevenue + dxRevenue + vPowerRevenue;
+            
+            const avgDailyLitres = totalLitres / salesData.length;
+
+            document.getElementById('totalLitres').textContent = formatNumber(totalLitres) + ' L';
+            document.getElementById('totalRevenue').textContent = formatCurrency(totalRevenue);
+            document.getElementById('avgDailyLitres').textContent = formatNumber(avgDailyLitres) + ' L';
+            document.getElementById('daysCount').textContent = salesData.length;
 
             const products = [
-                { name: 'UX (Unleaded)', total: uxTotal, color: '#667eea' },
-                { name: 'DX (Diesel)', total: dxTotal, color: '#764ba2' },
-                { name: 'V-Power', total: vPowerTotal, color: '#f093fb' }
+                { 
+                    name: 'UX (Unleaded)', 
+                    litres: uxLitres, 
+                    revenue: uxRevenue,
+                    price: prices.ux,
+                    color: '#667eea' 
+                },
+                { 
+                    name: 'DX (Diesel)', 
+                    litres: dxLitres, 
+                    revenue: dxRevenue,
+                    price: prices.dx,
+                    color: '#764ba2' 
+                },
+                { 
+                    name: 'V-Power', 
+                    litres: vPowerLitres, 
+                    revenue: vPowerRevenue,
+                    price: prices.vPower,
+                    color: '#f093fb' 
+                }
             ];
-
-            const topProduct = products.reduce((max, p) => p.total > max.total ? p : max);
-
-            document.getElementById('totalSales').textContent = formatCurrency(totalSales);
-            document.getElementById('avgDailySales').textContent = formatCurrency(avgDaily);
-            document.getElementById('topProduct').textContent = topProduct.name.split(' ')[0];
-            document.getElementById('daysCount').textContent = salesData.length;
 
             const productGrid = document.getElementById('productGrid');
             productGrid.innerHTML = products.map(p => `
                 <div class="product-item">
                     <h4>${p.name}</h4>
                     <div class="metric">
-                        <div class="metric-label">Total Sales</div>
-                        <div class="metric-value">${formatCurrency(p.total)}</div>
+                        <div class="metric-label">Total Volume</div>
+                        <div class="metric-value">${formatNumber(p.litres)} L</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">Average Daily</div>
-                        <div class="metric-value">${formatCurrency(p.total / salesData.length)}</div>
+                        <div class="metric-label">Total Revenue</div>
+                        <div class="metric-value">${formatCurrency(p.revenue)}</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">Share</div>
-                        <div class="metric-value">${((p.total / totalSales) * 100).toFixed(1)}%</div>
+                        <div class="metric-label">Price per Litre</div>
+                        <div class="metric-value">${formatCurrency(p.price)}</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Volume Share</div>
+                        <div class="metric-value">${((p.litres / totalLitres) * 100).toFixed(1)}%</div>
                     </div>
                 </div>
             `).join('');
@@ -364,33 +492,58 @@
             if (charts.pie) charts.pie.destroy();
 
             const ctx1 = document.getElementById('salesChart').getContext('2d');
+            
+            const datasets = currentView === 'litres' ? [
+                {
+                    label: 'UX (Unleaded)',
+                    data: salesData.map(row => row.UX),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'DX (Diesel)',
+                    data: salesData.map(row => row.DX),
+                    borderColor: '#764ba2',
+                    backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'V-Power',
+                    data: salesData.map(row => row['V-POWER']),
+                    borderColor: '#f093fb',
+                    backgroundColor: 'rgba(240, 147, 251, 0.1)',
+                    tension: 0.4
+                }
+            ] : [
+                {
+                    label: 'UX (Unleaded)',
+                    data: salesData.map(row => row.UX * prices.ux),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'DX (Diesel)',
+                    data: salesData.map(row => row.DX * prices.dx),
+                    borderColor: '#764ba2',
+                    backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'V-Power',
+                    data: salesData.map(row => row['V-POWER'] * prices.vPower),
+                    borderColor: '#f093fb',
+                    backgroundColor: 'rgba(240, 147, 251, 0.1)',
+                    tension: 0.4
+                }
+            ];
+
             charts.line = new Chart(ctx1, {
                 type: 'line',
                 data: {
                     labels: salesData.map(row => row.DATES),
-                    datasets: [
-                        {
-                            label: 'UX (Unleaded)',
-                            data: salesData.map(row => row.UX),
-                            borderColor: '#667eea',
-                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                            tension: 0.4
-                        },
-                        {
-                            label: 'DX (Diesel)',
-                            data: salesData.map(row => row.DX),
-                            borderColor: '#764ba2',
-                            backgroundColor: 'rgba(118, 75, 162, 0.1)',
-                            tension: 0.4
-                        },
-                        {
-                            label: 'V-Power',
-                            data: salesData.map(row => row['V-POWER']),
-                            borderColor: '#f093fb',
-                            backgroundColor: 'rgba(240, 147, 251, 0.1)',
-                            tension: 0.4
-                        }
-                    ]
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
@@ -398,6 +551,19 @@
                     plugins: {
                         legend: {
                             position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    if (currentView === 'litres') {
+                                        return `${label}: ${formatNumber(value)} L`;
+                                    } else {
+                                        return `${label}: ${formatCurrency(value)}`;
+                                    }
+                                }
+                            }
                         }
                     },
                     scales: {
@@ -405,7 +571,11 @@
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    return 'KES ' + value.toLocaleString();
+                                    if (currentView === 'litres') {
+                                        return formatNumber(value) + ' L';
+                                    } else {
+                                        return 'KES ' + value.toLocaleString();
+                                    }
                                 }
                             }
                         }
@@ -414,12 +584,16 @@
             });
 
             const ctx2 = document.getElementById('pieChart').getContext('2d');
+            const pieData = currentPieView === 'litres-pie' 
+                ? products.map(p => p.litres)
+                : products.map(p => p.revenue);
+
             charts.pie = new Chart(ctx2, {
                 type: 'doughnut',
                 data: {
                     labels: products.map(p => p.name),
                     datasets: [{
-                        data: products.map(p => p.total),
+                        data: pieData,
                         backgroundColor: products.map(p => p.color),
                         borderWidth: 2,
                         borderColor: '#fff'
@@ -439,7 +613,11 @@
                                     const value = context.parsed || 0;
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                     const percentage = ((value / total) * 100).toFixed(1);
-                                    return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                    if (currentPieView === 'litres-pie') {
+                                        return `${label}: ${formatNumber(value)} L (${percentage}%)`;
+                                    } else {
+                                        return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                    }
                                 }
                             }
                         }
@@ -455,6 +633,30 @@
                 currentMonth = this.dataset.month;
                 loadData(currentMonth);
             });
+        });
+
+        document.querySelectorAll('.toggle-btn[data-view="litres"], .toggle-btn[data-view="revenue"]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const parent = this.parentElement;
+                parent.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentView = this.dataset.view;
+                renderDashboard();
+            });
+        });
+
+        document.querySelectorAll('.toggle-btn[data-view="litres-pie"], .toggle-btn[data-view="revenue-pie"]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const parent = this.parentElement;
+                parent.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentPieView = this.dataset.view;
+                renderDashboard();
+            });
+        });
+
+        ['uxPrice', 'dxPrice', 'vPowerPrice'].forEach(id => {
+            document.getElementById(id).addEventListener('change', updatePrices);
         });
 
         loadData(currentMonth);
