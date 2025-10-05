@@ -82,179 +82,149 @@
     </div>
 
     <script>
-        const CSV_URLS = [
-            // September
-            'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1346158160&single=true&output=csv',
-            // October
-            'https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=285948413&single=true&output=csv'
-        ];
+       <script>
+const sepUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTO3PNP1zG_QTHC6pY0lVTrchtBF36Tc1FKIuyGfBdexGVJNVj34reyTws-5vmGP8cst3YndAdNmB_P/pub?gid=0&single=true&output=csv";
+const octUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=285948413&single=true&output=csv";
 
-        let salesData = [];
-        let allData = [];
-        let originalData = [];
-        let charts = {};
+let salesData = [];
+let charts = {};
 
-        function loadData() {
-    const btn = document.getElementById('refreshBtn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Loading...';
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('dashboard').style.display = 'none';
-
-    Promise.all(CSV_URLS.map(url => fetch(url).then(r => r.text())))
-        .then(csvs => {
-            allData = csvs.map(csv => Papa.parse(csv, { header: true, dynamicTyping: true }).data);
-
-            // Merge September + October data
-            originalData = mergeMonthlyData(allData);
-            salesData = originalData.map(r => ({ ...r }));
-            
-        function normalizeDateLabel(colName) {
+// ✅ Global date normalizer (fixes Sep 2025.10.01 issue)
+function normalizeDateLabel(colName) {
     if (!colName) return '';
-
-    // Handle both formats e.g. "2025.09.01" or "2025-10-01"
     const clean = colName.replace(/\./g, '-').trim();
     const parts = clean.split('-').map(p => p.padStart(2, '0'));
-
-    // Extract YYYY, MM, DD (try to detect order)
     let [y, m, d] = parts.length === 3 && parts[0].length === 4
         ? [parts[0], parts[1], parts[2]]
         : [parts[2], parts[0], parts[1]];
-
-    // If month missing, default to current
     if (!y || !m || !d) return colName;
-
-    // Convert month to text
     const monthName = new Date(`${y}-${m}-${d}`).toLocaleString('en-US', { month: 'short' });
     return `${monthName} ${parseInt(d)}`;
 }
 
-            processAndDisplayData();
-            btn.disabled = false;
-            btn.textContent = '🔄 Refresh Data';
-        })
-        .catch(err => {
-            console.error(err);
-            alert('Error loading data: ' + err.message);
-            btn.disabled = false;
-            btn.textContent = '🔄 Refresh Data';
-        });
+// ✅ Fetch CSV and merge two months
+async function loadData() {
+    document.getElementById('refreshBtn').disabled = true;
+
+    try {
+        const [sepResp, octResp] = await Promise.all([
+            fetch(sepUrl),
+            fetch(octUrl)
+        ]);
+
+        const [sepText, octText] = await Promise.all([
+            sepResp.text(),
+            octResp.text()
+        ]);
+
+        const sepRows = Papa.parse(sepText, { header: true }).data;
+        const octRows = Papa.parse(octText, { header: true }).data;
+
+        salesData = mergeMonthlyData(sepRows, octRows);
+        processAndDisplayData();
+
+        document.getElementById('lastUpdated').textContent =
+            "Last updated: " + new Date().toLocaleString();
+    } catch (err) {
+        console.error("Error loading data:", err);
+        alert("Failed to load data. Check console for details.");
+    } finally {
+        document.getElementById('refreshBtn').disabled = false;
+    }
 }
 
-        function mergeMonthlyData([sepData, octData]) {
+// ✅ Merge by product name
+function mergeMonthlyData(sepData, octData) {
     const merged = [];
-    for (let i = 0; i < sepData.length; i++) {
-        const row = {};
-        const sepRow = sepData[i] || {};
-        const octRow = octData[i] || {};
 
-        // Copy product name
-        const firstKey = Object.keys(sepRow)[0] || Object.keys(octRow)[0];
-        row[firstKey] = sepRow[firstKey] || octRow[firstKey] || '';
+    sepData.forEach(row => {
+        const name = row.Product?.trim();
+        if (!name) return;
+        const octRow = octData.find(r => r.Product?.trim() === name);
+        const mergedRow = { Product: name };
 
-        // Tag September columns
-        for (const key in sepRow) {
-            if (key !== firstKey) row[`SEP_${key}`] = sepRow[key];
+        Object.keys(row).forEach(k => {
+            if (k !== 'Product') mergedRow[k] = row[k];
+        });
+
+        if (octRow) {
+            Object.keys(octRow).forEach(k => {
+                if (k !== 'Product') mergedRow[k] = octRow[k];
+            });
         }
 
-        // Tag October columns
-        for (const key in octRow) {
-            if (key !== firstKey) row[`OCT_${key}`] = octRow[key];
-        }
+        merged.push(mergedRow);
+    });
 
-        merged.push(row);
-    }
     return merged;
 }
 
-function filterByMonth() {
-    const selector = document.getElementById('monthSelector');
-    const month = selector.value;
+// ✅ Build dashboard
+function processAndDisplayData() {
+    const totalPerProduct = {};
+    const allDates = new Set();
 
-    if (month === 'all') {
-        salesData = originalData.map(r => ({ ...r }));
-    } else {
-        salesData = originalData.map(row => {
-            const firstKey = Object.keys(row)[0];
-            const filtered = {};
-            filtered[firstKey] = row[firstKey];
-
-            Object.keys(row).forEach(k => {
-                if (month === 'sep' && k.startsWith('SEP_')) {
-                    filtered[k.replace('SEP_', '')] = row[k];
-                }
-                if (month === 'oct' && k.startsWith('OCT_')) {
-                    filtered[k.replace('OCT_', '')] = row[k];
-                }
-            });
-            return filtered;
+    salesData.forEach(row => {
+        let productTotal = 0;
+        Object.keys(row).forEach(k => {
+            if (k !== 'Product') {
+                const val = Number(row[k]) || 0;
+                totalPerProduct[row.Product] = (totalPerProduct[row.Product] || 0) + val;
+                allDates.add(k);
+                productTotal += val;
+            }
         });
-    }
+    });
 
-    processAndDisplayData();
+    // Fill summary table
+    const tableBody = document.getElementById('salesTableBody');
+    tableBody.innerHTML = '';
+    Object.entries(totalPerProduct).forEach(([prod, total]) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${prod}</td><td>${total.toLocaleString()}</td>`;
+        tableBody.appendChild(tr);
+    });
+
+    document.getElementById('totalProducts').textContent = Object.keys(totalPerProduct).length;
+    document.getElementById('totalSales').textContent = Object.values(totalPerProduct).reduce((a, b) => a + b, 0).toLocaleString();
+
+    createDailyTrendChart();
+    createProductTrendChart();
 }
 
-        function calculateStats() {
-            let total = 0;
-            let products = 0;
-            salesData.forEach(row => {
-                for (const key in row) {
-                    if (!isNaN(row[key]) && key !== Object.keys(row)[0]) total += row[key];
-                }
-                products++;
-            });
-            return { total, avg: (total / products).toFixed(1) };
-        }
+// ✅ Month-aware daily trend (fixed)
+function createDailyTrendChart() {
+    const labels = [];
+    const totals = [];
+    const allKeys = Object.keys(salesData[0]).slice(1); // skip product name
 
-        function displayStats(stats) {
-            document.getElementById('statsGrid').innerHTML = `
-                <div class="stat-card"><h3>Total Sales</h3><p>${stats.total.toLocaleString()} KGs</p></div>
-                <div class="stat-card"><h3>Average/Product</h3><p>${stats.avg}</p></div>
-            `;
-        }
+    allKeys.forEach(col => {
+        const label = normalizeDateLabel(col);
+        labels.push(label);
 
-  
+        let total = 0;
+        salesData.forEach(row => total += Number(row[col]) || 0);
+        totals.push(total);
+    });
 
-       // ✅ Dynamic month-aware daily trend
-        function createDailyTrendChart() {
-            const labels = [];
-            const totals = [];
-            const allKeys = Object.keys(salesData[0]).slice(1); // skip product name
+    if (charts.dailyTrend) charts.dailyTrend.destroy();
 
-                allKeys.forEach(col => {
-        // Use actual column name (e.g., "2025.09.01" or "2025.10.01")
-                const label = normalizeDateLabel(col);
-                labels.push(label);
-
-        // Compute total for that day across all rows
-                let total = 0;
-                salesData.forEach(row => total += Number(row[col]) || 0);
-                totals.push(total);
-                    });
-
-    // Destroy old chart if exists
-                if (charts.dailyTrend) charts.dailyTrend.destroy();
-
-        charts.dailyTrend = new Chart(document.getElementById('dailyTrendChart'), {
-            type: 'line',
+    charts.dailyTrend = new Chart(document.getElementById('dailyTrendChart'), {
+        type: 'line',
         data: {
             labels,
-            datasets: [
-                {
-                    label: 'Total KGs',
-                    data: totals,
-                    borderColor: '#667eea',
-                    tension: 0.3,
-                    fill: false,
-                    pointRadius: 3
-                }
-            ]
+            datasets: [{
+                label: 'Total KGs',
+                data: totals,
+                borderColor: '#667eea',
+                tension: 0.3,
+                fill: false,
+                pointRadius: 3
+            }]
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { display: false }
-            },
+            plugins: { legend: { display: false } },
             scales: {
                 x: { title: { display: true, text: 'Date' } },
                 y: { title: { display: true, text: 'KGs Sold' } }
@@ -263,24 +233,42 @@ function filterByMonth() {
     });
 }
 
+// ✅ Product trend chart (updated for Oct)
+function createProductTrendChart() {
+    const labels = [];
+    const datasets = [];
 
-        function createProductDistributionChart() {
-            const products = salesData.map(r => Object.values(r)[0]);
-            const totals = salesData.map(row => {
-                let sum = 0;
-                for (const key in row) if (!isNaN(row[key]) && key !== Object.keys(row)[0]) sum += row[key];
-                return sum;
-            });
+    const allKeys = Object.keys(salesData[0]).slice(1);
+    allKeys.forEach(col => labels.push(normalizeDateLabel(col)));
 
-            if (charts.productDist) charts.productDist.destroy();
-            charts.productDist = new Chart(document.getElementById('productDistChart'), {
-                type: 'bar',
-                data: { labels: products, datasets: [{ label: 'Total KGs', data: totals, backgroundColor: '#764ba2' }] },
-                options: { responsive: true, plugins: { legend: { display: false } } }
-            });
+    salesData.forEach((row, idx) => {
+        const data = allKeys.map(col => Number(row[col]) || 0);
+        datasets.push({
+            label: row.Product,
+            data,
+            borderColor: `hsl(${idx * 50}, 70%, 60%)`,
+            fill: false,
+            tension: 0.3
+        });
+    });
+
+    if (charts.productTrend) charts.productTrend.destroy();
+
+    charts.productTrend = new Chart(document.getElementById('productTrendChart'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                x: { title: { display: true, text: 'Date' } },
+                y: { title: { display: true, text: 'KGs Sold' } }
+            }
         }
+    });
+}
 
-        function createProductTrendChart() {
+    function createProductTrendChart() {
             const labels = Object.keys(salesData[0]).slice(1);
             const datasets = salesData.map((row, i) => ({
                 label: Object.values(row)[0],
