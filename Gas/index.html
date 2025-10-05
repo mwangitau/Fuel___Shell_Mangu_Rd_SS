@@ -89,7 +89,7 @@
             'https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=285948413&single=true&output=csv'
         ];
 
-        let salesData = [];
+        let originalData = [];
         let charts = {};
 
         function loadData() {
@@ -141,17 +141,34 @@
     return merged;
 }
 
-        }
+function filterByMonth() {
+    const selector = document.getElementById('monthSelector');
+    const month = selector.value;
 
-        function processAndDisplayData() {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'block';
-            displayStats(calculateStats());
-            createDailyTrendChart();
-            createProductDistributionChart();
-            createProductTrendChart();
-            createDataTable();
-        }
+    if (month === 'all') {
+        originalData = mergeMonthlyData(allData);
+        salesData = originalData.map(r => ({ ...r }));
+    } else {
+        salesData = originalData.map(row => {
+            const firstKey = Object.keys(row)[0];
+            const filtered = {};
+            filtered[firstKey] = row[firstKey];
+
+            Object.keys(row).forEach(k => {
+                if (month === 'sep' && k.startsWith('SEP_')) {
+                    filtered[k.replace('SEP_', '')] = row[k];
+                }
+                if (month === 'oct' && k.startsWith('OCT_')) {
+                    filtered[k.replace('OCT_', '')] = row[k];
+                }
+            });
+            return filtered;
+        });
+    }
+
+    processAndDisplayData();
+}
+
 
         function calculateStats() {
             let total = 0;
