@@ -116,16 +116,31 @@
         }
 
         function mergeMonthlyData([sepData, octData]) {
-            const merged = [];
-            for (let i = 0; i < sepData.length; i++) {
-                const row = { ...sepData[i] };
-                const octRow = octData[i] || {};
-                for (const key in octRow) {
-                    if (key !== Object.keys(octRow)[0]) row[key] = octRow[key];
-                }
-                merged.push(row);
-            }
-            return merged;
+    const merged = [];
+    for (let i = 0; i < sepData.length; i++) {
+        const row = {};
+        const sepRow = sepData[i] || {};
+        const octRow = octData[i] || {};
+
+        // Copy product name
+        const firstKey = Object.keys(sepRow)[0] || Object.keys(octRow)[0];
+        row[firstKey] = sepRow[firstKey] || octRow[firstKey] || '';
+
+        // Tag September columns
+        for (const key in sepRow) {
+            if (key !== firstKey) row[`SEP_${key}`] = sepRow[key];
+        }
+
+        // Tag October columns
+        for (const key in octRow) {
+            if (key !== firstKey) row[`OCT_${key}`] = octRow[key];
+        }
+
+        merged.push(row);
+    }
+    return merged;
+}
+
         }
 
         function processAndDisplayData() {
