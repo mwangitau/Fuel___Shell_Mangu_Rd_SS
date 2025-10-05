@@ -3,248 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gas Sales Dashboard - September 2025</title>
+    <title>Gas Sales Dashboard - Sep & Oct 2025</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-            animation: fadeIn 0.8s ease-in;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-        
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { text-align: center; color: white; margin-bottom: 30px; animation: fadeIn 0.8s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.2em; opacity: 0.9; }
         .refresh-btn {
-            background: white;
-            color: #667eea;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-            margin-top: 15px;
+            background: white; color: #667eea; border: none; padding: 12px 24px;
+            border-radius: 25px; font-size: 1em; font-weight: bold; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); transition: all 0.3s ease; margin-top: 15px;
         }
-        
-        .refresh-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 7px 20px rgba(0,0,0,0.3);
-        }
-        
-        .refresh-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
+        .refresh-btn:hover { transform: scale(1.05); box-shadow: 0 7px 20px rgba(0,0,0,0.3); }
+        .refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .stat-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            animation: slideUp 0.5s ease-out forwards;
-            opacity: 0;
+            background: white; border-radius: 15px; padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: slideUp 0.5s ease-out forwards; opacity: 0;
         }
-        
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .stat-card:nth-child(1) { animation-delay: 0.1s; }
-        .stat-card:nth-child(2) { animation-delay: 0.2s; }
-        .stat-card:nth-child(3) { animation-delay: 0.3s; }
-        .stat-card:nth-child(4) { animation-delay: 0.4s; }
-        .stat-card:nth-child(5) { animation-delay: 0.5s; }
-        .stat-card:nth-child(6) { animation-delay: 0.6s; }
-        
-        .stat-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-        }
-        
-        .stat-card h3 {
-            color: #667eea;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-        }
-        
-        .stat-card .value {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #333;
-        }
-        
-        .stat-card .label {
-            color: #666;
-            font-size: 0.9em;
-            margin-top: 5px;
-        }
-        
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        @media (max-width: 768px) {
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .chart-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: box-shadow 0.3s ease;
-        }
-        
-        .chart-card:hover {
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-        }
-        
-        .chart-card h2 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 1.3em;
-        }
-        
-        .table-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            overflow-x: auto;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        th {
-            background-color: #667eea;
-            color: white;
-            font-weight: 600;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-        
-        tr:hover {
-            background-color: #f5f5f5;
-        }
-        
-        .loading {
-            text-align: center;
-            color: white;
-            font-size: 1.5em;
-            padding: 50px;
-        }
-        
-        .spinner {
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top: 4px solid white;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .error {
-            background: #ff6b6b;
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            margin: 20px auto;
-            max-width: 600px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        
-        .error h3 {
-            margin-bottom: 10px;
-            font-size: 1.3em;
-        }
-        
-        .last-updated {
-            text-align: center;
-            color: white;
-            font-size: 0.9em;
-            margin-top: 10px;
-            opacity: 0.8;
-        }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .stat-card:nth-child(1) { animation-delay: 0.1s; } .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; } .stat-card:nth-child(4) { animation-delay: 0.4s; }
+        .stat-card:nth-child(5) { animation-delay: 0.5s; } .stat-card:nth-child(6) { animation-delay: 0.6s; }
+        .stat-card:hover { transform: translateY(-10px); box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
+        .stat-card h3 { color: #667eea; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .stat-card .value { font-size: 2.5em; font-weight: bold; color: #333; }
+        .stat-card .label { color: #666; font-size: 0.9em; margin-top: 5px; }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
+        .chart-card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .chart-card:hover { box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
+        .chart-card h2 { color: #667eea; margin-bottom: 20px; font-size: 1.3em; }
+        .table-card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #667eea; color: white; font-weight: 600; position: sticky; top: 0; z-index: 10; }
+        tr:hover { background-color: #f5f5f5; }
+        .loading { text-align: center; color: white; font-size: 1.5em; padding: 50px; }
+        .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .error { background: #ff6b6b; color: white; padding: 20px; border-radius: 10px; text-align: center; margin: 20px auto; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .last-updated { text-align: center; color: white; font-size: 0.9em; margin-top: 10px; opacity: 0.8; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🔥 Gas Sales Dashboard</h1>
-            <p>September 2025 Performance Overview</p>
+            <p>September + October 2025 Overview</p>
             <button class="refresh-btn" onclick="loadData()" id="refreshBtn">🔄 Refresh Data</button>
             <div class="last-updated" id="lastUpdated"></div>
         </div>
-        
+
         <div id="loading" class="loading">
             <div class="spinner"></div>
             <p>Loading data...</p>
@@ -252,7 +73,7 @@
         <div id="error" style="display: none;"></div>
         <div id="dashboard" style="display: none;">
             <div class="stats-grid" id="statsGrid"></div>
-            
+
             <div class="charts-grid">
                 <div class="chart-card">
                     <h2>📈 Daily Sales Trend (Total KGs)</h2>
@@ -263,67 +84,88 @@
                     <canvas id="productDistChart"></canvas>
                 </div>
             </div>
-            
+
             <div class="chart-card" style="margin-bottom: 30px;">
                 <h2>📊 Product Performance Over Time</h2>
                 <canvas id="productTrendChart"></canvas>
             </div>
-            
+
             <div class="table-card">
                 <h2>📋 Detailed Sales Data</h2>
                 <table id="dataTable"></table>
             </div>
         </div>
     </div>
-    
+
     <script>
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1346158160&single=true&output=csv';
-        
+        // 🔗 Combined September + October
+        const CSV_URLS = [
+            'https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1346158160&single=true&output=csv',
+            'https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=285948413&single=true&output=csv'
+        ];
+
         let salesData = [];
         let charts = {};
-        
+
         function loadData() {
-            const refreshBtn = document.getElementById('refreshBtn');
-            refreshBtn.disabled = true;
-            refreshBtn.textContent = '⏳ Loading...';
-            
+            const btn = document.getElementById('refreshBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Loading...';
+
             document.getElementById('loading').style.display = 'block';
             document.getElementById('error').style.display = 'none';
             document.getElementById('dashboard').style.display = 'none';
-            
-            Papa.parse(CSV_URL, {
-                download: true,
-                header: true,
-                dynamicTyping: true,
-                skipEmptyLines: true,
-                transformHeader: (header) => header.trim(),
-                complete: function(results) {
-                    if (results.errors.length > 0) {
-                        console.warn('CSV parsing warnings:', results.errors);
-                    }
-                    
-                    salesData = results.data.filter(row => {
-                        const firstCol = Object.keys(row)[0];
-                        return row[firstCol] && row[firstCol].toString().trim() !== '';
-                    });
-                    
-                    if (salesData.length === 0) {
-                        showError('No valid data found in the spreadsheet. Please check the data format.');
-                        refreshBtn.disabled = false;
-                        refreshBtn.textContent = '🔄 Refresh Data';
-                        return;
-                    }
-                    
+
+            let loadedData = [];
+
+            function loadNext(index) {
+                if (index >= CSV_URLS.length) {
+                    salesData = mergeMonthlyData(loadedData);
                     processAndDisplayData();
-                    refreshBtn.disabled = false;
-                    refreshBtn.textContent = '🔄 Refresh Data';
-                },
-                error: function(error) {
-                    showError('Failed to load data: ' + error.message + '. Please check your internet connection and try again.');
-                    refreshBtn.disabled = false;
-                    refreshBtn.textContent = '🔄 Refresh Data';
+                    btn.disabled = false;
+                    btn.textContent = '🔄 Refresh Data';
+                    return;
                 }
-            });
+
+                Papa.parse(CSV_URLS[index], {
+                    download: true,
+                    header: true,
+                    dynamicTyping: true,
+                    skipEmptyLines: true,
+                    transformHeader: (h) => h.trim(),
+                    complete: function(results) {
+                        const clean = results.data.filter(r => {
+                            const firstCol = Object.keys(r)[0];
+                            return r[firstCol] && r[firstCol].toString().trim() !== '';
+                        });
+                        loadedData.push(clean);
+                        loadNext(index + 1);
+                    },
+                    error: function(err) {
+                        showError('Failed to load data: ' + err.message);
+                        btn.disabled = false;
+                        btn.textContent = '🔄 Refresh Data';
+                    }
+                });
+            }
+            loadNext(0);
+        }
+
+        // 🔄 Merge both months by matching row names
+        function mergeMonthlyData(monthlyArrays) {
+            if (monthlyArrays.length === 1) return monthlyArrays[0];
+            const [sepData, octData] = monthlyArrays;
+            const merged = [];
+
+            for (let i = 0; i < sepData.length; i++) {
+                const combinedRow = { ...sepData[i] };
+                const octRow = octData[i] || {};
+                for (const key in octRow) {
+                    if (key !== Object.keys(octRow)[0]) combinedRow[key] = octRow[key];
+                }
+                merged.push(combinedRow);
+            }
+            return merged;
         }
         
         function processAndDisplayData() {
