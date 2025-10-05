@@ -392,7 +392,7 @@
   <div class="container">
     <div class="header">
       <h1>📊 Staff Shortages Dashboard</h1>
-      <p>Mangu Rd Shell Service Station — Real-time Analytics</p>
+      <p>Mangu Rd Shell Service Station — Real-time Analytics (Sept - Oct 2024)</p>
     </div>
     
     <div class="content">
@@ -475,11 +475,15 @@
   <div class="tooltip" id="tooltip"></div>
 
   <script>
-    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRNw7hn2wzYu3ATj3LVB5NT8oKO0PLkyTI_SN7owSvlnoJm0k4mvAW6nclDwF6Trtqsdb3wCMpM9imI/pub?gid=0&single=true&output=csv";
-    const staff = ["JOHN","DAVID","ZACHARIAH","THOMAS","PAUL","MACHARIAH","NJAGI","VICTOR","PETER"];
+    const csvUrls = [
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vRNw7hn2wzYu3ATj3LVB5NT8oKO0PLkyTI_SN7owSvlnoJm0k4mvAW6nclDwF6Trtqsdb3wCMpM9imI/pub?gid=0&single=true&output=csv",
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=993195447&single=true&output=csv"
+    ];
     
     let chart, allData = [], filteredData = [];
     let searchTimeout;
+    let allStaffMembers = new Set(); // Track all unique staff members
+    let currentStaff = []; // Active staff for current filtered view
 
     // Color scheme for staff members
     const staffColors = [
@@ -509,15 +513,33 @@
 
     async function loadData() {
       try {
-        const resp = await fetch(csvUrl);
-        const text = await resp.text();
-        const rows = csvToArray(text);
+        // Fetch data from both CSV sources
+        const fetchPromises = csvUrls.map(url => fetch(url).then(r => r.text()));
+        const texts = await Promise.all(fetchPromises);
+        
+        // Parse and combine data from both months
+        let combinedRows = [];
+        texts.forEach(text => {
+          const rows = csvToArray(text);
+          combinedRows = combinedRows.concat(rows);
+        });
 
-        allData = rows
+        // Extract all unique staff members from the data
+        allStaffMembers.clear();
+        if (combinedRows.length > 0) {
+          const firstRow = combinedRows[0];
+          Object.keys(firstRow).forEach(key => {
+            if (key !== 'DAY' && key !== 'TOTALS' && key.trim() !== '') {
+              allStaffMembers.add(key.trim());
+            }
+          });
+        }
+
+        allData = combinedRows
           .filter(r => r.DAY && r.DAY !== "TOTALS") 
           .map(r => {
             let obj = { day: formatDay(r.DAY) };    
-            staff.forEach(s => obj[s] = parseFloat(r[s]) || 0);
+            allStaffMembers.forEach(s => obj[s] = parseFloat(r[s]) || 0);
             return obj;
           })
           .sort((a, b) => new Date(a.day) - new Date(b.day));
@@ -528,6 +550,7 @@
         document.getElementById('loadingIndicator').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
         
+        updateCurrentStaff();
         populateDropdown();
         setDefaultDates();
         renderDashboard();
@@ -540,9 +563,30 @@
       }
     }
 
+    function updateCurrentStaff() {
+      // Determine which staff members have data in the filtered date range
+      const staffWithData = new Set();
+      
+      filteredData.forEach(row => {
+        allStaffMembers.forEach(s => {
+          if (row[s] !== 0 || filteredData.some(r => r[s] !== 0)) {
+            staffWithData.add(s);
+          }
+        });
+      });
+      
+      // If no data yet, use all staff members
+      currentStaff = staffWithData.size > 0 
+        ? Array.from(staffWithData).sort() 
+        : Array.from(allStaffMembers).sort();
+    }
+
     function populateDropdown() {
       const select = document.getElementById("staffSelect");
-      staff.forEach(s => {
+      // Clear existing options except "All Staff Members"
+      select.innerHTML = '<option value="ALL">All Staff Members</option>';
+      
+      currentStaff.forEach(s => {
         let opt = document.createElement("option");
         opt.value = s;
         opt.textContent = s;
@@ -586,6 +630,15 @@
       if (startDate) filteredData = filteredData.filter(d => d.day >= startDate);
       if (endDate) filteredData = filteredData.filter(d => d.day <= endDate);
 
+      updateCurrentStaff();
+      populateDropdown();
+      
+      // Restore selected staff if still available
+      const select = document.getElementById("staffSelect");
+      if (selectedStaff !== "ALL" && currentStaff.includes(selectedStaff)) {
+        select.value = selectedStaff;
+      }
+      
       renderDashboard();
       
       // Visual feedback
@@ -602,6 +655,8 @@
       document.getElementById("searchBox").value = "";
       setDefaultDates();
       filteredData = [...allData];
+      updateCurrentStaff();
+      populateDropdown();
       renderDashboard();
     }
 
@@ -619,13 +674,13 @@
       
       if (selectedStaff === "ALL") {
         // Overall statistics
-        const totalShortage = staff.reduce((sum, s) => {
-          return sum + filteredData.reduce((staffSum, d) => staffSum + d[s], 0);
+        const totalShortage = currentStaff.reduce((sum, s) => {
+          return sum + filteredData.reduce((staffSum, d) => staffSum + (d[s] || 0), 0);
         }, 0);
         
         const avgDaily = totalShortage / Math.max(filteredData.length, 1);
         const worstDay = filteredData.reduce((worst, day) => {
-          const dayTotal = staff.reduce((sum, s) => sum + day[s], 0);
+          const dayTotal = currentStaff.reduce((sum, s) => sum + (day[s] || 0), 0);
           return dayTotal < worst.total ? { day: day.day, total: dayTotal } : worst;
         }, { day: '', total: 0 });
         
@@ -653,10 +708,11 @@
         `;
       } else {
         // Individual staff statistics
-        const total = filteredData.reduce((sum, d) => sum + d[selectedStaff], 0);
+        const total = filteredData.reduce((sum, d) => sum + (d[selectedStaff] || 0), 0);
         const avg = total / Math.max(filteredData.length, 1);
-        const max = Math.max(...filteredData.map(d => d[selectedStaff]));
-        const min = Math.min(...filteredData.map(d => d[selectedStaff]));
+        const values = filteredData.map(d => d[selectedStaff] || 0);
+        const max = Math.max(...values);
+        const min = Math.min(...values);
         
         cards = `
           <div class="stat-card ${total < 0 ? 'negative' : 'positive'}">
@@ -695,11 +751,11 @@
       
       let datasets;
       if (selectedStaff === "ALL") {
-        datasets = staff.map((s, i) => ({
+        datasets = currentStaff.map((s, i) => ({
           label: s,
-          data: filteredData.map(d => ({ x: d.day, y: d[s] })),
-          borderColor: staffColors[i],
-          backgroundColor: staffColors[i],
+          data: filteredData.map(d => ({ x: d.day, y: d[s] || 0 })),
+          borderColor: staffColors[i % staffColors.length],
+          backgroundColor: staffColors[i % staffColors.length],
           fill: false,
           tension: 0,
           pointRadius: 3,
@@ -709,7 +765,7 @@
       } else {
         datasets = [{
           label: selectedStaff,
-          data: filteredData.map(d => ({ x: d.day, y: d[selectedStaff] })),
+          data: filteredData.map(d => ({ x: d.day, y: d[selectedStaff] || 0 })),
           borderColor: "#0077cc",
           backgroundColor: "#0077cc",
           fill: false,
@@ -741,23 +797,21 @@
             y: {
               grid: { 
                 color: function(context) {
-                  // Highlight the acceptable range (-180 to +180)
                   if (context.tick.value === -180 || context.tick.value === 180) {
-                    return '#dc3545'; // Red line for limits
+                    return '#dc3545';
                   }
                   if (context.tick.value >= -180 && context.tick.value <= 180) {
-                    return '#28a745'; // Green grid for acceptable range
+                    return '#28a745';
                   }
-                  return '#e9ecef'; // Default gray for exceeding limits
+                  return '#e9ecef';
                 }
               },
               ticks: { 
                 color: function(context) {
-                  // Color code the tick labels
                   if (context.tick.value >= -180 && context.tick.value <= 180) {
-                    return '#28a745'; // Green for acceptable range
+                    return '#28a745';
                   }
-                  return '#dc3545'; // Red for exceeding company limits
+                  return '#dc3545';
                 },
                 callback: function(value) {
                   const label = 'KES ' + value.toFixed(0);
@@ -804,11 +858,11 @@
       let header, rows;
 
       if (selectedStaff === "ALL") {
-        header = "<tr><th>📅 Date</th>" + staff.map(s => `<th>👤 ${s}</th>`).join("") + "<th>💰 Daily Total</th></tr>";
+        header = "<tr><th>📅 Date</th>" + currentStaff.map(s => `<th>👤 ${s}</th>`).join("") + "<th>💰 Daily Total</th></tr>";
         rows = filteredData.map(row => {
-          const dailyTotal = staff.reduce((sum, s) => sum + row[s], 0);
-          let cells = staff.map(s => {
-            const v = row[s];
+          const dailyTotal = currentStaff.reduce((sum, s) => sum + (row[s] || 0), 0);
+          let cells = currentStaff.map(s => {
+            const v = row[s] || 0;
             const cls = v < 0 ? "negative" : v > 0 ? "positive" : "zero";
             return `<td class='${cls}'>KES ${v.toFixed(2)}</td>`;
           }).join("");
@@ -819,7 +873,7 @@
       } else {
         header = `<tr><th>📅 Date</th><th>👤 ${selectedStaff}</th><th>📊 Status</th></tr>`;
         rows = filteredData.map(row => {
-          const v = row[selectedStaff];
+          const v = row[selectedStaff] || 0;
           const cls = v < 0 ? "negative" : v > 0 ? "positive" : "zero";
           const status = v < 0 ? "🔴 Shortage" : v > 0 ? "🟢 Surplus" : "⚪ Balanced";
           return `<tr onclick="highlightRow(this)"><td><strong>${row.day}</strong></td><td class='${cls}'>KES ${v.toFixed(2)}</td><td>${status}</td></tr>`;
@@ -837,7 +891,6 @@
       const term = searchTerm.toLowerCase().trim();
       
       if (!term) {
-        // Show all rows if search is empty
         rows.forEach(row => {
           row.style.display = "";
         });
@@ -874,31 +927,6 @@
       }, 2000);
     }
 
-    function toggleChartAnimation() {
-      animationEnabled = !animationEnabled;
-      const btn = document.querySelector('.btn-chart');
-      btn.textContent = animationEnabled ? "🎬 Animation" : "⏸️ Static";
-      btn.classList.toggle('active');
-      renderChart();
-    }
-
-    function exportChart() {
-      if (!chart) return;
-      
-      const link = document.createElement('a');
-      link.download = `staff-shortages-${new Date().toISOString().split('T')[0]}.png`;
-      link.href = chart.toBase64Image();
-      link.click();
-      
-      // Visual feedback
-      const btn = document.querySelectorAll('.btn-chart')[1];
-      const originalText = btn.textContent;
-      btn.textContent = "✅ Exported";
-      setTimeout(() => {
-        btn.textContent = originalText;
-      }, 1500);
-    }
-
     function toggleFullscreen() {
       const chartContainer = document.querySelector('.chart-container');
       
@@ -919,8 +947,6 @@
 
     function showTooltip(event) {
       const tooltip = document.getElementById('tooltip');
-      const rect = event.target.getBoundingClientRect();
-      
       tooltip.style.left = event.clientX + 10 + 'px';
       tooltip.style.top = event.clientY - 30 + 'px';
       tooltip.style.opacity = '1';
@@ -931,17 +957,14 @@
       tooltip.style.opacity = '0';
     }
 
-    // Initialize dashboard
     document.addEventListener('DOMContentLoaded', () => {
       loadData();
       
-      // Add some interactive animations on load
       setTimeout(() => {
         document.querySelector('.container').style.animation = 'fadeIn 0.8s ease-out';
       }, 100);
     });
 
-    // Add CSS animation for container fade in
     const style = document.createElement('style');
     style.textContent = `
       @keyframes fadeIn {
@@ -951,7 +974,6 @@
     `;
     document.head.appendChild(style);
 
-    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
@@ -967,7 +989,6 @@
       }
     });
 
-    // Add periodic data refresh (every 5 minutes)
     setInterval(() => {
       console.log('Refreshing data...');
       loadData();
@@ -976,4 +997,3 @@
   </script>
 </body>
 </html>
-   
