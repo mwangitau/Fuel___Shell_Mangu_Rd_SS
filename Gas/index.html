@@ -108,6 +108,26 @@
             // Merge September + October data
             originalData = mergeMonthlyData(allData);
             salesData = originalData.map(r => ({ ...r }));
+            
+        function normalizeDateLabel(colName) {
+    if (!colName) return '';
+
+    // Handle both formats e.g. "2025.09.01" or "2025-10-01"
+    const clean = colName.replace(/\./g, '-').trim();
+    const parts = clean.split('-').map(p => p.padStart(2, '0'));
+
+    // Extract YYYY, MM, DD (try to detect order)
+    let [y, m, d] = parts.length === 3 && parts[0].length === 4
+        ? [parts[0], parts[1], parts[2]]
+        : [parts[2], parts[0], parts[1]];
+
+    // If month missing, default to current
+    if (!y || !m || !d) return colName;
+
+    // Convert month to text
+    const monthName = new Date(`${y}-${m}-${d}`).toLocaleString('en-US', { month: 'short' });
+    return `${monthName} ${parseInt(d)}`;
+}
 
             processAndDisplayData();
             btn.disabled = false;
@@ -193,27 +213,56 @@ function filterByMonth() {
             `;
         }
 
-        // ✅ Dynamic month-aware daily trend
+  
+
+       // ✅ Dynamic month-aware daily trend
         function createDailyTrendChart() {
             const labels = [];
             const totals = [];
-            const allKeys = Object.keys(salesData[0]).slice(1);
+            const allKeys = Object.keys(salesData[0]).slice(1); // skip product name
 
-            allKeys.forEach((key, i) => {
-                let month = i < 30 ? 'Sep' : 'Oct';
-                labels.push(`${month} ${i < 30 ? i + 1 : i - 29}`);
+                allKeys.forEach(col => {
+        // Use actual column name (e.g., "2025.09.01" or "2025.10.01")
+                const label = normalizeDateLabel(col);
+                labels.push(label);
+
+        // Compute total for that day across all rows
                 let total = 0;
-                salesData.forEach(row => total += Number(row[key]) || 0);
+                salesData.forEach(row => total += Number(row[col]) || 0);
                 totals.push(total);
-            });
+                    });
 
-            if (charts.dailyTrend) charts.dailyTrend.destroy();
-            charts.dailyTrend = new Chart(document.getElementById('dailyTrendChart'), {
-                type: 'line',
-                data: { labels, datasets: [{ label: 'Total KGs', data: totals, borderColor: '#667eea', fill: false }] },
-                options: { responsive: true, plugins: { legend: { display: false } } }
-            });
+    // Destroy old chart if exists
+                if (charts.dailyTrend) charts.dailyTrend.destroy();
+
+        charts.dailyTrend = new Chart(document.getElementById('dailyTrendChart'), {
+            type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Total KGs',
+                    data: totals,
+                    borderColor: '#667eea',
+                    tension: 0.3,
+                    fill: false,
+                    pointRadius: 3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: { title: { display: true, text: 'Date' } },
+                y: { title: { display: true, text: 'KGs Sold' } }
+            }
         }
+    });
+}
+
 
         function createProductDistributionChart() {
             const products = salesData.map(r => Object.values(r)[0]);
@@ -259,6 +308,18 @@ function filterByMonth() {
             table.innerHTML = html;
         }
         
+        function normalizeDateLabel(colName) {
+    if (!colName) return '';
+    const clean = colName.replace(/\./g, '-').trim();
+    const parts = clean.split('-').map(p => p.padStart(2, '0'));
+    let [y, m, d] = parts.length === 3 && parts[0].length === 4
+        ? [parts[0], parts[1], parts[2]]
+        : [parts[2], parts[0], parts[1]];
+    if (!y || !m || !d) return colName;
+    const monthName = new Date(`${y}-${m}-${d}`).toLocaleString('en-US', { month: 'short' });
+    return `${monthName} ${parseInt(d)}`;
+}
+
         function processAndDisplayData() {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
