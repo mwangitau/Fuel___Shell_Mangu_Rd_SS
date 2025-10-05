@@ -89,31 +89,37 @@
             'https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=285948413&single=true&output=csv'
         ];
 
+        let salesData = [];
+        let allData = [];
         let originalData = [];
         let charts = {};
 
         function loadData() {
-            const btn = document.getElementById('refreshBtn');
-            btn.disabled = true;
-            btn.textContent = '⏳ Loading...';
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('dashboard').style.display = 'none';
+    const btn = document.getElementById('refreshBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Loading...';
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('dashboard').style.display = 'none';
 
-            Promise.all(CSV_URLS.map(url => fetch(url).then(r => r.text())))
-                .then(csvs => {
-                    const allData = csvs.map(csv => Papa.parse(csv, { header: true, dynamicTyping: true }).data);
-                    salesData = mergeMonthlyData(allData);
-                    processAndDisplayData();
-                    btn.disabled = false;
-                    btn.textContent = '🔄 Refresh Data';
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert('Error loading data: ' + err.message);
-                    btn.disabled = false;
-                    btn.textContent = '🔄 Refresh Data';
-                });
-        }
+    Promise.all(CSV_URLS.map(url => fetch(url).then(r => r.text())))
+        .then(csvs => {
+            allData = csvs.map(csv => Papa.parse(csv, { header: true, dynamicTyping: true }).data);
+
+            // Merge September + October data
+            originalData = mergeMonthlyData(allData);
+            salesData = originalData.map(r => ({ ...r }));
+
+            processAndDisplayData();
+            btn.disabled = false;
+            btn.textContent = '🔄 Refresh Data';
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Error loading data: ' + err.message);
+            btn.disabled = false;
+            btn.textContent = '🔄 Refresh Data';
+        });
+}
 
         function mergeMonthlyData([sepData, octData]) {
     const merged = [];
@@ -146,7 +152,6 @@ function filterByMonth() {
     const month = selector.value;
 
     if (month === 'all') {
-        originalData = mergeMonthlyData(allData);
         salesData = originalData.map(r => ({ ...r }));
     } else {
         salesData = originalData.map(row => {
@@ -168,7 +173,6 @@ function filterByMonth() {
 
     processAndDisplayData();
 }
-
 
         function calculateStats() {
             let total = 0;
@@ -258,6 +262,12 @@ function filterByMonth() {
         function processAndDisplayData() {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
+            const monthValue = document.getElementById('monthSelector').value;
+                document.querySelector('.header p').textContent =
+                    monthValue === 'sep' ? 'September Overview' :
+                    monthValue === 'oct' ? 'October Overview' :
+                        'All Months Overview';
+
             
             // Update last updated time
             const now = new Date();
