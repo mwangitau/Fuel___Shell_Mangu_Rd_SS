@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gas Sales Dashboard - Sep & Oct 2025</title>
+    <title>Gas Sales Dashboard </title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -36,9 +36,16 @@
     <div class="container">
         <div class="header">
             <h1>🔥 Gas Sales Dashboard</h1>
-            <p>September + October 2025 Overview</p>
+            <p>All Months Overview</p>
             <button class="refresh-btn" onclick="loadData()" id="refreshBtn">🔄 Refresh Data</button>
         </div>
+            <select id="monthSelector" onchange="filterByMonth()" style="
+                padding:8px 12px; border-radius:8px; border:none; font-weight:bold; color:#667eea; margin-left:10px;">
+                  <option value="all">All Months</option>
+                  <option value="sep">September</option>
+                  <option value="oct">October</option>
+            </select>
+
     <div id="lastUpdated" style="margin-top:8px; font-size:13px; color:#dcdcdc; font-style:italic;">
     Last updated: (loading…)
     </div>
