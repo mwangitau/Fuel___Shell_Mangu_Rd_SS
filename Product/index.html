@@ -244,6 +244,109 @@
       background: #fef3c7;
       color: #d97706;
     }
+    .stock-alert-section {
+      background: linear-gradient(135deg, #fee2e2, #fecaca);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 25px;
+      border-left: 5px solid #dc2626;
+      box-shadow: 0 5px 15px rgba(220, 38, 38, 0.2);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 5px 15px rgba(220, 38, 38, 0.2); }
+      50% { box-shadow: 0 5px 25px rgba(220, 38, 38, 0.4); }
+    }
+    .stock-alert-section.warning {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border-left-color: #d97706;
+    }
+    .stock-alert-section.safe {
+      background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+      border-left-color: #059669;
+      animation: none;
+    }
+    .stock-alert-section h3 {
+      color: #dc2626;
+      margin-bottom: 15px;
+      font-size: 1.5em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .stock-alert-section.warning h3 {
+      color: #d97706;
+    }
+    .stock-alert-section.safe h3 {
+      color: #059669;
+    }
+    .stock-items {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .stock-item {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+    }
+    .stock-item:hover {
+      transform: translateY(-3px);
+    }
+    .stock-item.critical {
+      border: 3px solid #dc2626;
+      background: #fef2f2;
+    }
+    .stock-item.warning {
+      border: 3px solid #d97706;
+      background: #fffbeb;
+    }
+    .stock-item.safe {
+      border: 3px solid #059669;
+      background: #f0fdf4;
+    }
+    .stock-product-name {
+      font-size: 1.3em;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #1e293b;
+    }
+    .stock-level {
+      font-size: 2em;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    .stock-item.critical .stock-level {
+      color: #dc2626;
+    }
+    .stock-item.warning .stock-level {
+      color: #d97706;
+    }
+    .stock-item.safe .stock-level {
+      color: #059669;
+    }
+    .stock-status {
+      font-size: 0.9em;
+      padding: 5px 10px;
+      border-radius: 5px;
+      display: inline-block;
+      margin-top: 5px;
+    }
+    .stock-item.critical .stock-status {
+      background: #dc2626;
+      color: white;
+    }
+    .stock-item.warning .stock-status {
+      background: #d97706;
+      color: white;
+    }
+    .stock-item.safe .stock-status {
+      background: #059669;
+      color: white;
+    }
     .loading-spinner {
       display: flex;
       justify-content: center;
@@ -290,6 +393,8 @@
     <div class="metrics-grid" id="metricsGrid">
       <div class="loading-spinner"><div class="spinner"></div></div>
     </div>
+    
+    <div id="stockAlertSection"></div>
     
     <div class="filter-section">
       <div class="filter-group">
@@ -565,6 +670,21 @@
       const topProduct = Object.keys(productTotals).reduce((a, b) => 
         productTotals[a] > productTotals[b] ? a : b, Object.keys(productTotals)[0] || 'N/A');
       
+      // Check stock alerts
+      const latestStockByProduct = {};
+      data.forEach(row => {
+        if (!latestStockByProduct[row.product] || row.date > latestStockByProduct[row.product].date) {
+          latestStockByProduct[row.product] = row;
+        }
+      });
+      
+      let lowStockCount = 0;
+      Object.keys(latestStockByProduct).forEach(product => {
+        const closeDip = latestStockByProduct[product].closeDip;
+        if (product === 'VP' && closeDip < 1000) lowStockCount++;
+        if ((product === 'UX' || product === 'DX') && closeDip < 2000) lowStockCount++;
+      });
+      
       document.getElementById('metricsGrid').innerHTML = `
         <div class="metric-card">
           <div class="metric-icon">💰</div>
@@ -586,12 +706,128 @@
           <div class="metric-value">${highVariances}</div>
           <div class="metric-label">High Variance Alerts</div>
         </div>
+        <div class="metric-card ${lowStockCount > 0 ? 'warning' : 'success'}">
+          <div class="metric-icon">⚠️</div>
+          <div class="metric-value">${lowStockCount}</div>
+          <div class="metric-label">Low Stock Alerts</div>
+        </div>
         <div class="metric-card">
           <div class="metric-icon">🏆</div>
           <div class="metric-value">${topProduct}</div>
           <div class="metric-label">Top Selling Product</div>
         </div>
       `;
+      
+      updateStockAlerts(latestStockByProduct);
+    }
+
+    function updateStockAlerts(latestStockByProduct) {
+      const stockThresholds = {
+        'UX': 2000,
+        'DX': 2000,
+        'VP': 1000
+      };
+      
+      let criticalAlerts = [];
+      let warningAlerts = [];
+      let safeProducts = [];
+      
+      ['UX', 'DX', 'VP'].forEach(product => {
+        const stock = latestStockByProduct[product];
+        if (!stock) return;
+        
+        const threshold = stockThresholds[product];
+        const closeDip = stock.closeDip;
+        const percentOfThreshold = (closeDip / threshold) * 100;
+        
+        let status = 'safe';
+        let statusText = 'Stock Level OK';
+        
+        if (closeDip < threshold * 0.5) {
+          status = 'critical';
+          statusText = '🚨 CRITICAL - Reorder Now!';
+          criticalAlerts.push({ product, closeDip, threshold, date: stock.date, percentOfThreshold });
+        } else if (closeDip < threshold) {
+          status = 'warning';
+          statusText = '⚠️ Warning - Low Stock';
+          warningAlerts.push({ product, closeDip, threshold, date: stock.date, percentOfThreshold });
+        } else {
+          safeProducts.push({ product, closeDip, threshold, date: stock.date, percentOfThreshold });
+        }
+        
+        stock.stockStatus = status;
+        stock.statusText = statusText;
+      });
+      
+      const hasAlerts = criticalAlerts.length > 0 || warningAlerts.length > 0;
+      const sectionClass = criticalAlerts.length > 0 ? '' : warningAlerts.length > 0 ? 'warning' : 'safe';
+      const titleIcon = criticalAlerts.length > 0 ? '🚨' : warningAlerts.length > 0 ? '⚠️' : '✅';
+      const titleText = criticalAlerts.length > 0 ? 'CRITICAL STOCK ALERT' : 
+                        warningAlerts.length > 0 ? 'Low Stock Warning' : 
+                        'Stock Levels Normal';
+      
+      let html = `<div class="stock-alert-section ${sectionClass}">
+        <h3>${titleIcon} ${titleText}</h3>`;
+      
+      if (hasAlerts) {
+        html += '<div class="stock-items">';
+        
+        [...criticalAlerts, ...warningAlerts, ...safeProducts].forEach(alert => {
+          const stock = latestStockByProduct[alert.product];
+          const productName = alert.product === 'UX' ? 'Premium Unleaded (UX)' : 
+                             alert.product === 'DX' ? 'Diesel (DX)' : 'Vpower (VP)';
+          
+          html += `
+            <div class="stock-item ${stock.stockStatus}">
+              <div class="stock-product-name">${productName}</div>
+              <div class="stock-level">${alert.closeDip.toLocaleString()} L</div>
+              <div>Threshold: ${alert.threshold.toLocaleString()} L</div>
+              <div style="margin: 5px 0;">
+                <div style="background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden;">
+                  <div style="background: ${stock.stockStatus === 'critical' ? '#dc2626' : stock.stockStatus === 'warning' ? '#d97706' : '#059669'}; 
+                              height: 100%; width: ${Math.min(alert.percentOfThreshold, 100)}%; transition: width 0.3s;"></div>
+                </div>
+                <div style="font-size: 0.85em; color: #64748b; margin-top: 3px;">${alert.percentOfThreshold.toFixed(1)}% of threshold</div>
+              </div>
+              <div class="stock-status">${stock.statusText}</div>
+              <div style="font-size: 0.85em; color: #64748b; margin-top: 8px;">As of ${formatDisplayDate(alert.date)}</div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+      } else {
+        html += '<p style="font-size: 1.1em; margin: 10px 0;">All product stock levels are above safety thresholds. ✅</p>';
+        html += '<div class="stock-items">';
+        
+        safeProducts.forEach(alert => {
+          const stock = latestStockByProduct[alert.product];
+          const productName = alert.product === 'UX' ? 'Premium Unleaded (UX)' : 
+                             alert.product === 'DX' ? 'Diesel (DX)' : 'Vpower (VP)';
+          
+          html += `
+            <div class="stock-item ${stock.stockStatus}">
+              <div class="stock-product-name">${productName}</div>
+              <div class="stock-level">${alert.closeDip.toLocaleString()} L</div>
+              <div>Threshold: ${alert.threshold.toLocaleString()} L</div>
+              <div style="margin: 5px 0;">
+                <div style="background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden;">
+                  <div style="background: #059669; height: 100%; width: ${Math.min(alert.percentOfThreshold, 100)}%; transition: width 0.3s;"></div>
+                </div>
+                <div style="font-size: 0.85em; color: #64748b; margin-top: 3px;">${alert.percentOfThreshold.toFixed(1)}% of threshold</div>
+              </div>
+              <div class="stock-status">${stock.statusText}</div>
+              <div style="font-size: 0.85em; color: #64748b; margin-top: 8px;">As of ${formatDisplayDate(alert.date)}</div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+      }
+      
+      html += '</div>';
+      
+      document.getElementById('stockAlertSection').innerHTML = html;
     }
 
     function createCharts(data) {
