@@ -7,90 +7,311 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, sans-serif;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: #333;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
       padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      min-height: 100vh;
     }
-    .container { max-width: 1300px; margin: auto; }
-    .header { text-align: center; color: white; margin-bottom: 30px; }
-    .refresh-btn {
-      background: white;
-      color: #667eea;
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.98);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      text-align: center;
+      color: #1e293b;
+      margin-bottom: 10px;
+      font-size: 2.8em;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle {
+      text-align: center;
+      color: #64748b;
+      font-size: 1.1em;
+      margin-bottom: 20px;
+    }
+    .control-panel {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .control-label {
+      font-size: 0.9em;
+      color: #475569;
+      font-weight: 600;
+    }
+    select, button {
+      padding: 12px 18px;
       border: none;
-      padding: 12px 24px;
-      border-radius: 25px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
       cursor: pointer;
-      font-weight: bold;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      font-weight: 600;
     }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 20px; margin-bottom: 30px; }
-    .stat-card { background: white; padding: 20px; border-radius: 10px; text-align: center; }
-    .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px,1fr)); gap: 20px; }
-    .chart-card { background: white; border-radius: 10px; padding: 20px; }
-    .table-card { background: white; border-radius: 10px; padding: 20px; margin-top: 30px; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
-    th { background: #667eea; color: white; position: sticky; top: 0; }
-    .loading { text-align: center; color: white; }
-    .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 40px; height: 40px; margin: 10px auto; animation: spin 1s linear infinite; }
-    @keyframes spin { from {transform: rotate(0);} to {transform: rotate(360deg);} }
+    select:hover, button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .last-updated {
+      font-size: 0.85em;
+      color: #64748b;
+      font-style: italic;
+      text-align: center;
+      margin-top: 10px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 25px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform: rotate(45deg);
+      transition: all 0.5s;
+      opacity: 0;
+    }
+    .stat-card:hover {
+      transform: translateY(-8px) scale(1.03);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+    }
+    .stat-card:hover::before {
+      opacity: 1;
+      animation: shimmer 0.6s ease-in-out;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) rotate(45deg); }
+    }
+    .stat-icon {
+      font-size: 2em;
+      margin-bottom: 10px;
+      opacity: 0.9;
+    }
+    .stat-value {
+      font-size: 2.4em;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .stat-label {
+      font-size: 0.95em;
+      opacity: 0.95;
+    }
+    .chart-container {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      transition: transform 0.2s ease;
+    }
+    .chart-container:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+    }
+    .chart-container h2 {
+      color: #1e293b;
+      margin: 0 0 20px 0;
+      font-size: 1.5em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 25px;
+      margin-bottom: 25px;
+    }
+    .table-container {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      overflow-x: auto;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .table-container h2 {
+      color: #1e293b;
+      margin: 0 0 20px 0;
+      font-size: 1.5em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    th {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      font-weight: bold;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    tbody tr:hover {
+      background: rgba(102, 126, 234, 0.05);
+    }
+    .loading {
+      text-align: center;
+      padding: 60px;
+    }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(102, 126, 234, 0.2);
+      border-top: 5px solid #667eea;
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .error-message {
+      background: linear-gradient(135deg, #fee2e2, #fecaca);
+      border-left: 5px solid #dc2626;
+      padding: 20px;
+      border-radius: 10px;
+      color: #dc2626;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .no-data {
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+    }
+    footer {
+      margin-top: 40px;
+      padding: 25px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border-radius: 15px;
+      font-size: 13px;
+      line-height: 1.6;
+      text-align: center;
+    }
+    @media (max-width: 768px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+      .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <h1>🔥 Gas Sales Dashboard</h1>
-      <p id="headerText">All Months Overview</p>
-      <button class="refresh-btn" onclick="loadData()" id="refreshBtn">🔄 Refresh Data</button>
-
-      <select id="monthSelector" onchange="switchMonth(this.value)" style="
-        padding:8px 12px; border-radius:8px; border:none; font-weight:bold; color:#667eea; margin-left:10px;">
-        <option value="All">All Months</option>
-        <option value="September">September</option>
-        <option value="October">October</option>
-      </select>
-
-      <div id="lastUpdated" style="margin-top:8px; font-size:13px; color:#dcdcdc; font-style:italic;">
-        Last updated: (loading…)
+    <h1>🔥 Gas Sales Dashboard</h1>
+    <div class="subtitle" id="headerText">All Months Overview</div>
+    
+    <div class="control-panel">
+      <div class="control-group">
+        <label class="control-label">📅 Month Filter</label>
+        <select id="monthSelector" onchange="switchMonth(this.value)">
+          <option value="All">All Months</option>
+          <option value="September">September</option>
+          <option value="October">October</option>
+        </select>
       </div>
+      <button onclick="loadData()" id="refreshBtn">🔄 Refresh Data</button>
     </div>
-
+    <div class="last-updated" id="lastUpdated">Last updated: Loading...</div>
+    
     <div id="loading" class="loading">
       <div class="spinner"></div>
-      <p>Loading data...</p>
+      <p style="color: #667eea; font-weight: bold; font-size: 1.2em;">Loading gas sales data...</p>
     </div>
-
+    
+    <div id="errorContainer"></div>
+    
     <div id="dashboard" style="display: none;">
       <div class="stats-grid" id="statsGrid"></div>
-
+      
       <div class="charts-grid">
-        <div class="chart-card">
+        <div class="chart-container">
           <h2>📈 Daily Sales Trend</h2>
           <canvas id="dailyTrendChart"></canvas>
         </div>
-        <div class="chart-card">
+        <div class="chart-container">
           <h2>🎯 Product Distribution</h2>
           <canvas id="productDistChart"></canvas>
         </div>
       </div>
-
-      <div class="chart-card">
+      
+      <div class="chart-container">
         <h2>📊 Product Performance Over Time</h2>
         <canvas id="productTrendChart"></canvas>
       </div>
-
-      <div class="table-card">
+      
+      <div class="table-container">
         <h2>📋 Detailed Sales Data</h2>
         <table id="dataTable"></table>
       </div>
     </div>
+    
+    <footer>
+      <p><strong>© 2025 Gas Sales Management — All Rights Reserved</strong></p>
+      <p><strong>Confidential:</strong> This dashboard is for official use only.</p>
+      <p>Data refreshed automatically • Dashboard v2.0</p>
+    </footer>
   </div>
 
   <script>
-    // ✅ Your API Endpoints
     const SEPTEMBER_API = "https://script.google.com/macros/s/AKfycbhsXZAG60VwIl2vxiZwY7FJn41KMxORvpeTGRq-OUy9t5SJaOhKXcWvnn-fZZ6DY5d/exec";
-    const OCTOBER_API   = "https://script.google.com/macros/s/AKfycbwalM3Oh0m8Q7SUD00jXxw32EOo4m9UQM2iwV0_UzjUTDd6VkHGSvZK2v_TcN0nibXQ/exec";
+    const OCTOBER_API = "https://script.google.com/macros/s/AKfycbwalM3Oh0m8Q7SUD00jXxw32EOo4m9UQM2iwV0_UzjUTDd6VkHGSvZK2v_TcN0nibXQ/exec";
 
     let allData = [];
     let currentMonth = "All";
@@ -99,26 +320,59 @@
     async function loadData() {
       document.getElementById('loading').style.display = 'block';
       document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('errorContainer').innerHTML = '';
       document.getElementById('refreshBtn').disabled = true;
 
       try {
+        console.log('Fetching data from both APIs...');
+        
         const [sepRes, octRes] = await Promise.all([
-          fetch(SEPTEMBER_API).then(r => r.json()),
-          fetch(OCTOBER_API).then(r => r.json())
+          fetch(SEPTEMBER_API).then(r => {
+            if (!r.ok) throw new Error('September API failed');
+            return r.json();
+          }),
+          fetch(OCTOBER_API).then(r => {
+            if (!r.ok) throw new Error('October API failed');
+            return r.json();
+          })
         ]);
 
-        const sepData = sepRes.data || [];
-        const octData = octRes.data || [];
+        const sepData = Array.isArray(sepRes.data) ? sepRes.data : [];
+        const octData = Array.isArray(octRes.data) ? octRes.data : [];
+
+        console.log('September data:', sepData.length, 'records');
+        console.log('October data:', octData.length, 'records');
 
         // Merge both months
         allData = [...sepData, ...octData];
 
-        document.getElementById('lastUpdated').textContent = "Last updated: " + new Date().toLocaleString();
+        if (allData.length === 0) {
+          throw new Error('No data received from APIs');
+        }
+
+        // Sort by date
+        allData.sort((a, b) => {
+          const dateA = new Date(a.Date || a.DATE || a.date);
+          const dateB = new Date(b.Date || b.DATE || b.date);
+          return dateA - dateB;
+        });
+
+        document.getElementById('lastUpdated').textContent = 
+          "Last updated: " + new Date().toLocaleString();
+        
         switchMonth(currentMonth);
 
       } catch (err) {
-        alert("Failed to load data: " + err.message);
-        console.error(err);
+        console.error('Error loading data:', err);
+        document.getElementById('errorContainer').innerHTML = `
+          <div class="error-message">
+            <h3>❌ Data Loading Error</h3>
+            <p><strong>Error:</strong> ${err.message}</p>
+            <p>Please check your internet connection and API endpoints, then try again.</p>
+            <button onclick="loadData()" style="margin-top: 15px;">🔄 Retry</button>
+          </div>
+        `;
+        document.getElementById('loading').style.display = 'none';
       } finally {
         document.getElementById('refreshBtn').disabled = false;
       }
@@ -129,80 +383,246 @@
       document.getElementById('headerText').textContent =
         month === 'September' ? 'September Overview' :
         month === 'October' ? 'October Overview' : 'All Months Overview';
+      document.getElementById('monthSelector').value = month;
 
       let filtered = allData;
       if (month !== "All") {
         filtered = allData.filter(row => {
-          const d = new Date(row.Date || row.DATE || row.date);
+          const dateStr = row.Date || row.DATE || row.date;
+          if (!dateStr) return false;
+          const d = new Date(dateStr);
           const m = d.toLocaleString('en-US', { month: 'long' });
           return m === month;
         });
       }
+      
       displayData(filtered);
     }
 
     function displayData(data) {
       document.getElementById('loading').style.display = 'none';
+      
+      if (data.length === 0) {
+        document.getElementById('dashboard').innerHTML = `
+          <div class="no-data">
+            <h2>📭 No Data Available</h2>
+            <p>No records found for the selected month filter.</p>
+          </div>
+        `;
+        document.getElementById('dashboard').style.display = 'block';
+        return;
+      }
+      
       document.getElementById('dashboard').style.display = 'block';
 
+      // Calculate statistics
       const totalKG = data.reduce((sum, r) => sum + (Number(r.TotalKGs) || 0), 0);
+      const avg6KG = data.filter(r => r.Product?.includes('6KG'))
+        .reduce((sum, r) => sum + (Number(r.TotalKGs) || 0), 0);
+      const avg13KG = data.filter(r => r.Product?.includes('13KG'))
+        .reduce((sum, r) => sum + (Number(r.TotalKGs) || 0), 0);
+      const avg45KG = data.filter(r => r.Product?.includes('45KG'))
+        .reduce((sum, r) => sum + (Number(r.TotalKGs) || 0), 0);
+      
+      const uniqueDays = new Set(data.map(r => r.Date || r.DATE || r.date)).size;
+      const avgPerDay = uniqueDays > 0 ? (totalKG / uniqueDays).toFixed(0) : 0;
+
       document.getElementById('statsGrid').innerHTML = `
         <div class="stat-card">
-          <h3>Total KGs Sold</h3>
-          <div class="value">${totalKG.toLocaleString()}</div>
-          <div class="label">${currentMonth}</div>
-        </div>`;
+          <div class="stat-icon">⚖️</div>
+          <div class="stat-value">${totalKG.toLocaleString()}</div>
+          <div class="stat-label">Total KGs Sold</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📅</div>
+          <div class="stat-value">${uniqueDays}</div>
+          <div class="stat-label">Days of Sales</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📊</div>
+          <div class="stat-value">${avgPerDay}</div>
+          <div class="stat-label">Avg KGs/Day</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+          <div class="stat-icon">🛢️</div>
+          <div class="stat-value">${data.length}</div>
+          <div class="stat-label">Total Transactions</div>
+        </div>
+      `;
 
       createDailyTrendChart(data);
       createProductDistributionChart(data);
+      createProductTrendChart(data);
       createDataTable(data);
     }
 
     function createDailyTrendChart(data) {
       if (charts.dailyTrend) charts.dailyTrend.destroy();
 
-      const labels = data.map(r => r.Date || r.DATE);
-      const values = data.map(r => Number(r.TotalKGs) || 0);
+      // Aggregate by date
+      const dailyTotals = {};
+      data.forEach(r => {
+        const date = r.Date || r.DATE || r.date;
+        if (!dailyTotals[date]) dailyTotals[date] = 0;
+        dailyTotals[date] += Number(r.TotalKGs) || 0;
+      });
+
+      const dates = Object.keys(dailyTotals).sort();
+      const values = dates.map(d => dailyTotals[d]);
 
       charts.dailyTrend = new Chart(document.getElementById('dailyTrendChart'), {
         type: 'line',
-        data: { labels, datasets: [{ label: 'Total KGs', data: values, borderColor: '#667eea', fill: false }] },
-        options: { responsive: true, plugins: { legend: { display: false } } }
+        data: {
+          labels: dates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+          datasets: [{
+            label: 'Total KGs',
+            data: values,
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: v => v.toLocaleString() + ' kg' }
+            }
+          }
+        }
       });
     }
 
     function createProductDistributionChart(data) {
       if (charts.productDist) charts.productDist.destroy();
 
-      const total6 = data.filter(r => r.Product?.includes('6KG')).reduce((a,b) => a + (Number(b.TotalKGs)||0), 0);
-      const total13 = data.filter(r => r.Product?.includes('13KG')).reduce((a,b) => a + (Number(b.TotalKGs)||0), 0);
-      const total45 = data.filter(r => r.Product?.includes('45KG')).reduce((a,b) => a + (Number(b.TotalKGs)||0), 0);
+      const total6 = data.filter(r => r.Product?.includes('6KG'))
+        .reduce((a, b) => a + (Number(b.TotalKGs) || 0), 0);
+      const total13 = data.filter(r => r.Product?.includes('13KG'))
+        .reduce((a, b) => a + (Number(b.TotalKGs) || 0), 0);
+      const total45 = data.filter(r => r.Product?.includes('45KG'))
+        .reduce((a, b) => a + (Number(b.TotalKGs) || 0), 0);
 
       charts.productDist = new Chart(document.getElementById('productDistChart'), {
         type: 'doughnut',
-        data: { labels: ['6KG','13KG','45KG'], datasets: [{ data: [total6,total13,total45], backgroundColor: ['#667eea','#764ba2','#f093fb'] }] },
-        options: { plugins: { legend: { position: 'bottom' } } }
+        data: {
+          labels: ['6KG', '13KG', '45KG'],
+          datasets: [{
+            data: [total6, total13, total45],
+            backgroundColor: ['#667eea', '#764ba2', '#f093fb'],
+            borderWidth: 3,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+    }
+
+    function createProductTrendChart(data) {
+      if (charts.productTrend) charts.productTrend.destroy();
+
+      // Aggregate by date and product
+      const trends = { '6KG': {}, '13KG': {}, '45KG': {} };
+      data.forEach(r => {
+        const date = r.Date || r.DATE || r.date;
+        const product = r.Product || '';
+        const kg = Number(r.TotalKGs) || 0;
+        
+        if (product.includes('6KG')) {
+          trends['6KG'][date] = (trends['6KG'][date] || 0) + kg;
+        } else if (product.includes('13KG')) {
+          trends['13KG'][date] = (trends['13KG'][date] || 0) + kg;
+        } else if (product.includes('45KG')) {
+          trends['45KG'][date] = (trends['45KG'][date] || 0) + kg;
+        }
+      });
+
+      const dates = [...new Set(data.map(r => r.Date || r.DATE || r.date))].sort();
+      const labels = dates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
+      const datasets = [
+        {
+          label: '6KG',
+          data: dates.map(d => trends['6KG'][d] || 0),
+          borderColor: '#667eea',
+          backgroundColor: 'rgba(102, 126, 234, 0.2)',
+          tension: 0.4
+        },
+        {
+          label: '13KG',
+          data: dates.map(d => trends['13KG'][d] || 0),
+          borderColor: '#764ba2',
+          backgroundColor: 'rgba(118, 75, 162, 0.2)',
+          tension: 0.4
+        },
+        {
+          label: '45KG',
+          data: dates.map(d => trends['45KG'][d] || 0),
+          borderColor: '#f093fb',
+          backgroundColor: 'rgba(240, 147, 251, 0.2)',
+          tension: 0.4
+        }
+      ];
+
+      charts.productTrend = new Chart(document.getElementById('productTrendChart'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { position: 'top' }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: v => v.toLocaleString() + ' kg' }
+            }
+          }
+        }
       });
     }
 
     function createDataTable(data) {
       const table = document.getElementById('dataTable');
+      
       if (!data.length) {
-        table.innerHTML = "<tr><td>No data available</td></tr>";
+        table.innerHTML = "<tbody><tr><td>No data available</td></tr></tbody>";
         return;
       }
+
       const keys = Object.keys(data[0]);
       let html = "<thead><tr>" + keys.map(k => `<th>${k}</th>`).join('') + "</tr></thead><tbody>";
-      data.forEach(r => {
-        html += "<tr>" + keys.map(k => `<td>${r[k] || ''}</td>`).join('') + "</tr>";
+      
+      data.slice().reverse().forEach(r => {
+        html += "<tr>" + keys.map(k => {
+          let val = r[k] || '';
+          if (k === 'TotalKGs' && val) {
+            val = Number(val).toLocaleString();
+          }
+          return `<td>${val}</td>`;
+        }).join('') + "</tr>";
       });
+      
       html += "</tbody>";
       table.innerHTML = html;
     }
 
+    // Load data on page load
     window.addEventListener('load', loadData);
   </script>
 </body>
 </html>
-
 
