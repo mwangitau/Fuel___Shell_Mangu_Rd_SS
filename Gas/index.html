@@ -310,12 +310,53 @@
   </div>
 
   <script>
-    const SEPTEMBER_API = "https://script.google.com/macros/s/AKfycbhsXZAG60VwIl2vxiZwY7FJn41KMxORvpeTGRq-OUy9t5SJaOhKXcWvnn-fZZ6DY5d/exec";
-    const OCTOBER_API = "https://script.google.com/macros/s/AKfycbwalM3Oh0m8Q7SUD00jXxw32EOo4m9UQM2iwV0_UzjUTDd6VkHGSvZK2v_TcN0nibXQ/exec";
+    const SEPTEMBER_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1346158160&single=true&output=csv";
+    const OCTOBER_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=285948413&single=true&output=csv";
 
     let allData = [];
     let currentMonth = "All";
     let charts = {};
+
+    function csvToArray(csv, delimiter = ',') {
+      const lines = csv.trim().split('\n');
+      
+      function parseLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          const nextChar = line[i + 1];
+          
+          if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+              current += '"';
+              i++;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (char === delimiter && !inQuotes) {
+            result.push(current);
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current);
+        return result.map(field => field.trim());
+      }
+      
+      const headers = parseLine(lines[0]);
+      return lines.slice(1).map(line => {
+        const items = parseLine(line);
+        let obj = {};
+        headers.forEach((h, i) => {
+          obj[h] = items[i] || "";
+        });
+        return obj;
+      });
+    }
 
     async function loadData() {
       document.getElementById('loading').style.display = 'block';
@@ -324,38 +365,70 @@
       document.getElementById('refreshBtn').disabled = true;
 
       try {
-        console.log('Fetching data from both APIs...');
+        console.log('Fetching data from Google Sheets...');
         
         const [sepRes, octRes] = await Promise.all([
-          fetch(SEPTEMBER_API).then(r => {
-            if (!r.ok) throw new Error('September API failed');
-            return r.json();
+          fetch(SEPTEMBER_CSV).then(r => {
+            if (!r.ok) throw new Error('September sheet fetch failed');
+            return r.text();
           }),
-          fetch(OCTOBER_API).then(r => {
-            if (!r.ok) throw new Error('October API failed');
-            return r.json();
+          fetch(OCTOBER_CSV).then(r => {
+            if (!r.ok) throw new Error('October sheet fetch failed');
+            return r.text();
           })
         ]);
 
-        const sepData = Array.isArray(sepRes.data) ? sepRes.data : [];
-        const octData = Array.isArray(octRes.data) ? octRes.data : [];
+        console.log('Parsing September data...');
+        const sepData = csvToArray(sepRes);
+        console.log('September records:', sepData.length);
+        console.log('Sample September row:', sepData[0]);
 
-        console.log('September data:', sepData.length, 'records');
-        console.log('October data:', octData.length, 'records');
+        console.log('Parsing October data...');
+        const octData = csvToArray(octRes);
+        console.log('October records:', octData.length);
+        console.log('Sample October row:', octData[0]);
 
-        // Merge both months
-        allData = [...sepData, ...octData];
+        // Process and clean the data
+        const processRow = (row, month) => {
+          // Try different possible column names
+          const date = row.Date || row.DATE || row.date || '';
+          const product = row.Product || row.PRODUCT || row.product || '';
+          const totalKGs = row.TotalKGs || row['Total KGs'] || row['TOTAL KGS'] || row.totalKGs || '';
+          
+          if (!date || !product || !totalKGs) return null;
+          
+          const kgNum = parseFloat(totalKGs.toString().replace(/,/g, '')) || 0;
+          if (kgNum === 0) return null;
+          
+          return {
+            Date: date,
+            Product: product,
+            TotalKGs: kgNum,
+            Month: month,
+            ...row
+          };
+        };
+
+        const sepProcessed = sepData.map(r => processRow(r, 'September')).filter(r => r !== null);
+        const octProcessed = octData.map(r => processRow(r, 'October')).filter(r => r !== null);
+
+        console.log('Processed September:', sepProcessed.length);
+        console.log('Processed October:', octProcessed.length);
+
+        allData = [...sepProcessed, ...octProcessed];
 
         if (allData.length === 0) {
-          throw new Error('No data received from APIs');
+          throw new Error('No valid data found in the sheets. Please check the column names.');
         }
 
         // Sort by date
         allData.sort((a, b) => {
-          const dateA = new Date(a.Date || a.DATE || a.date);
-          const dateB = new Date(b.Date || b.DATE || b.date);
+          const dateA = new Date(a.Date);
+          const dateB = new Date(b.Date);
           return dateA - dateB;
         });
+
+        console.log(`Total records loaded: ${allData.length}`);
 
         document.getElementById('lastUpdated').textContent = 
           "Last updated: " + new Date().toLocaleString();
@@ -368,8 +441,10 @@
           <div class="error-message">
             <h3>❌ Data Loading Error</h3>
             <p><strong>Error:</strong> ${err.message}</p>
-            <p>Please check your internet connection and API endpoints, then try again.</p>
-            <button onclick="loadData()" style="margin-top: 15px;">🔄 Retry</button>
+            <p>Please check that the Google Sheets are published and accessible.</p>
+            <button onclick="loadData()" style="margin-top: 15px; background: #dc2626; border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+              🔄 Retry
+            </button>
           </div>
         `;
         document.getElementById('loading').style.display = 'none';
@@ -387,15 +462,10 @@
 
       let filtered = allData;
       if (month !== "All") {
-        filtered = allData.filter(row => {
-          const dateStr = row.Date || row.DATE || row.date;
-          if (!dateStr) return false;
-          const d = new Date(dateStr);
-          const m = d.toLocaleString('en-US', { month: 'long' });
-          return m === month;
-        });
+        filtered = allData.filter(row => row.Month === month);
       }
       
+      console.log(`Displaying ${filtered.length} records for ${month}`);
       displayData(filtered);
     }
 
@@ -416,21 +486,21 @@
       document.getElementById('dashboard').style.display = 'block';
 
       // Calculate statistics
-      const totalKG = data.reduce((sum, r) => sum + (Number(r.TotalKGs) || 0), 0);
-      const avg6KG = data.filter(r => r.Product?.includes('6KG'))
-        .reduce((sum, r) => sum + (Number(r.TotalKGs) || 0), 0);
-      const avg13KG = data.filter(r => r.Product?.includes('13KG'))
-        .reduce((sum, r) => sum + (Number(r.TotalKGs) || 0), 0);
-      const avg45KG = data.filter(r => r.Product?.includes('45KG'))
-        .reduce((sum, r) => sum + (Number(r.TotalKGs) || 0), 0);
+      const totalKG = data.reduce((sum, r) => sum + r.TotalKGs, 0);
+      const total6KG = data.filter(r => r.Product.includes('6KG') || r.Product.includes('6 KG'))
+        .reduce((sum, r) => sum + r.TotalKGs, 0);
+      const total13KG = data.filter(r => r.Product.includes('13KG') || r.Product.includes('13 KG'))
+        .reduce((sum, r) => sum + r.TotalKGs, 0);
+      const total45KG = data.filter(r => r.Product.includes('45KG') || r.Product.includes('45 KG'))
+        .reduce((sum, r) => sum + r.TotalKGs, 0);
       
-      const uniqueDays = new Set(data.map(r => r.Date || r.DATE || r.date)).size;
+      const uniqueDays = new Set(data.map(r => r.Date)).size;
       const avgPerDay = uniqueDays > 0 ? (totalKG / uniqueDays).toFixed(0) : 0;
 
       document.getElementById('statsGrid').innerHTML = `
         <div class="stat-card">
           <div class="stat-icon">⚖️</div>
-          <div class="stat-value">${totalKG.toLocaleString()}</div>
+          <div class="stat-value">${totalKG.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
           <div class="stat-label">Total KGs Sold</div>
         </div>
         <div class="stat-card">
@@ -459,12 +529,10 @@
     function createDailyTrendChart(data) {
       if (charts.dailyTrend) charts.dailyTrend.destroy();
 
-      // Aggregate by date
       const dailyTotals = {};
       data.forEach(r => {
-        const date = r.Date || r.DATE || r.date;
-        if (!dailyTotals[date]) dailyTotals[date] = 0;
-        dailyTotals[date] += Number(r.TotalKGs) || 0;
+        if (!dailyTotals[r.Date]) dailyTotals[r.Date] = 0;
+        dailyTotals[r.Date] += r.TotalKGs;
       });
 
       const dates = Object.keys(dailyTotals).sort();
@@ -473,14 +541,18 @@
       charts.dailyTrend = new Chart(document.getElementById('dailyTrendChart'), {
         type: 'line',
         data: {
-          labels: dates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+          labels: dates.map(d => {
+            const date = new Date(d);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          }),
           datasets: [{
             label: 'Total KGs',
             data: values,
             borderColor: '#667eea',
             backgroundColor: 'rgba(102, 126, 234, 0.1)',
             tension: 0.4,
-            fill: true
+            fill: true,
+            borderWidth: 3
           }]
         },
         options: {
@@ -502,12 +574,12 @@
     function createProductDistributionChart(data) {
       if (charts.productDist) charts.productDist.destroy();
 
-      const total6 = data.filter(r => r.Product?.includes('6KG'))
-        .reduce((a, b) => a + (Number(b.TotalKGs) || 0), 0);
-      const total13 = data.filter(r => r.Product?.includes('13KG'))
-        .reduce((a, b) => a + (Number(b.TotalKGs) || 0), 0);
-      const total45 = data.filter(r => r.Product?.includes('45KG'))
-        .reduce((a, b) => a + (Number(b.TotalKGs) || 0), 0);
+      const total6 = data.filter(r => r.Product.includes('6KG') || r.Product.includes('6 KG'))
+        .reduce((a, b) => a + b.TotalKGs, 0);
+      const total13 = data.filter(r => r.Product.includes('13KG') || r.Product.includes('13 KG'))
+        .reduce((a, b) => a + b.TotalKGs, 0);
+      const total45 = data.filter(r => r.Product.includes('45KG') || r.Product.includes('45 KG'))
+        .reduce((a, b) => a + b.TotalKGs, 0);
 
       charts.productDist = new Chart(document.getElementById('productDistChart'), {
         type: 'doughnut',
@@ -524,7 +596,18 @@
           responsive: true,
           maintainAspectRatio: true,
           plugins: {
-            legend: { position: 'bottom' }
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.parsed || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return `${label}: ${value.toLocaleString()} kg (${percentage}%)`;
+                }
+              }
+            }
           }
         }
       });
@@ -533,24 +616,25 @@
     function createProductTrendChart(data) {
       if (charts.productTrend) charts.productTrend.destroy();
 
-      // Aggregate by date and product
       const trends = { '6KG': {}, '13KG': {}, '45KG': {} };
       data.forEach(r => {
-        const date = r.Date || r.DATE || r.date;
-        const product = r.Product || '';
-        const kg = Number(r.TotalKGs) || 0;
+        const product = r.Product;
+        const kg = r.TotalKGs;
         
-        if (product.includes('6KG')) {
-          trends['6KG'][date] = (trends['6KG'][date] || 0) + kg;
-        } else if (product.includes('13KG')) {
-          trends['13KG'][date] = (trends['13KG'][date] || 0) + kg;
-        } else if (product.includes('45KG')) {
-          trends['45KG'][date] = (trends['45KG'][date] || 0) + kg;
+        if (product.includes('6KG') || product.includes('6 KG')) {
+          trends['6KG'][r.Date] = (trends['6KG'][r.Date] || 0) + kg;
+        } else if (product.includes('13KG') || product.includes('13 KG')) {
+          trends['13KG'][r.Date] = (trends['13KG'][r.Date] || 0) + kg;
+        } else if (product.includes('45KG') || product.includes('45 KG')) {
+          trends['45KG'][r.Date] = (trends['45KG'][r.Date] || 0) + kg;
         }
       });
 
-      const dates = [...new Set(data.map(r => r.Date || r.DATE || r.date))].sort();
-      const labels = dates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      const dates = [...new Set(data.map(r => r.Date))].sort();
+      const labels = dates.map(d => {
+        const date = new Date(d);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
 
       const datasets = [
         {
@@ -558,21 +642,24 @@
           data: dates.map(d => trends['6KG'][d] || 0),
           borderColor: '#667eea',
           backgroundColor: 'rgba(102, 126, 234, 0.2)',
-          tension: 0.4
+          tension: 0.4,
+          borderWidth: 3
         },
         {
           label: '13KG',
           data: dates.map(d => trends['13KG'][d] || 0),
           borderColor: '#764ba2',
           backgroundColor: 'rgba(118, 75, 162, 0.2)',
-          tension: 0.4
+          tension: 0.4,
+          borderWidth: 3
         },
         {
           label: '45KG',
           data: dates.map(d => trends['45KG'][d] || 0),
           borderColor: '#f093fb',
           backgroundColor: 'rgba(240, 147, 251, 0.2)',
-          tension: 0.4
+          tension: 0.4,
+          borderWidth: 3
         }
       ];
 
@@ -603,26 +690,31 @@
         return;
       }
 
-      const keys = Object.keys(data[0]);
-      let html = "<thead><tr>" + keys.map(k => `<th>${k}</th>`).join('') + "</tr></thead><tbody>";
+      // Use only the main columns
+      const displayColumns = ['Date', 'Product', 'TotalKGs', 'Month'];
+      
+      let html = "<thead><tr>" + displayColumns.map(k => `<th>${k}</th>`).join('') + "</tr></thead><tbody>";
       
       data.slice().reverse().forEach(r => {
-        html += "<tr>" + keys.map(k => {
+        html += "<tr>";
+        displayColumns.forEach(k => {
           let val = r[k] || '';
-          if (k === 'TotalKGs' && val) {
-            val = Number(val).toLocaleString();
+          if (k === 'TotalKGs') {
+            val = Number(val).toLocaleString(undefined, {maximumFractionDigits: 2});
+          } else if (k === 'Date') {
+            const date = new Date(val);
+            val = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
           }
-          return `<td>${val}</td>`;
-        }).join('') + "</tr>";
+          html += `<td>${val}</td>`;
+        });
+        html += "</tr>";
       });
       
       html += "</tbody>";
       table.innerHTML = html;
     }
 
-    // Load data on page load
     window.addEventListener('load', loadData);
   </script>
 </body>
 </html>
-
