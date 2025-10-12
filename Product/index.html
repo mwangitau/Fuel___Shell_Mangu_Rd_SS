@@ -411,17 +411,25 @@
         console.log('Data received, parsing...');
         const rows = csvToArray(text);
         console.log('Sample row:', rows[0]);
+        console.log('Total rows:', rows.length);
         
         allData = [];
+        let lastDate = null; // Keep track of the last valid date
         
         rows.forEach((row, index) => {
-          // Skip empty rows or total rows
+          // Handle empty DATE cells - use the last date we saw
           const dateValue = row.DATE ? row.DATE.toString().trim() : '';
-          if (!dateValue || dateValue === '' || dateValue.toUpperCase().includes('TOTAL')) return;
           
-          const date = formatDate(dateValue);
+          if (dateValue && dateValue !== '' && !dateValue.toUpperCase().includes('TOTAL')) {
+            lastDate = dateValue;
+          }
+          
+          // Skip if we don't have a date yet or if this is a total row
+          if (!lastDate || (dateValue && dateValue.toUpperCase().includes('TOTAL'))) return;
+          
+          const date = formatDate(lastDate);
           if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            console.log(`Skipping row ${index + 2}: Invalid date format "${dateValue}"`);
+            console.log(`Skipping row ${index + 2}: Invalid date format "${lastDate}"`);
             return;
           }
           
@@ -459,7 +467,7 @@
               variancePct,
               comments: row.COMMENTS || ''
             });
-            console.log(`Added: ${date} - ${product} - Meter: ${meterSale}`);
+            console.log(`Added: ${date} - ${product} - Meter: ${meterSale} - Variance: ${variancePct}%`);
           }
         });
         
