@@ -412,77 +412,34 @@
         
         rows.forEach(row => {
           // Skip empty rows or total rows
-          if (!row.DAY || row.DAY === '' || row.DAY.includes('TOTAL')) return;
+          if (!row.DATE || row.DATE === '' || row.DATE.includes('TOTAL')) return;
           
-          const date = formatDate(row.DAY);
+          const date = formatDate(row.DATE);
           if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) return;
           
-          // Parse UX data
-          const uxOpenDip = parseFloat(row['OPEN DIP']) || 0;
-          const uxDelivery = parseFloat(row['DELIVERY']) || 0;
-          const uxCloseDip = parseFloat(row['CLOSE DIP']) || 0;
-          const uxDipSale = parseFloat(row['DIP SALE']) || 0;
-          const uxMeterSale = parseFloat(row['METER SALE']) || 0;
-          const uxVariance = parseFloat(row['VAR']) || 0;
-          const uxVariancePct = parseFloat(row['EXPLAIN > 5%']) || 0;
+          const product = (row.PRODUCT || '').trim().toUpperCase();
+          if (!product || !['UX', 'DX', 'VP'].includes(product)) return;
           
-          if (uxMeterSale > 0) {
+          const openDip = parseFloat(row['OPEN DIP']) || 0;
+          const delivery = parseFloat(row['DELIVERY']) || 0;
+          const closeDip = parseFloat(row['CLOSE DIP']) || 0;
+          const dipSale = parseFloat(row['DIP SALE']) || 0;
+          const meterSale = parseFloat(row['METER SALE']) || 0;
+          const variance = parseFloat(row['VAR']) || 0;
+          const variancePct = parseFloat(row['EXPLAIN > 5%']) || 0;
+          
+          if (meterSale > 0 || dipSale > 0) {
             allData.push({
               date,
-              product: 'UX',
-              openDip: uxOpenDip,
-              delivery: uxDelivery,
-              closeDip: uxCloseDip,
-              dipSale: uxDipSale,
-              meterSale: uxMeterSale,
-              variance: uxVariance,
-              variancePct: uxVariancePct
-            });
-          }
-          
-          // Parse DX data
-          const dxOpenDip = parseFloat(row['OPEN DIP.1']) || 0;
-          const dxDelivery = parseFloat(row['DELIVERY.1']) || 0;
-          const dxCloseDip = parseFloat(row['CLOSE DIP.1']) || 0;
-          const dxDipSale = parseFloat(row['DIP SALE.1']) || 0;
-          const dxMeterSale = parseFloat(row['METER SALE.1']) || 0;
-          const dxVariance = parseFloat(row['VAR.1']) || 0;
-          const dxVariancePct = parseFloat(row['EXPLAIN > 5%.1']) || 0;
-          
-          if (dxMeterSale > 0) {
-            allData.push({
-              date,
-              product: 'DX',
-              openDip: dxOpenDip,
-              delivery: dxDelivery,
-              closeDip: dxCloseDip,
-              dipSale: dxDipSale,
-              meterSale: dxMeterSale,
-              variance: dxVariance,
-              variancePct: dxVariancePct
-            });
-          }
-          
-          // Parse VP data
-          const vpOpenDip = parseFloat(row['OPEN DIP.2']) || 0;
-          const vpDelivery = parseFloat(row['DELIVERY.2']) || 0;
-          const vpCloseDip = parseFloat(row['CLOSE DIP.2']) || 0;
-          const vpDipSale = parseFloat(row['DIP SALE.2']) || 0;
-          const vpMeterSale = parseFloat(row['METER SALE.2']) || 0;
-          const vpVariance = parseFloat(row['VAR.2']) || 0;
-          const vpVariancePct = parseFloat(row['EXPLAIN > 5%.2']) || 0;
-          
-          if (vpMeterSale > 0) {
-            allData.push({
-              date,
-              product: 'VP',
-              openDip: vpOpenDip,
-              delivery: vpDelivery,
-              closeDip: vpCloseDip,
-              dipSale: vpDipSale,
-              meterSale: vpMeterSale,
-              variance: vpVariance,
-              variancePct: vpVariancePct
+              product,
+              openDip,
+              delivery,
+              closeDip,
+              dipSale,
+              meterSale,
+              variance,
+              variancePct,
+              comments: row.COMMENTS || ''
             });
           }
         });
@@ -879,4 +836,3 @@
   </script>
 </body>
 </html>
-
