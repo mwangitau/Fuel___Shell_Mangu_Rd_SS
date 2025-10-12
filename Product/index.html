@@ -374,10 +374,14 @@
     }
 
     function formatDate(dateStr) {
-      // Handle format like "2025.10.01"
-      const parts = dateStr.split(".");
+      // Handle format like "2025.10.01" or "2025.10.1"
+      if (!dateStr) return null;
+      const parts = dateStr.trim().split(".");
       if (parts.length === 3) {
-        return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+        const year = parts[0].padStart(4, '0');
+        const month = parts[1].padStart(2, '0');
+        const day = parts[2].padStart(2, '0');
+        return `${year}-${month}-${day}`;
       }
       return dateStr;
     }
@@ -410,23 +414,37 @@
         
         allData = [];
         
-        rows.forEach(row => {
+        rows.forEach((row, index) => {
           // Skip empty rows or total rows
-          if (!row.DATE || row.DATE === '' || row.DATE.includes('TOTAL')) return;
+          const dateValue = row.DATE ? row.DATE.toString().trim() : '';
+          if (!dateValue || dateValue === '' || dateValue.toUpperCase().includes('TOTAL')) return;
           
-          const date = formatDate(row.DATE);
-          if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) return;
+          const date = formatDate(dateValue);
+          if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            console.log(`Skipping row ${index + 2}: Invalid date format "${dateValue}"`);
+            return;
+          }
           
-          const product = (row.PRODUCT || '').trim().toUpperCase();
-          if (!product || !['UX', 'DX', 'VP'].includes(product)) return;
+          const product = (row.PRODUCT || '').toString().trim().toUpperCase();
+          if (!product || !['UX', 'DX', 'VP'].includes(product)) {
+            console.log(`Skipping row ${index + 2}: Invalid product "${product}"`);
+            return;
+          }
           
-          const openDip = parseFloat(row['OPEN DIP']) || 0;
-          const delivery = parseFloat(row['DELIVERY']) || 0;
-          const closeDip = parseFloat(row['CLOSE DIP']) || 0;
-          const dipSale = parseFloat(row['DIP SALE']) || 0;
-          const meterSale = parseFloat(row['METER SALE']) || 0;
-          const variance = parseFloat(row['VAR']) || 0;
-          const variancePct = parseFloat(row['EXPLAIN > 5%']) || 0;
+          // Parse numeric values, handling potential comma separators
+          const parseNum = (val) => {
+            if (!val) return 0;
+            const str = val.toString().replace(/,/g, '');
+            return parseFloat(str) || 0;
+          };
+          
+          const openDip = parseNum(row['OPEN DIP']);
+          const delivery = parseNum(row['DELIVERY']);
+          const closeDip = parseNum(row['CLOSE DIP']);
+          const dipSale = parseNum(row['DIP SALE']);
+          const meterSale = parseNum(row['METER SALE']);
+          const variance = parseNum(row['VAR']);
+          const variancePct = parseNum(row['EXPLAIN > 5%']);
           
           if (meterSale > 0 || dipSale > 0) {
             allData.push({
@@ -441,6 +459,7 @@
               variancePct,
               comments: row.COMMENTS || ''
             });
+            console.log(`Added: ${date} - ${product} - Meter: ${meterSale}`);
           }
         });
         
