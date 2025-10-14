@@ -682,7 +682,7 @@
       Object.keys(latestStockByProduct).forEach(product => {
         const closeDip = latestStockByProduct[product].closeDip;
         if (product === 'VP' && closeDip < 1000) lowStockCount++;
-        if ((product === 'UX' || product === 'DX') && closeDip < 2000) lowStockCount++;
+        if ((product === 'UX' || product === 'DX') && closeDip < 3000) lowStockCount++;
       });
       
       document.getElementById('metricsGrid').innerHTML = `
