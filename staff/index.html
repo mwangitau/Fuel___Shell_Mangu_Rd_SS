@@ -25,6 +25,37 @@
       overflow: hidden;
     }
     
+    /* Configuration Helper Section */
+    .config-helper {
+      background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+      border-left: 5px solid #4caf50;
+      padding: 20px;
+      margin: 20px 30px;
+      border-radius: 10px;
+    }
+    .config-helper h3 {
+      margin-top: 0;
+      color: #2e7d32;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .config-helper code {
+      background: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      color: #d32f2f;
+    }
+    .config-helper ol {
+      margin: 10px 0;
+      padding-left: 25px;
+    }
+    .config-helper li {
+      margin: 8px 0;
+      line-height: 1.6;
+    }
+    
     .header {
       background: linear-gradient(135deg, #0077cc, #005aa3);
       color: white;
@@ -75,7 +106,7 @@
     
     .controls-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 20px;
       align-items: end;
     }
@@ -392,12 +423,38 @@
   <div class="container">
     <div class="header">
       <h1>📊 Staff Shortages Dashboard</h1>
-      <p>Mangu Rd Shell Service Station — Real-time Analytics (Sept - Oct 2024)</p>
+      <p id="headerSubtitle">Mangu Rd Shell Service Station — Real-time Analytics</p>
+    </div>
+    
+    <!-- Configuration Helper (Remove this section after you're comfortable) -->
+    <div class="config-helper" id="configHelper">
+      <h3>💡 Quick Setup Guide - Staff Dashboard</h3>
+      <p><strong>To add a new month of staff shortage data:</strong></p>
+      <ol>
+        <li>Open your Google Sheet and go to <strong>File → Share → Publish to web</strong></li>
+        <li>Select the staff shortages sheet/tab, choose <strong>CSV</strong> format, click <strong>Publish</strong></li>
+        <li>Copy the published CSV link</li>
+        <li>In the code below (line ~420), add your month like this:<br>
+            <code>"December": "YOUR_CSV_LINK_HERE"</code></li>
+        <li>Save and refresh! Your new month data loads automatically 🎉</li>
+      </ol>
+      <p><strong>Note:</strong> Your sheet must have a <code>DAY</code> column and columns for each staff member with their daily balances.</p>
+      <button onclick="document.getElementById('configHelper').style.display='none'" 
+              style="background: #4caf50; margin-top: 10px; cursor: pointer; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600;">
+        ✓ Got it, hide this message
+      </button>
     </div>
     
     <div class="content">
       <div class="controls-section">
         <div class="controls-grid">
+          <div class="control-group">
+            <label>📅 Month Filter</label>
+            <select id="monthSelect" onchange="loadSelectedMonth()">
+              <!-- Options will be auto-populated from dataSources -->
+            </select>
+          </div>
+          
           <div class="control-group">
             <label>👥 View Staff Member</label>
             <select id="staffSelect">
@@ -469,27 +526,63 @@
     <div class="footer">
       <p><strong>© 2025 Kiryan Energy Ltd</strong> — All Rights Reserved</p>
       <p><strong>Confidential:</strong> This interactive dashboard contains sensitive business data. Unauthorized access, distribution, or reproduction is strictly prohibited.</p>
+      <p>Dashboard v2.1 • Easy Config</p>
     </div>
   </div>
 
   <div class="tooltip" id="tooltip"></div>
 
   <script>
-    const csvUrls = [
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vRNw7hn2wzYu3ATj3LVB5NT8oKO0PLkyTI_SN7owSvlnoJm0k4mvAW6nclDwF6Trtqsdb3wCMpM9imI/pub?gid=0&single=true&output=csv",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=993195447&single=true&output=csv"
-    ];
+    // ============================================================================
+    // 📝 CONFIGURATION SECTION - ADD YOUR MONTHS HERE!
+    // ============================================================================
+    // To add a new month, simply add a new line like:
+    // "MonthName": "YOUR_GOOGLE_SHEETS_CSV_LINK",
+    // 
+    // All months will be combined and available in the dropdown!
+    // ============================================================================
+    
+    const dataSources = {
+      "September": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRNw7hn2wzYu3ATj3LVB5NT8oKO0PLkyTI_SN7owSvlnoJm0k4mvAW6nclDwF6Trtqsdb3wCMpM9imI/pub?gid=0&single=true&output=csv",
+      "October": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=993195447&single=true&output=csv"
+      // Add more months here as needed:
+      "November": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=993195447&single=true&output=csv",
+      // "December": "YOUR_CSV_LINK_HERE",
+    };
+    
+    // ============================================================================
+    // 🔧 AUTOMATIC SETUP - NO NEED TO EDIT BELOW THIS LINE!
+    // ============================================================================
     
     let chart, allData = [], filteredData = [];
     let searchTimeout;
-    let allStaffMembers = new Set(); // Track all unique staff members
-    let currentStaff = []; // Active staff for current filtered view
+    let allStaffMembers = new Set();
+    let currentStaff = [];
+    let allMonthsData = {}; // Store data for each month separately
 
     // Color scheme for staff members
     const staffColors = [
       '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
       '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0'
     ];
+
+    // Initialize month dropdown on page load
+    function initializeMonthFilter() {
+      const monthSelect = document.getElementById('monthSelect');
+      monthSelect.innerHTML = '<option value="combined">Combined (All Months)</option>';
+      
+      // Get months in reverse chronological order (newest first)
+      const months = Object.keys(dataSources).reverse();
+      
+      months.forEach(month => {
+        const option = document.createElement('option');
+        option.value = month;
+        option.textContent = month;
+        monthSelect.appendChild(option);
+      });
+      
+      console.log(`✅ Initialized with ${months.length} months: ${months.join(', ')}`);
+    }
 
     function csvToArray(csv, delimiter = ',') {
       const lines = csv.trim().split('\n');
@@ -513,15 +606,26 @@
 
     async function loadData() {
       try {
-        // Fetch data from both CSV sources
-        const fetchPromises = csvUrls.map(url => fetch(url).then(r => r.text()));
-        const texts = await Promise.all(fetchPromises);
+        console.log('📥 Loading staff shortage data...');
         
-        // Parse and combine data from both months
+        // Fetch data from all CSV sources
+        const fetchPromises = Object.entries(dataSources).map(([month, url]) => 
+          fetch(url)
+            .then(r => r.text())
+            .then(text => ({ month, text }))
+        );
+        
+        const results = await Promise.all(fetchPromises);
+        
+        // Parse and store data for each month separately
+        allMonthsData = {};
         let combinedRows = [];
-        texts.forEach(text => {
+        
+        results.forEach(({ month, text }) => {
           const rows = csvToArray(text);
+          allMonthsData[month] = rows;
           combinedRows = combinedRows.concat(rows);
+          console.log(`   ✅ Loaded ${rows.length} rows from ${month}`);
         });
 
         // Extract all unique staff members from the data
@@ -534,7 +638,10 @@
             }
           });
         }
+        
+        console.log(`   Found ${allStaffMembers.size} staff members: ${Array.from(allStaffMembers).join(', ')}`);
 
+        // Process all data (combined by default)
         allData = combinedRows
           .filter(r => r.DAY && r.DAY !== "TOTALS") 
           .map(r => {
@@ -545,6 +652,9 @@
           .sort((a, b) => new Date(a.day) - new Date(b.day));
 
         filteredData = [...allData];
+        
+        // Update subtitle with date range
+        updateHeaderSubtitle();
         
         // Hide loading indicator and show content
         document.getElementById('loadingIndicator').style.display = 'none';
@@ -557,9 +667,62 @@
         setupEventListeners();
         
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('❌ Error loading data:', error);
         document.getElementById('loadingIndicator').innerHTML = 
-          '<div style="color: #dc3545;">❌ Error loading data. Please try again later.</div>';
+          '<div style="color: #dc3545;">❌ Error loading data. Please check your CSV links and try again.</div>';
+      }
+    }
+
+    function loadSelectedMonth() {
+      const selectedMonth = document.getElementById('monthSelect').value;
+      
+      if (selectedMonth === 'combined') {
+        // Load all months combined
+        let combinedRows = [];
+        Object.values(allMonthsData).forEach(rows => {
+          combinedRows = combinedRows.concat(rows);
+        });
+        
+        allData = combinedRows
+          .filter(r => r.DAY && r.DAY !== "TOTALS") 
+          .map(r => {
+            let obj = { day: formatDay(r.DAY) };    
+            allStaffMembers.forEach(s => obj[s] = parseFloat(r[s]) || 0);
+            return obj;
+          })
+          .sort((a, b) => new Date(a.day) - new Date(b.day));
+      } else {
+        // Load specific month
+        const rows = allMonthsData[selectedMonth] || [];
+        allData = rows
+          .filter(r => r.DAY && r.DAY !== "TOTALS") 
+          .map(r => {
+            let obj = { day: formatDay(r.DAY) };    
+            allStaffMembers.forEach(s => obj[s] = parseFloat(r[s]) || 0);
+            return obj;
+          })
+          .sort((a, b) => new Date(a.day) - new Date(b.day));
+      }
+      
+      filteredData = [...allData];
+      updateHeaderSubtitle();
+      updateCurrentStaff();
+      populateDropdown();
+      setDefaultDates();
+      renderDashboard();
+    }
+
+    function updateHeaderSubtitle() {
+      const subtitle = document.getElementById('headerSubtitle');
+      const selectedMonth = document.getElementById('monthSelect').value;
+      
+      if (allData.length > 0) {
+        const dates = allData.map(d => d.day).sort();
+        const startDate = new Date(dates[0]).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        const endDate = new Date(dates[dates.length - 1]).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        
+        const monthLabel = selectedMonth === 'combined' ? 'All Months' : selectedMonth;
+        subtitle.textContent = `Mangu Rd Shell Service Station — ${monthLabel} (${startDate} - ${endDate})`;
       }
     }
 
@@ -583,6 +746,8 @@
 
     function populateDropdown() {
       const select = document.getElementById("staffSelect");
+      const currentValue = select.value;
+      
       // Clear existing options except "All Staff Members"
       select.innerHTML = '<option value="ALL">All Staff Members</option>';
       
@@ -592,6 +757,11 @@
         opt.textContent = s;
         select.appendChild(opt);
       });
+      
+      // Restore previous selection if still available
+      if (currentValue !== "ALL" && currentStaff.includes(currentValue)) {
+        select.value = currentValue;
+      }
     }
 
     function setDefaultDates() {
@@ -650,14 +820,11 @@
     }
 
     function resetFilters() {
+      document.getElementById("monthSelect").value = "combined";
       document.getElementById("staffSelect").value = "ALL";
       document.getElementById("chartType").value = "bar";
       document.getElementById("searchBox").value = "";
-      setDefaultDates();
-      filteredData = [...allData];
-      updateCurrentStaff();
-      populateDropdown();
-      renderDashboard();
+      loadSelectedMonth();
     }
 
     function renderDashboard() {
@@ -957,7 +1124,9 @@
       tooltip.style.opacity = '0';
     }
 
+    // Initialize and load data on page load
     document.addEventListener('DOMContentLoaded', () => {
+      initializeMonthFilter();
       loadData();
       
       setTimeout(() => {
@@ -974,6 +1143,7 @@
     `;
     document.head.appendChild(style);
 
+    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
@@ -988,11 +1158,6 @@
         }
       }
     });
-
-    setInterval(() => {
-      console.log('Refreshing data...');
-      loadData();
-    }, 300000);
 
   </script>
 </body>
