@@ -376,7 +376,7 @@
     const dataSources = {
       "September": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?output=csv",
       "October": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1064673143&output=csv",
-      "November": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=1064673143&single=true&output=csv",
+      "November": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=1064673143&single=true&output=csv"
       // Add more months here as needed:
       // "December": "YOUR_CSV_LINK_HERE",
       // "January": "YOUR_CSV_LINK_HERE",
@@ -391,11 +391,12 @@
     // Auto-populate month dropdown on page load
     function initializeMonthFilter() {
       const monthFilter = document.getElementById('monthFilter');
-      monthFilter.innerHTML = '<option value="combined">Combined (All Months)</option>';
+      monthFilter.innerHTML = '';
       
       // Get months in reverse chronological order (newest first)
       const months = Object.keys(dataSources).reverse();
       
+      // Add individual months first
       months.forEach(month => {
         const option = document.createElement('option');
         option.value = month;
@@ -403,7 +404,14 @@
         monthFilter.appendChild(option);
       });
       
+      // Add combined option at the end
+      const combinedOption = document.createElement('option');
+      combinedOption.value = 'combined';
+      combinedOption.textContent = 'Combined (All Months)';
+      monthFilter.appendChild(combinedOption);
+      
       console.log(`✅ Initialized with ${months.length} months: ${months.join(', ')}`);
+      console.log(`   Default selection: ${months[0]} (most recent)`);
     }
 
     function csvToArray(csv, delimiter = ',') {
