@@ -20,6 +20,38 @@
       padding: 30px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
+    
+    /* Configuration Helper Section */
+    .config-helper {
+      background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+      border-left: 5px solid #4caf50;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 25px;
+    }
+    .config-helper h3 {
+      margin-top: 0;
+      color: #2e7d32;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .config-helper code {
+      background: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      color: #d32f2f;
+    }
+    .config-helper ol {
+      margin: 10px 0;
+      padding-left: 25px;
+    }
+    .config-helper li {
+      margin: 8px 0;
+      line-height: 1.6;
+    }
+    
     h1 {
       text-align: center;
       color: #1e293b;
@@ -390,6 +422,25 @@
     <h1>⛽ Fuel Product Analysis Dashboard</h1>
     <div class="subtitle">Inventory Management & Variance Tracking</div>
     
+    <!-- Configuration Helper (Remove this section after you're comfortable) -->
+    <div class="config-helper" id="configHelper">
+      <h3>💡 Quick Setup Guide - Product Dashboard</h3>
+      <p><strong>To add a new month of product data:</strong></p>
+      <ol>
+        <li>Open your Google Sheet and go to <strong>File → Share → Publish to web</strong></li>
+        <li>Select the product analysis sheet/tab, choose <strong>CSV</strong> format, click <strong>Publish</strong></li>
+        <li>Copy the published CSV link</li>
+        <li>In the code below (line ~445), add your month like this:<br>
+            <code>"December": "YOUR_CSV_LINK_HERE"</code></li>
+        <li>Save and refresh! Your new month appears in the dropdown automatically 🎉</li>
+      </ol>
+      <p><strong>Note:</strong> Your sheet must have these columns: <code>DATE, PRODUCT, OPEN DIP, DELIVERY, CLOSE DIP, DIP SALE, METER SALE, VAR, EXPLAIN &gt; 5%</code></p>
+      <button onclick="document.getElementById('configHelper').style.display='none'" 
+              style="background: #4caf50; margin-top: 10px; cursor: pointer;">
+        ✓ Got it, hide this message
+      </button>
+    </div>
+    
     <div class="metrics-grid" id="metricsGrid">
       <div class="loading-spinner"><div class="spinner"></div></div>
     </div>
@@ -398,12 +449,18 @@
     
     <div class="filter-section">
       <div class="filter-group">
+        <label class="filter-label">📅 Month</label>
+        <select id="monthFilter" onchange="loadData()">
+          <!-- Options will be auto-populated from dataSources -->
+        </select>
+      </div>
+      <div class="filter-group">
         <label class="filter-label">📦 Product Filter</label>
         <select id="productFilter">
           <option value="all">All Products</option>
-          <option value="UX">UX - Premium Unleaded</option>
-          <option value="DX">DX - Diesel</option>
-          <option value="VP">VP - Vpower</option>
+          <option value="UX">UX - Unleaded Super (Green)</option>
+          <option value="DX">DX - Diesel (Black)</option>
+          <option value="VP">VP - V-Power (Red)</option>
         </select>
       </div>
       <div class="filter-group">
@@ -455,15 +512,70 @@
     <footer>
       <p><strong>© 2025 Kiryan Energy Ltd — All Rights Reserved</strong></p>
       <p><strong>Confidential:</strong> This dashboard is for official use only.</p>
-      <p>Data refreshed automatically • Dashboard v2.0</p>
+      <p>Data refreshed automatically • Dashboard v2.1 • Easy Config</p>
     </footer>
   </div>
 
   <script>
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1772695434&single=true&output=csv";
+    // ============================================================================
+    // 📝 CONFIGURATION SECTION - ADD YOUR MONTHS HERE!
+    // ============================================================================
+    // To add a new month, simply add a new line like:
+    // "MonthName": "YOUR_GOOGLE_SHEETS_CSV_LINK",
+    // 
+    // The dropdown will automatically update with all months below!
+    // ============================================================================
+    
+    const dataSources = {
+      "October": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1772695434&single=true&output=csv"
+      // Add more months here as needed:
+      "November": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=1772695434&single=true&output=csv",
+      // "December": "YOUR_CSV_LINK_HERE",
+    };
+    
+    // ============================================================================
+    // 🎨 PRODUCT COLOR CONFIGURATION
+    // ============================================================================
+    // Customize your product colors here!
+    // DX Diesel = Black, UX Unleaded Super = Green, VP V-Power = Red
+    // ============================================================================
+    
+    const PRODUCT_COLORS = {
+      'DX': '#000000',      // Black - Diesel
+      'UX': '#10b981',      // Green - Unleaded Super
+      'VP': '#dc2626'       // Red - V-Power
+    };
+    
+    const PRODUCT_NAMES = {
+      'DX': 'DX Diesel',
+      'UX': 'UX Unleaded Super',
+      'VP': 'VP Shell V-Power'
+    };
+    
+    // ============================================================================
+    // 🔧 AUTOMATIC SETUP - NO NEED TO EDIT BELOW THIS LINE!
+    // ============================================================================
     
     let allData = [];
     let charts = {};
+
+    // Auto-populate month dropdown on page load
+    function initializeMonthFilter() {
+      const monthFilter = document.getElementById('monthFilter');
+      monthFilter.innerHTML = '';
+      
+      // Get months in reverse chronological order (newest first)
+      const months = Object.keys(dataSources).reverse();
+      
+      months.forEach(month => {
+        const option = document.createElement('option');
+        option.value = month;
+        option.textContent = month;
+        monthFilter.appendChild(option);
+      });
+      
+      console.log(`✅ Initialized with ${months.length} months: ${months.join(', ')}`);
+    }
 
     function csvToArray(csv, delimiter = ',') {
       const lines = csv.trim().split('\n');
@@ -530,8 +642,13 @@
 
     async function loadData() {
       try {
-        console.log('Fetching data from Google Sheets...');
-        const response = await fetch(CSV_URL);
+        const selectedMonth = document.getElementById('monthFilter').value;
+        const csvUrl = dataSources[selectedMonth];
+        
+        document.getElementById('metricsGrid').innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+        
+        console.log(`📥 Loading ${selectedMonth} product data...`);
+        const response = await fetch(csvUrl);
         
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -545,10 +662,11 @@
         console.log('Data received, parsing...');
         const rows = csvToArray(text);
         console.log('Sample row:', rows[0]);
-        console.log('Total rows:', rows.length);
+        console.log(`   Parsed ${rows.length} rows`);
         
         allData = [];
         let lastDate = null; // Keep track of the last valid date
+        let validRows = 0;
         
         rows.forEach((row, index) => {
           // Handle empty DATE cells - use the last date we saw
@@ -563,13 +681,11 @@
           
           const date = formatDate(lastDate);
           if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            console.log(`Skipping row ${index + 2}: Invalid date format "${lastDate}"`);
             return;
           }
           
           const product = (row.PRODUCT || '').toString().trim().toUpperCase();
           if (!product || !['UX', 'DX', 'VP'].includes(product)) {
-            console.log(`Skipping row ${index + 2}: Invalid product "${product}"`);
             return;
           }
           
@@ -601,11 +717,11 @@
               variancePct,
               comments: row.COMMENTS || ''
             });
-            console.log(`Added: ${date} - ${product} - Meter: ${meterSale} - Variance: ${variancePct}%`);
+            validRows++;
           }
         });
         
-        console.log(`Loaded ${allData.length} product records`);
+        console.log(`   ✅ ${validRows} valid product records added from ${selectedMonth}`);
         
         if (allData.length === 0) {
           throw new Error('No valid data found. Please check the Google Sheet column names.');
@@ -615,11 +731,17 @@
         updateDashboard();
         
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('❌ Error loading data:', error);
         document.getElementById('metricsGrid').innerHTML = `
           <div style="grid-column: 1 / -1; color: #dc2626; text-align: center; padding: 40px;">
             <h3 style="color: #dc2626;">❌ Data Loading Error</h3>
             <p><strong>Error:</strong> ${error.message}</p>
+            <p><strong>Troubleshooting Tips:</strong></p>
+            <ul style="text-align: left; margin: 15px auto; max-width: 600px;">
+              <li>Make sure your Google Sheet is <strong>Published to web</strong></li>
+              <li>Verify the CSV link is correct and accessible</li>
+              <li>Check column names: DATE, PRODUCT, OPEN DIP, DELIVERY, CLOSE DIP, DIP SALE, METER SALE, VAR, EXPLAIN > 5%</li>
+            </ul>
             <button onclick="loadData()" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-top: 15px;">
               🔄 Retry
             </button>
@@ -713,7 +835,7 @@
         </div>
         <div class="metric-card">
           <div class="metric-icon">🏆</div>
-          <div class="metric-value">${topProduct}</div>
+          <div class="metric-value">${PRODUCT_NAMES[topProduct] || topProduct}</div>
           <div class="metric-label">Top Selling Product</div>
         </div>
       `;
@@ -774,12 +896,15 @@
         
         [...criticalAlerts, ...warningAlerts, ...safeProducts].forEach(alert => {
           const stock = latestStockByProduct[alert.product];
-          const productName = alert.product === 'UX' ? 'Premium Unleaded (UX)' : 
-                             alert.product === 'DX' ? 'Diesel (DX)' : 'Vpower (VP)';
+          const productName = PRODUCT_NAMES[alert.product];
+          const productColor = PRODUCT_COLORS[alert.product];
           
           html += `
             <div class="stock-item ${stock.stockStatus}">
-              <div class="stock-product-name">${productName}</div>
+              <div class="stock-product-name" style="color: ${productColor};">
+                <span style="display: inline-block; width: 15px; height: 15px; background: ${productColor}; border-radius: 50%; margin-right: 8px; vertical-align: middle;"></span>
+                ${productName}
+              </div>
               <div class="stock-level">${alert.closeDip.toLocaleString()} L</div>
               <div>Threshold: ${alert.threshold.toLocaleString()} L</div>
               <div style="margin: 5px 0;">
@@ -802,12 +927,15 @@
         
         safeProducts.forEach(alert => {
           const stock = latestStockByProduct[alert.product];
-          const productName = alert.product === 'UX' ? 'Premium Unleaded (UX)' : 
-                             alert.product === 'DX' ? 'Diesel (DX)' : 'Vpower (VP)';
+          const productName = PRODUCT_NAMES[alert.product];
+          const productColor = PRODUCT_COLORS[alert.product];
           
           html += `
             <div class="stock-item ${stock.stockStatus}">
-              <div class="stock-product-name">${productName}</div>
+              <div class="stock-product-name" style="color: ${productColor};">
+                <span style="display: inline-block; width: 15px; height: 15px; background: ${productColor}; border-radius: 50%; margin-right: 8px; vertical-align: middle;"></span>
+                ${productName}
+              </div>
               <div class="stock-level">${alert.closeDip.toLocaleString()} L</div>
               <div>Threshold: ${alert.threshold.toLocaleString()} L</div>
               <div style="margin: 5px 0;">
@@ -845,14 +973,13 @@
       });
       
       const dates = Object.keys(dailySales).sort();
-      const products = ['UX', 'DX', 'VP'];
-      const datasets = products.map((product, idx) => {
-        const colors = ['#1e3c72', '#7e22ce', '#059669'];
+      const products = ['DX', 'UX', 'VP'];
+      const datasets = products.map((product) => {
         return {
-          label: product,
+          label: PRODUCT_NAMES[product],
           data: dates.map(date => dailySales[date][product] || 0),
-          borderColor: colors[idx],
-          backgroundColor: colors[idx] + '33',
+          borderColor: PRODUCT_COLORS[product],
+          backgroundColor: PRODUCT_COLORS[product] + '33',
           tension: 0.4,
           fill: false
         };
@@ -886,14 +1013,16 @@
         productSales[row.product] = (productSales[row.product] || 0) + row.meterSale;
       });
       
+      const sortedProducts = ['DX', 'UX', 'VP'].filter(p => productSales[p]);
+      
       charts.productComparison = new Chart(document.getElementById('productComparisonChart').getContext('2d'), {
         type: 'bar',
         data: {
-          labels: Object.keys(productSales),
+          labels: sortedProducts.map(p => PRODUCT_NAMES[p]),
           datasets: [{
             label: 'Total Sales (L)',
-            data: Object.values(productSales),
-            backgroundColor: ['#1e3c72', '#7e22ce', '#059669'],
+            data: sortedProducts.map(p => productSales[p]),
+            backgroundColor: sortedProducts.map(p => PRODUCT_COLORS[p]),
             borderRadius: 8
           }]
         },
@@ -928,7 +1057,7 @@
           labels: Object.keys(varianceCategories),
           datasets: [{
             data: Object.values(varianceCategories),
-            backgroundColor: ['#059669', '#d97706', '#dc2626'],
+            backgroundColor: ['#10b981', '#d97706', '#dc2626'],
             borderWidth: 3,
             borderColor: '#ffffff'
           }]
@@ -951,14 +1080,16 @@
         }
       });
       
+      const deliveryProducts = ['DX', 'UX', 'VP'].filter(p => deliveryByProduct[p]);
+      
       charts.delivery = new Chart(document.getElementById('deliveryChart').getContext('2d'), {
         type: 'bar',
         data: {
-          labels: Object.keys(deliveryByProduct),
+          labels: deliveryProducts.map(p => PRODUCT_NAMES[p]),
           datasets: [{
             label: 'Total Deliveries (L)',
-            data: Object.values(deliveryByProduct),
-            backgroundColor: ['#2a5298', '#9333ea', '#10b981'],
+            data: deliveryProducts.map(p => deliveryByProduct[p]),
+            backgroundColor: deliveryProducts.map(p => PRODUCT_COLORS[p]),
             borderRadius: 8
           }]
         },
@@ -1057,8 +1188,8 @@
         `📊 Total meter sales: <strong>${totalSales.toLocaleString(undefined, {maximumFractionDigits: 0})} L</strong> across ${data.length} records`,
         `🚨 High variance alerts: <strong>${highVariances.length}</strong> incidents (${((highVariances.length / data.length) * 100).toFixed(1)}% of records) <span class="alert-badge ${highVariances.length > data.length * 0.2 ? 'alert-high' : 'alert-medium'}">${highVariances.length > data.length * 0.2 ? 'CRITICAL' : 'MONITOR'}</span>`,
         `📉 Total variance: <strong>${totalVariance.toFixed(2)} L</strong> (${((totalVariance / totalSales) * 100).toFixed(2)}% of total sales)`,
-        `⚠️ Worst variance day: <strong>${formatDisplayDate(worstVariance.date)}</strong> - ${worstVariance.product} with <strong>${worstVariance.variancePct.toFixed(2)}%</strong> variance`,
-        worstProduct ? `🔍 Product needing attention: <strong>${worstProduct}</strong> has high variance rate of <strong>${(worstRate * 100).toFixed(1)}%</strong>` : '',
+        `⚠️ Worst variance day: <strong>${formatDisplayDate(worstVariance.date)}</strong> - ${PRODUCT_NAMES[worstVariance.product]} with <strong>${worstVariance.variancePct.toFixed(2)}%</strong> variance`,
+        worstProduct ? `🔍 Product needing attention: <strong>${PRODUCT_NAMES[worstProduct]}</strong> has high variance rate of <strong>${(worstRate * 100).toFixed(1)}%</strong>` : '',
         `💡 Recommendation: ${highVariances.length > 5 ? 'Immediate investigation required for variance control measures' : 'Variance levels are within acceptable range'}`
       ].filter(insight => insight !== '');
       
@@ -1085,11 +1216,17 @@
       data.slice().reverse().forEach(row => {
         const varianceClass = row.variance >= 0 ? 'variance-positive' : 'variance-negative';
         const alertClass = Math.abs(row.variancePct) > 5 ? 'variance-alert' : '';
+        const productColor = PRODUCT_COLORS[row.product];
         
         html += `
           <tr>
             <td>${formatDisplayDate(row.date)}</td>
-            <td><strong>${row.product}</strong></td>
+            <td>
+              <strong style="color: ${productColor};">
+                <span style="display: inline-block; width: 10px; height: 10px; background: ${productColor}; border-radius: 50%; margin-right: 5px;"></span>
+                ${row.product}
+              </strong>
+            </td>
             <td>${row.openDip.toLocaleString()}</td>
             <td>${row.delivery.toLocaleString()}</td>
             <td>${row.closeDip.toLocaleString()}</td>
@@ -1123,8 +1260,11 @@
       updateDataTable(filtered);
     }
 
-    // Load data on page load
-    window.onload = () => loadData();
+    // Initialize and load data on page load
+    window.onload = () => {
+      initializeMonthFilter();
+      loadData();
+    };
   </script>
 </body>
 </html>
