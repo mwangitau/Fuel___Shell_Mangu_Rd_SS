@@ -20,6 +20,38 @@
       padding: 30px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     }
+    
+    /* Configuration Helper Section */
+    .config-helper {
+      background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+      border-left: 5px solid #4caf50;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 25px;
+    }
+    .config-helper h3 {
+      margin-top: 0;
+      color: #2e7d32;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .config-helper code {
+      background: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      color: #d32f2f;
+    }
+    .config-helper ol {
+      margin: 10px 0;
+      padding-left: 25px;
+    }
+    .config-helper li {
+      margin: 8px 0;
+      line-height: 1.6;
+    }
+    
     h1 {
       text-align: center;
       color: #2c3e50;
@@ -253,6 +285,24 @@
   <div class="container">
     <h1>⛽ Shell Mangu Fuel Pump Analysis - Volume Sales (Litres)</h1>
     
+    <!-- Configuration Helper (Remove this section after you're comfortable) -->
+    <div class="config-helper" id="configHelper">
+      <h3>💡 Quick Setup Guide</h3>
+      <p><strong>To add a new month:</strong></p>
+      <ol>
+        <li>Open your Google Sheet and go to <strong>File → Share → Publish to web</strong></li>
+        <li>Select the sheet/tab you want, choose <strong>CSV</strong> format, then click <strong>Publish</strong></li>
+        <li>Copy the published CSV link (looks like: <code>https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?output=csv</code>)</li>
+        <li>In the code below (line ~270), add your month like this:<br>
+            <code>"December": "YOUR_CSV_LINK_HERE"</code></li>
+        <li>Save and refresh! Your new month will appear in the dropdown automatically 🎉</li>
+      </ol>
+      <button onclick="document.getElementById('configHelper').style.display='none'" 
+              style="background: #4caf50; margin-top: 10px;">
+        ✓ Got it, hide this message
+      </button>
+    </div>
+    
     <div class="date-range" id="dateRange"></div>
     <div class="metrics-grid" id="metricsGrid"></div>
     
@@ -260,9 +310,7 @@
       <div class="filter-group">
         <label class="filter-label">📅 Month</label>
         <select id="monthFilter" onchange="loadFuelData()">
-          <option value="combined">Combined (All Months)</option>
-          <option value="October">October 2025</option>
-          <option value="September">September 2025</option>
+          <!-- Options will be auto-populated from dataSources -->
         </select>
       </div>
       <div class="filter-group">
@@ -311,18 +359,52 @@
     <footer>
       <p><strong>© 2025 Kiryan Energy Ltd — All Rights Reserved</strong></p>
       <p><strong>Confidential:</strong> These dashboards are for official use only and must not be copied, shared, or distributed without prior written permission from Kiryan Energy Ltd.</p>
-      <p>Data refreshed automatically • Dashboard v2.0</p>
+      <p>Data refreshed automatically • Dashboard v2.1 • Easy Config</p>
     </footer>
   </div>
 
   <script>
+    // ============================================================================
+    // 📝 CONFIGURATION SECTION - ADD YOUR MONTHS HERE!
+    // ============================================================================
+    // To add a new month, simply add a new line like:
+    // "MonthName": "YOUR_GOOGLE_SHEETS_CSV_LINK",
+    // 
+    // The dropdown will automatically update with all months below!
+    // ============================================================================
+    
     const dataSources = {
-      September: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?output=csv",
-      October: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1064673143&output=csv"
-      November: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=1064673143&single=true&output=csv"
+      "September": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?output=csv",
+      "October": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1064673143&output=csv",
+      "November": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=1064673143&single=true&output=csv"
+      // Add more months here as needed:
+      // "December": "YOUR_CSV_LINK_HERE",
+      // "January": "YOUR_CSV_LINK_HERE",
     };
+    
+    // ============================================================================
+    // 🔧 AUTOMATIC SETUP - NO NEED TO EDIT BELOW THIS LINE!
+    // ============================================================================
 
     let processedData = [], attendantsSet = new Set(), charts = {};
+
+    // Auto-populate month dropdown on page load
+    function initializeMonthFilter() {
+      const monthFilter = document.getElementById('monthFilter');
+      monthFilter.innerHTML = '<option value="combined">Combined (All Months)</option>';
+      
+      // Get months in reverse chronological order (newest first)
+      const months = Object.keys(dataSources).reverse();
+      
+      months.forEach(month => {
+        const option = document.createElement('option');
+        option.value = month;
+        option.textContent = month;
+        monthFilter.appendChild(option);
+      });
+      
+      console.log(`✅ Initialized with ${months.length} months: ${months.join(', ')}`);
+    }
 
     function csvToArray(csv, delimiter = ',') {
       const lines = csv.trim().split('\n');
@@ -365,15 +447,16 @@
         attendantsSet = new Set();
         
         if (selectedMonth === 'combined') {
+          // Load all months
           for (const [month, url] of Object.entries(dataSources)) {
             await loadMonthData(url, month);
           }
+          console.log(`✅ Combined data: ${processedData.length} days from ${Object.keys(dataSources).length} months`);
         } else {
+          // Load single month
           await loadMonthData(dataSources[selectedMonth], selectedMonth);
+          console.log(`✅ ${selectedMonth} data: ${processedData.length} days`);
         }
-        
-        console.log(`Processing complete. Valid rows: ${processedData.length}`);
-        console.log('Attendants found:', [...attendantsSet]);
         
         if (processedData.length === 0) {
           throw new Error('No valid fuel data found after processing all rows.');
@@ -386,13 +469,19 @@
         updateAnalysis();
         
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('❌ Error loading data:', error);
         
         const errorMessage = `
           <div style="color: red; text-align: left; padding: 20px; max-width: 600px; margin: 0 auto;">
             <h3 style="color: #e74c3c;">❌ Data Loading Error</h3>
             <p><strong>Error:</strong> ${error.message}</p>
-            <p><strong>Tip:</strong> Make sure your Google Sheets column names match exactly what the code expects.</p>
+            <p><strong>Troubleshooting Tips:</strong></p>
+            <ul style="text-align: left; margin: 15px 0;">
+              <li>Make sure your Google Sheet is <strong>Published to web</strong> (File → Share → Publish to web)</li>
+              <li>Verify the CSV link is correct and accessible</li>
+              <li>Check that column names match: <code>DAY</code>, <code>NAME OF CSA</code>, <code>PUMP 1</code>, <code>PUMP 2</code>, <code>PUMP 3</code></li>
+              <li>Ensure date format is: <code>YYYY.MM.DD</code> or <code>DD.MM.YYYY</code></li>
+            </ul>
             
             <button onclick="loadFuelData()" style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px 5px;">
               🔄 Retry
@@ -415,10 +504,11 @@
         throw new Error(`Empty response from Google Sheets for ${monthName}`);
       }
       
-      console.log(`CSV data loaded successfully for ${monthName}`);
+      console.log(`📥 Loading ${monthName} data...`);
       const rows = csvToArray(text);
-      console.log(`Parsed rows for ${monthName}:`, rows.length);
+      console.log(`   Parsed ${rows.length} rows`);
       
+      let validRows = 0;
       rows.forEach((row) => {
         const dayValue = row.DAY;
         if (!dayValue || dayValue === "TOTALS" || dayValue === '') return;
@@ -456,6 +546,7 @@
         const total = pump1.value + pump2.value + pump3.value;
         
         processedData.push({ date, pump1, pump2, pump3, total });
+        validRows++;
         
         [pump1, pump2, pump3].forEach(pump => {
           if (pump.attendant && pump.attendant !== 'Unknown' && pump.attendant !== '') {
@@ -463,6 +554,8 @@
           }
         });
       });
+      
+      console.log(`   ✅ ${validRows} valid days added from ${monthName}`);
     }
 
     function updateDateRange() {
@@ -470,8 +563,8 @@
         const startDate = formatDisplayDate(processedData[0].date);
         const endDate = formatDisplayDate(processedData[processedData.length - 1].date);
         const selectedMonth = document.getElementById('monthFilter').value;
-        const monthLabel = selectedMonth === 'combined' ? 'All Months' : selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1);
-        document.getElementById('dateRange').innerHTML = `📅 ${monthLabel} - Data Range: ${startDate} - ${endDate} (${processedData.length} days)`;
+        const monthLabel = selectedMonth === 'combined' ? 'All Months' : selectedMonth;
+        document.getElementById('dateRange').innerHTML = `📅 <strong>${monthLabel}</strong> - Data Range: ${startDate} to ${endDate} (${processedData.length} days)`;
       }
     }
 
@@ -729,7 +822,11 @@
       updateDataTable(filtered);
     }
 
-    window.onload = () => loadFuelData();
+    // Initialize and load data on page load
+    window.onload = () => {
+      initializeMonthFilter();
+      loadFuelData();
+    };
   </script>
 </body>
 </html>
