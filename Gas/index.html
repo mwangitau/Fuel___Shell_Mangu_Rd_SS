@@ -299,24 +299,6 @@
     <h1>🔥 Gas Sales Dashboard</h1>
     <div class="subtitle" id="headerText">Loading...</div>
     
-    <!-- Configuration Helper -->
-    <div class="config-helper" id="configHelper">
-      <h3>💡 Quick Setup Guide - Gas Dashboard (Pivot Format)</h3>
-      <p><strong>This dashboard reads your pivot table format directly!</strong></p>
-      <ol>
-        <li>Your sheet should have <strong>products in rows</strong> (Column A) and <strong>dates in columns</strong> (starting Column B)</li>
-        <li>To add a new month, publish your sheet: <strong>File → Share → Publish to web → CSV</strong></li>
-        <li>In the code below (line ~360), add your month:<br>
-            <code>"December": "YOUR_CSV_LINK_HERE"</code></li>
-        <li>Save and refresh! 🎉</li>
-      </ol>
-      <p><strong>Format Example:</strong> Row 1 = dates, Column A = products (6KG REFILL, 13KG REFIL, etc.)</p>
-      <button onclick="document.getElementById('configHelper').style.display='none'" 
-              style="background: #4caf50; margin-top: 10px; cursor: pointer;">
-        ✓ Got it, hide this message
-      </button>
-    </div>
-    
     <div class="control-panel">
       <div class="control-group">
         <label class="control-label">📅 Month Filter</label>
