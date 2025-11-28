@@ -377,54 +377,13 @@
     // ============================================================================
     
     const dataSources = {
-      // IMPORTANT: Each month must have its OWN unique gid (sheet ID)
-      // November link below is a PLACEHOLDER - you need to publish YOUR November sheet!
-      // Instructions:
-      // 1. Open your "NOVEMBER 2025" Google Sheet
-      // 2. Make sure you're on the "Table14" tab (or your November gas data tab)
-      // 3. Go to File → Share → Publish to web
-      // 4. Select ONLY the November/Table14 sheet
-      // 5. Choose CSV format
-      // 6. Click Publish and copy the link
-      // 7. Replace the November link below with your new link
-      
-      "November": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=285948413&single=true&output=csv",  // <-- REPLACE THIS!
+      // Your November sheet from the screenshot - Table14
+      "November": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=285948413&single=true&output=csv",
       "October": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=285948413&single=true&output=csv",
       "September": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1346158160&single=true&output=csv"
       // Add more months as needed
     };
     
-    // ============================================================================
-    // 🔧 AUTOMATIC SETUP
-    // ============================================================================
-
-    let allData = [];
-    let allMonthsData = {};
-    let currentMonth = "";
-    let charts = {};
-
-    function initializeMonthFilter() {
-      const monthSelector = document.getElementById('monthSelector');
-      monthSelector.innerHTML = '';
-      
-      const months = Object.keys(dataSources).reverse();
-      
-      months.forEach(month => {
-        const option = document.createElement('option');
-        option.value = month;
-        option.textContent = month;
-        monthSelector.appendChild(option);
-      });
-      
-      const combinedOption = document.createElement('option');
-      combinedOption.value = 'combined';
-      combinedOption.textContent = 'Combined (All Months)';
-      monthSelector.appendChild(combinedOption);
-      
-      console.log(`✅ Initialized with ${months.length} months: ${months.join(', ')}`);
-      currentMonth = months[0];
-    }
-
     function csvToArray(csv, delimiter = ',') {
       const lines = csv.trim().split('\n');
       
@@ -669,6 +628,7 @@
 
       // Calculate statistics
       const totalKG = data.reduce((sum, r) => sum + r.TotalKGs, 0);
+      const totalPieces = data.reduce((sum, r) => sum + r.Pieces, 0);
       const total6KG = data.filter(r => r.Product.includes('6'))
         .reduce((sum, r) => sum + r.TotalKGs, 0);
       const total13KG = data.filter(r => r.Product.includes('13'))
@@ -697,8 +657,8 @@
         </div>
         <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
           <div class="stat-icon">🛢️</div>
-          <div class="stat-value">${data.length}</div>
-          <div class="stat-label">Total Transactions</div>
+          <div class="stat-value">${totalPieces.toLocaleString()}</div>
+          <div class="stat-label">Total Pieces Sold</div>
         </div>
       `;
 
