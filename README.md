@@ -261,6 +261,6 @@ Built with dedication for operational excellence at Shell Mangu Road Service Sta
 
 <div align="center">
 
-**[View Live Demo](https://yourusername.github.io/Fuel___Shell_Mangu_Rd_SS/)** • **[Report Issue](#)** • **[Request Feature](#)**
+**[View Live Demo](https://mwangitau.github.io/Fuel___Shell_Mangu_Rd_SS/)** • **[Report Issue](#)** • **[Request Feature](#)**
 
 </div>
