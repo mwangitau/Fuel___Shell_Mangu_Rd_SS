@@ -299,27 +299,6 @@
     .card-link:active::after {
       opacity: 1;
     }
-
-    /* Loading indicator for navigation */
-    .navigating {
-      pointer-events: none;
-      opacity: 0.7;
-    }
-
-    .navigating::before {
-      content: '↗';
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      font-size: 24px;
-      color: rgba(255, 255, 255, 0.8);
-      animation: bounce 0.5s ease-in-out;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
-    }
   </style>
 </head>
 <body>
@@ -353,7 +332,7 @@
 
     <div class="card-container">
       <div class="card">
-        <a href="./fuel/" class="card-link">
+        <a href="./fuel_dashboard_easy_config.html" class="card-link">
           <span class="card-icon">⛽</span>
           <div class="card-title">Fuel Per Pump Analysis</div>
           <div class="card-description">Real-time performance tracking and efficiency metrics for each pump station with detailed analytics.</div>
@@ -361,7 +340,7 @@
       </div>
       
       <div class="card">
-        <a href="./staff/" class="card-link">
+        <a href="./staff_dashboard.html" class="card-link">
           <span class="card-icon">👥</span>
           <div class="card-title">Staff Management Dashboard</div>
           <div class="card-description">Monitor staff performance, and shortages.</div>
@@ -369,7 +348,7 @@
       </div>
       
       <div class="card">
-        <a href="./Product/" class="card-link">
+        <a href="./product_dashboard.html" class="card-link">
           <span class="card-icon">📊</span>
           <div class="card-title">Product Analysis Dashboard</div>
           <div class="card-description">Comprehensive product performance analysis with sales trends.</div>
@@ -377,7 +356,7 @@
       </div>
       
       <div class="card">
-        <a href="./Gas/" class="card-link">
+        <a href="./gas_dashboard_pivot_format.html" class="card-link">
           <span class="card-icon">🔥</span>
           <div class="card-title">Gas Operations Dashboard</div>
           <div class="card-description">Monitor gas cylinder sales, and distribution metrics.</div>
@@ -392,10 +371,10 @@
   </div>
 
   <script>
-    // Simplified particle creation (fewer particles)
+    // Simplified particle creation
     function createParticles() {
       const particlesContainer = document.getElementById('particles');
-      const particleCount = 20; // Reduced from 50
+      const particleCount = 20;
       
       for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
@@ -413,21 +392,11 @@
       }
     }
 
-    // Faster navigation with immediate feedback
-    function setupFastNavigation() {
+    // Add visual feedback on click
+    function setupClickFeedback() {
       const cardLinks = document.querySelectorAll('.card-link');
       
       cardLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-          // Immediate visual feedback
-          const card = this.closest('.card');
-          card.classList.add('navigating');
-          
-          // Allow default link behavior (faster than preventDefault + window.location)
-          // The browser will handle the navigation immediately
-        });
-        
-        // Optional: Add mousedown for even faster feedback
         link.addEventListener('mousedown', function(e) {
           const card = this.closest('.card');
           card.style.transform = 'translateY(-3px) scale(0.98)';
@@ -440,14 +409,11 @@
       });
     }
 
-    // Simplified initialization
+    // Initialize
     document.addEventListener('DOMContentLoaded', function() {
       createParticles();
-      setupFastNavigation();
+      setupClickFeedback();
     });
-
-    // Remove heavy background effects that slow down interactions
-    // Removed: constant hue rotation, parallax mouse tracking, counter animations
   </script>
 </body>
 </html>
