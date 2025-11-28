@@ -375,7 +375,7 @@
     const dataSources = {
       "November": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=285948413&single=true&output=csv",
       "October": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=285948413&single=true&output=csv",
-      
+      "September": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1346158160&single=true&output=csv"
       // Add more months as needed
     };
     
@@ -521,13 +521,10 @@
       }
 
       // Parse pivot table format
-      // Row 0 = Headers (column A is empty/label, then dates start)
-      // Rows 1+ = Product name in col 0, quantities in other columns
-      
       const headerRow = rows[0];
       console.log(`   Header row:`, headerRow);
       
-      // Extract dates from header row (skip first column which is product label)
+      // Extract dates from header row
       const dates = [];
       for (let i = 1; i < headerRow.length; i++) {
         const dateStr = headerRow[i];
@@ -544,8 +541,26 @@
         throw new Error(`No valid dates found in header row for ${monthName}`);
       }
 
-      // Transform pivot data to row format
+      // Transform pivot data to row format WITH CONVERSION TO KG
       const transformedData = [];
+      
+      // Function to extract cylinder size from product name and convert pieces to KG
+      function convertPiecesToKG(product, pieces) {
+        const productUpper = product.toUpperCase();
+        let cylinderSize = 0;
+        
+        if (productUpper.includes('6KG') || productUpper.includes('6 KG')) {
+          cylinderSize = 6;
+        } else if (productUpper.includes('13KG') || productUpper.includes('13 KG')) {
+          cylinderSize = 13;
+        } else if (productUpper.includes('25KG') || productUpper.includes('25 KG')) {
+          cylinderSize = 25;
+        } else if (productUpper.includes('45KG') || productUpper.includes('45 KG')) {
+          cylinderSize = 45;
+        }
+        
+        return pieces * cylinderSize;
+      }
       
       for (let rowIdx = 1; rowIdx < rows.length; rowIdx++) {
         const row = rows[rowIdx];
@@ -559,16 +574,19 @@
         // Process each date column for this product
         for (let colIdx = 1; colIdx < row.length && colIdx <= dates.length; colIdx++) {
           const quantityStr = row[colIdx];
-          const quantity = parseFloat(quantityStr) || 0;
+          const pieces = parseFloat(quantityStr) || 0;
           
-          // Only include if quantity > 0
-          if (quantity > 0) {
-            const date = dates[colIdx - 1]; // -1 because dates array doesn't include first column
+          // Only include if pieces > 0
+          if (pieces > 0) {
+            const date = dates[colIdx - 1];
             if (date) {
+              const totalKG = convertPiecesToKG(product, pieces);
+              
               transformedData.push({
                 Date: date,
                 Product: product.trim(),
-                TotalKGs: quantity,
+                Pieces: pieces,
+                TotalKGs: totalKG,
                 Month: monthName
               });
             }
@@ -577,6 +595,7 @@
       }
 
       console.log(`   ✅ Transformed ${transformedData.length} records from ${monthName}`);
+      console.log(`   Sample record:`, transformedData[0]);
       
       if (transformedData.length === 0) {
         console.warn(`   ⚠️ Warning: No valid data extracted from ${monthName}`);
@@ -824,15 +843,19 @@
         return;
       }
 
-      const displayColumns = ['Date', 'Product', 'TotalKGs', 'Month'];
+      const displayColumns = ['Date', 'Product', 'Pieces', 'TotalKGs', 'Month'];
       
-      let html = "<thead><tr>" + displayColumns.map(k => `<th>${k}</th>`).join('') + "</tr></thead><tbody>";
+      let html = "<thead><tr>" + displayColumns.map(k => {
+        if (k === 'Pieces') return '<th>Pieces Sold</th>';
+        if (k === 'TotalKGs') return '<th>Total KG</th>';
+        return `<th>${k}</th>`;
+      }).join('') + "</tr></thead><tbody>";
       
       data.slice().reverse().forEach(r => {
         html += "<tr>";
         displayColumns.forEach(k => {
           let val = r[k] || '';
-          if (k === 'TotalKGs') {
+          if (k === 'TotalKGs' || k === 'Pieces') {
             val = Number(val).toLocaleString(undefined, {maximumFractionDigits: 2});
           } else if (k === 'Date') {
             const date = new Date(val);
