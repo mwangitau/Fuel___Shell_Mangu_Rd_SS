@@ -25,37 +25,6 @@
       overflow: hidden;
     }
     
-    /* Configuration Helper Section */
-    .config-helper {
-      background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-      border-left: 5px solid #4caf50;
-      padding: 20px;
-      margin: 20px 30px;
-      border-radius: 10px;
-    }
-    .config-helper h3 {
-      margin-top: 0;
-      color: #2e7d32;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .config-helper code {
-      background: #fff;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-family: 'Courier New', monospace;
-      color: #d32f2f;
-    }
-    .config-helper ol {
-      margin: 10px 0;
-      padding-left: 25px;
-    }
-    .config-helper li {
-      margin: 8px 0;
-      line-height: 1.6;
-    }
-    
     .header {
       background: linear-gradient(135deg, #0077cc, #005aa3);
       color: white;
@@ -426,25 +395,6 @@
       <p id="headerSubtitle">Mangu Rd Shell Service Station — Real-time Analytics</p>
     </div>
     
-    <!-- Configuration Helper (Remove this section after you're comfortable) -->
-    <div class="config-helper" id="configHelper">
-      <h3>💡 Quick Setup Guide - Staff Dashboard</h3>
-      <p><strong>To add a new month of staff shortage data:</strong></p>
-      <ol>
-        <li>Open your Google Sheet and go to <strong>File → Share → Publish to web</strong></li>
-        <li>Select the staff shortages sheet/tab, choose <strong>CSV</strong> format, click <strong>Publish</strong></li>
-        <li>Copy the published CSV link</li>
-        <li>In the code below (line ~420), add your month like this:<br>
-            <code>"December": "YOUR_CSV_LINK_HERE"</code></li>
-        <li>Save and refresh! Your new month data loads automatically 🎉</li>
-      </ol>
-      <p><strong>Note:</strong> Your sheet must have a <code>DAY</code> column and columns for each staff member with their daily balances.</p>
-      <button onclick="document.getElementById('configHelper').style.display='none'" 
-              style="background: #4caf50; margin-top: 10px; cursor: pointer; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600;">
-        ✓ Got it, hide this message
-      </button>
-    </div>
-    
     <div class="content">
       <div class="controls-section">
         <div class="controls-grid">
@@ -536,18 +486,11 @@
     // ============================================================================
     // 📝 CONFIGURATION SECTION - ADD YOUR MONTHS HERE!
     // ============================================================================
-    // To add a new month, simply add a new line like:
-    // "MonthName": "YOUR_GOOGLE_SHEETS_CSV_LINK",
-    // 
-    // All months will be combined and available in the dropdown!
-    // ============================================================================
     
     const dataSources = {
-      "September": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRNw7hn2wzYu3ATj3LVB5NT8oKO0PLkyTI_SN7owSvlnoJm0k4mvAW6nclDwF6Trtqsdb3wCMpM9imI/pub?gid=0&single=true&output=csv",
+      "November": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=993195447&single=true&output=csv",
       "October": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=993195447&single=true&output=csv",
-      "November": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=993195447&single=true&output=csv"
-      // Add more months here as needed:
-      // "December": "YOUR_CSV_LINK_HERE",
+      "September": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRNw7hn2wzYu3ATj3LVB5NT8oKO0PLkyTI_SN7owSvlnoJm0k4mvAW6nclDwF6Trtqsdb3wCMpM9imI/pub?gid=0&single=true&output=csv"
     };
     
     // ============================================================================
