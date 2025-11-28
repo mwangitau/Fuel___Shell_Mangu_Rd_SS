@@ -372,10 +372,25 @@
     // 📝 CONFIGURATION SECTION - ADD YOUR MONTHS HERE!
     // ============================================================================
     
+    // ============================================================================
+    // 📝 CONFIGURATION SECTION - ADD YOUR MONTHS HERE!
+    // ============================================================================
+    
     const dataSources = {
-      "November": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=285948413&single=true&output=csv",
+      // IMPORTANT: Each month must have its OWN unique gid (sheet ID)
+      // November link below is a PLACEHOLDER - you need to publish YOUR November sheet!
+      // Instructions:
+      // 1. Open your "NOVEMBER 2025" Google Sheet
+      // 2. Make sure you're on the "Table14" tab (or your November gas data tab)
+      // 3. Go to File → Share → Publish to web
+      // 4. Select ONLY the November/Table14 sheet
+      // 5. Choose CSV format
+      // 6. Click Publish and copy the link
+      // 7. Replace the November link below with your new link
+      
+      "November": "REPLACE_WITH_YOUR_NOVEMBER_CSV_LINK",  // <-- REPLACE THIS!
       "October": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=285948413&single=true&output=csv",
-      "September": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1346158160&single=true&output=csv",
+      "September": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1346158160&single=true&output=csv"
       // Add more months as needed
     };
     
@@ -528,15 +543,25 @@
       const dates = [];
       for (let i = 1; i < headerRow.length; i++) {
         const dateStr = headerRow[i];
-        if (dateStr && dateStr.trim() !== '') {
-          const formattedDate = formatDate(dateStr);
-          if (formattedDate) {
+        
+        // Skip if empty or contains "TOTAL" or other non-date text
+        if (!dateStr || dateStr.trim() === '') continue;
+        if (dateStr.toString().toUpperCase().includes('TOTAL')) continue;
+        if (dateStr.toString().toUpperCase().includes('PCS')) continue;
+        
+        const formattedDate = formatDate(dateStr);
+        if (formattedDate) {
+          // Validate that it's actually a valid date
+          const testDate = new Date(formattedDate);
+          if (!isNaN(testDate.getTime())) {
             dates.push(formattedDate);
+          } else {
+            console.log(`   ⚠️ Skipping invalid date: ${dateStr} (formatted as ${formattedDate})`);
           }
         }
       }
       
-      console.log(`   Found ${dates.length} dates in ${monthName}`);
+      console.log(`   Found ${dates.length} valid dates in ${monthName}`);
       if (dates.length === 0) {
         throw new Error(`No valid dates found in header row for ${monthName}`);
       }
