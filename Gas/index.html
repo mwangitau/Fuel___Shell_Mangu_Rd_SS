@@ -21,6 +21,38 @@
       padding: 30px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
+    
+    /* Configuration Helper Section */
+    .config-helper {
+      background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+      border-left: 5px solid #4caf50;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 25px;
+    }
+    .config-helper h3 {
+      margin-top: 0;
+      color: #2e7d32;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .config-helper code {
+      background: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      color: #d32f2f;
+    }
+    .config-helper ol {
+      margin: 10px 0;
+      padding-left: 25px;
+    }
+    .config-helper li {
+      margin: 8px 0;
+      line-height: 1.6;
+    }
+    
     h1 {
       text-align: center;
       color: #1e293b;
@@ -225,7 +257,17 @@
       border-radius: 10px;
       color: #dc2626;
       margin: 20px 0;
-      text-align: center;
+    }
+    .error-details {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 10px;
+      font-family: monospace;
+      font-size: 0.9em;
+      color: #1e293b;
+      max-height: 200px;
+      overflow-y: auto;
     }
     .no-data {
       text-align: center;
@@ -255,15 +297,31 @@
 <body>
   <div class="container">
     <h1>🔥 Gas Sales Dashboard</h1>
-    <div class="subtitle" id="headerText">All Months Overview</div>
+    <div class="subtitle" id="headerText">Loading...</div>
+    
+    <!-- Configuration Helper -->
+    <div class="config-helper" id="configHelper">
+      <h3>💡 Quick Setup Guide - Gas Dashboard (Pivot Format)</h3>
+      <p><strong>This dashboard reads your pivot table format directly!</strong></p>
+      <ol>
+        <li>Your sheet should have <strong>products in rows</strong> (Column A) and <strong>dates in columns</strong> (starting Column B)</li>
+        <li>To add a new month, publish your sheet: <strong>File → Share → Publish to web → CSV</strong></li>
+        <li>In the code below (line ~360), add your month:<br>
+            <code>"December": "YOUR_CSV_LINK_HERE"</code></li>
+        <li>Save and refresh! 🎉</li>
+      </ol>
+      <p><strong>Format Example:</strong> Row 1 = dates, Column A = products (6KG REFILL, 13KG REFIL, etc.)</p>
+      <button onclick="document.getElementById('configHelper').style.display='none'" 
+              style="background: #4caf50; margin-top: 10px; cursor: pointer;">
+        ✓ Got it, hide this message
+      </button>
+    </div>
     
     <div class="control-panel">
       <div class="control-group">
         <label class="control-label">📅 Month Filter</label>
         <select id="monthSelector" onchange="switchMonth(this.value)">
-          <option value="All">All Months</option>
-          <option value="September">September</option>
-          <option value="October">October</option>
+          <!-- Options will be auto-populated -->
         </select>
       </div>
       <button onclick="loadData()" id="refreshBtn">🔄 Refresh Data</button>
@@ -303,19 +361,54 @@
     </div>
     
     <footer>
-      <p><strong>© 2025 Gas Sales Management — All Rights Reserved</strong></p>
+      <p><strong>© 2025 Kiryan Energy Ltd — All Rights Reserved</strong></p>
       <p><strong>Confidential:</strong> This dashboard is for official use only.</p>
-      <p>Data refreshed automatically • Dashboard v2.0</p>
+      <p>Data refreshed automatically • Dashboard v2.1 • Pivot Format</p>
     </footer>
   </div>
 
   <script>
-    const SEPTEMBER_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1346158160&single=true&output=csv";
-    const OCTOBER_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=285948413&single=true&output=csv";
+    // ============================================================================
+    // 📝 CONFIGURATION SECTION - ADD YOUR MONTHS HERE!
+    // ============================================================================
+    
+    const dataSources = {
+      "November": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=285948413&single=true&output=csv",
+      "October": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=285948413&single=true&output=csv",
+      "September": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?gid=1346158160&single=true&output=csv"
+      // Add more months as needed
+    };
+    
+    // ============================================================================
+    // 🔧 AUTOMATIC SETUP
+    // ============================================================================
 
     let allData = [];
-    let currentMonth = "All";
+    let allMonthsData = {};
+    let currentMonth = "";
     let charts = {};
+
+    function initializeMonthFilter() {
+      const monthSelector = document.getElementById('monthSelector');
+      monthSelector.innerHTML = '';
+      
+      const months = Object.keys(dataSources).reverse();
+      
+      months.forEach(month => {
+        const option = document.createElement('option');
+        option.value = month;
+        option.textContent = month;
+        monthSelector.appendChild(option);
+      });
+      
+      const combinedOption = document.createElement('option');
+      combinedOption.value = 'combined';
+      combinedOption.textContent = 'Combined (All Months)';
+      monthSelector.appendChild(combinedOption);
+      
+      console.log(`✅ Initialized with ${months.length} months: ${months.join(', ')}`);
+      currentMonth = months[0];
+    }
 
     function csvToArray(csv, delimiter = ',') {
       const lines = csv.trim().split('\n');
@@ -347,15 +440,25 @@
         return result.map(field => field.trim());
       }
       
-      const headers = parseLine(lines[0]);
-      return lines.slice(1).map(line => {
-        const items = parseLine(line);
-        let obj = {};
-        headers.forEach((h, i) => {
-          obj[h] = items[i] || "";
-        });
-        return obj;
-      });
+      return lines.map(line => parseLine(line));
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return null;
+      
+      // Handle format like "2025.11.01" or "01.11.2025"
+      const parts = dateStr.trim().split(".");
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          // YYYY.MM.DD
+          return `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
+        } else {
+          // DD.MM.YYYY
+          return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+        }
+      }
+      
+      return dateStr;
     }
 
     async function loadData() {
@@ -365,70 +468,14 @@
       document.getElementById('refreshBtn').disabled = true;
 
       try {
-        console.log('Fetching data from Google Sheets...');
+        console.log('📥 Loading gas sales data (pivot format)...');
+        allMonthsData = {};
         
-        const [sepRes, octRes] = await Promise.all([
-          fetch(SEPTEMBER_CSV).then(r => {
-            if (!r.ok) throw new Error('September sheet fetch failed');
-            return r.text();
-          }),
-          fetch(OCTOBER_CSV).then(r => {
-            if (!r.ok) throw new Error('October sheet fetch failed');
-            return r.text();
-          })
-        ]);
-
-        console.log('Parsing September data...');
-        const sepData = csvToArray(sepRes);
-        console.log('September records:', sepData.length);
-        console.log('Sample September row:', sepData[0]);
-
-        console.log('Parsing October data...');
-        const octData = csvToArray(octRes);
-        console.log('October records:', octData.length);
-        console.log('Sample October row:', octData[0]);
-
-        // Process and clean the data
-        const processRow = (row, month) => {
-          // Try different possible column names
-          const date = row.Date || row.DATE || row.date || '';
-          const product = row.Product || row.PRODUCT || row.product || '';
-          const totalKGs = row.TotalKGs || row['Total KGs'] || row['TOTAL KGS'] || row.totalKGs || '';
-          
-          if (!date || !product || !totalKGs) return null;
-          
-          const kgNum = parseFloat(totalKGs.toString().replace(/,/g, '')) || 0;
-          if (kgNum === 0) return null;
-          
-          return {
-            Date: date,
-            Product: product,
-            TotalKGs: kgNum,
-            Month: month,
-            ...row
-          };
-        };
-
-        const sepProcessed = sepData.map(r => processRow(r, 'September')).filter(r => r !== null);
-        const octProcessed = octData.map(r => processRow(r, 'October')).filter(r => r !== null);
-
-        console.log('Processed September:', sepProcessed.length);
-        console.log('Processed October:', octProcessed.length);
-
-        allData = [...sepProcessed, ...octProcessed];
-
-        if (allData.length === 0) {
-          throw new Error('No valid data found in the sheets. Please check the column names.');
+        for (const [month, url] of Object.entries(dataSources)) {
+          await loadMonthData(url, month);
         }
-
-        // Sort by date
-        allData.sort((a, b) => {
-          const dateA = new Date(a.Date);
-          const dateB = new Date(b.Date);
-          return dateA - dateB;
-        });
-
-        console.log(`Total records loaded: ${allData.length}`);
+        
+        console.log(`✅ Loaded ${Object.keys(allMonthsData).length} months of data`);
 
         document.getElementById('lastUpdated').textContent = 
           "Last updated: " + new Date().toLocaleString();
@@ -436,12 +483,12 @@
         switchMonth(currentMonth);
 
       } catch (err) {
-        console.error('Error loading data:', err);
+        console.error('❌ Error loading data:', err);
         document.getElementById('errorContainer').innerHTML = `
           <div class="error-message">
             <h3>❌ Data Loading Error</h3>
             <p><strong>Error:</strong> ${err.message}</p>
-            <p>Please check that the Google Sheets are published and accessible.</p>
+            <div class="error-details">${err.stack || 'No additional details'}</div>
             <button onclick="loadData()" style="margin-top: 15px; background: #dc2626; border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
               🔄 Retry
             </button>
@@ -453,19 +500,110 @@
       }
     }
 
-    function switchMonth(month) {
-      currentMonth = month;
-      document.getElementById('headerText').textContent =
-        month === 'September' ? 'September Overview' :
-        month === 'October' ? 'October Overview' : 'All Months Overview';
-      document.getElementById('monthSelector').value = month;
-
-      let filtered = allData;
-      if (month !== "All") {
-        filtered = allData.filter(row => row.Month === month);
+    async function loadMonthData(csvUrl, monthName) {
+      console.log(`   Loading ${monthName} (pivot format)...`);
+      
+      const response = await fetch(csvUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} for ${monthName}`);
       }
       
-      console.log(`Displaying ${filtered.length} records for ${month}`);
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        throw new Error(`Empty response for ${monthName}`);
+      }
+      
+      const rows = csvToArray(text);
+      console.log(`   Parsed ${rows.length} rows from ${monthName}`);
+      
+      if (rows.length === 0) {
+        throw new Error(`No data in ${monthName}`);
+      }
+
+      // Parse pivot table format
+      // Row 0 = Headers (column A is empty/label, then dates start)
+      // Rows 1+ = Product name in col 0, quantities in other columns
+      
+      const headerRow = rows[0];
+      console.log(`   Header row:`, headerRow);
+      
+      // Extract dates from header row (skip first column which is product label)
+      const dates = [];
+      for (let i = 1; i < headerRow.length; i++) {
+        const dateStr = headerRow[i];
+        if (dateStr && dateStr.trim() !== '') {
+          const formattedDate = formatDate(dateStr);
+          if (formattedDate) {
+            dates.push(formattedDate);
+          }
+        }
+      }
+      
+      console.log(`   Found ${dates.length} dates in ${monthName}`);
+      if (dates.length === 0) {
+        throw new Error(`No valid dates found in header row for ${monthName}`);
+      }
+
+      // Transform pivot data to row format
+      const transformedData = [];
+      
+      for (let rowIdx = 1; rowIdx < rows.length; rowIdx++) {
+        const row = rows[rowIdx];
+        const product = row[0];
+        
+        // Skip if no product name or if it's a total row
+        if (!product || product.toString().toUpperCase().includes('TOTAL')) {
+          continue;
+        }
+        
+        // Process each date column for this product
+        for (let colIdx = 1; colIdx < row.length && colIdx <= dates.length; colIdx++) {
+          const quantityStr = row[colIdx];
+          const quantity = parseFloat(quantityStr) || 0;
+          
+          // Only include if quantity > 0
+          if (quantity > 0) {
+            const date = dates[colIdx - 1]; // -1 because dates array doesn't include first column
+            if (date) {
+              transformedData.push({
+                Date: date,
+                Product: product.trim(),
+                TotalKGs: quantity,
+                Month: monthName
+              });
+            }
+          }
+        }
+      }
+
+      console.log(`   ✅ Transformed ${transformedData.length} records from ${monthName}`);
+      
+      if (transformedData.length === 0) {
+        console.warn(`   ⚠️ Warning: No valid data extracted from ${monthName}`);
+      }
+      
+      allMonthsData[monthName] = transformedData;
+    }
+
+    function switchMonth(month) {
+      currentMonth = month;
+      
+      const headerText = month === 'combined' ? 'All Months Overview' : `${month} Overview`;
+      document.getElementById('headerText').textContent = headerText;
+      document.getElementById('monthSelector').value = month;
+
+      let filtered = [];
+      if (month === 'combined') {
+        Object.values(allMonthsData).forEach(monthData => {
+          filtered = filtered.concat(monthData);
+        });
+      } else {
+        filtered = allMonthsData[month] || [];
+      }
+      
+      filtered.sort((a, b) => new Date(a.Date) - new Date(b.Date));
+      
+      console.log(`📊 Displaying ${filtered.length} records for ${month}`);
       displayData(filtered);
     }
 
@@ -476,7 +614,7 @@
         document.getElementById('dashboard').innerHTML = `
           <div class="no-data">
             <h2>📭 No Data Available</h2>
-            <p>No records found for the selected month filter.</p>
+            <p>No records found for the selected month.</p>
           </div>
         `;
         document.getElementById('dashboard').style.display = 'block';
@@ -487,11 +625,11 @@
 
       // Calculate statistics
       const totalKG = data.reduce((sum, r) => sum + r.TotalKGs, 0);
-      const total6KG = data.filter(r => r.Product.includes('6KG') || r.Product.includes('6 KG'))
+      const total6KG = data.filter(r => r.Product.includes('6'))
         .reduce((sum, r) => sum + r.TotalKGs, 0);
-      const total13KG = data.filter(r => r.Product.includes('13KG') || r.Product.includes('13 KG'))
+      const total13KG = data.filter(r => r.Product.includes('13'))
         .reduce((sum, r) => sum + r.TotalKGs, 0);
-      const total45KG = data.filter(r => r.Product.includes('45KG') || r.Product.includes('45 KG'))
+      const total45KG = data.filter(r => r.Product.includes('45'))
         .reduce((sum, r) => sum + r.TotalKGs, 0);
       
       const uniqueDays = new Set(data.map(r => r.Date)).size;
@@ -558,9 +696,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: true,
-          plugins: {
-            legend: { display: false }
-          },
+          plugins: { legend: { display: false } },
           scales: {
             y: {
               beginAtZero: true,
@@ -574,11 +710,11 @@
     function createProductDistributionChart(data) {
       if (charts.productDist) charts.productDist.destroy();
 
-      const total6 = data.filter(r => r.Product.includes('6KG') || r.Product.includes('6 KG'))
+      const total6 = data.filter(r => r.Product.includes('6'))
         .reduce((a, b) => a + b.TotalKGs, 0);
-      const total13 = data.filter(r => r.Product.includes('13KG') || r.Product.includes('13 KG'))
+      const total13 = data.filter(r => r.Product.includes('13'))
         .reduce((a, b) => a + b.TotalKGs, 0);
-      const total45 = data.filter(r => r.Product.includes('45KG') || r.Product.includes('45 KG'))
+      const total45 = data.filter(r => r.Product.includes('45'))
         .reduce((a, b) => a + b.TotalKGs, 0);
 
       charts.productDist = new Chart(document.getElementById('productDistChart'), {
@@ -621,11 +757,11 @@
         const product = r.Product;
         const kg = r.TotalKGs;
         
-        if (product.includes('6KG') || product.includes('6 KG')) {
+        if (product.includes('6')) {
           trends['6KG'][r.Date] = (trends['6KG'][r.Date] || 0) + kg;
-        } else if (product.includes('13KG') || product.includes('13 KG')) {
+        } else if (product.includes('13')) {
           trends['13KG'][r.Date] = (trends['13KG'][r.Date] || 0) + kg;
-        } else if (product.includes('45KG') || product.includes('45 KG')) {
+        } else if (product.includes('45')) {
           trends['45KG'][r.Date] = (trends['45KG'][r.Date] || 0) + kg;
         }
       });
@@ -669,9 +805,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: true,
-          plugins: {
-            legend: { position: 'top' }
-          },
+          plugins: { legend: { position: 'top' } },
           scales: {
             y: {
               beginAtZero: true,
@@ -690,7 +824,6 @@
         return;
       }
 
-      // Use only the main columns
       const displayColumns = ['Date', 'Product', 'TotalKGs', 'Month'];
       
       let html = "<thead><tr>" + displayColumns.map(k => `<th>${k}</th>`).join('') + "</tr></thead><tbody>";
@@ -714,7 +847,10 @@
       table.innerHTML = html;
     }
 
-    window.addEventListener('load', loadData);
+    window.addEventListener('load', () => {
+      initializeMonthFilter();
+      loadData();
+    });
   </script>
 </body>
 </html>
