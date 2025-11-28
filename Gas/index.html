@@ -366,6 +366,37 @@
       // Add more months as needed
     };
     
+    // ============================================================================
+    // 🔧 AUTOMATIC SETUP
+    // ============================================================================
+
+    let allData = [];
+    let allMonthsData = {};
+    let currentMonth = "";
+    let charts = {};
+
+    function initializeMonthFilter() {
+      const monthSelector = document.getElementById('monthSelector');
+      monthSelector.innerHTML = '';
+      
+      const months = Object.keys(dataSources).reverse();
+      
+      months.forEach(month => {
+        const option = document.createElement('option');
+        option.value = month;
+        option.textContent = month;
+        monthSelector.appendChild(option);
+      });
+      
+      const combinedOption = document.createElement('option');
+      combinedOption.value = 'combined';
+      combinedOption.textContent = 'Combined (All Months)';
+      monthSelector.appendChild(combinedOption);
+      
+      console.log(`✅ Initialized with ${months.length} months: ${months.join(', ')}`);
+      currentMonth = months[0];
+    }
+
     function csvToArray(csv, delimiter = ',') {
       const lines = csv.trim().split('\n');
       
