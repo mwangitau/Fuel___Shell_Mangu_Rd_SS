@@ -457,6 +457,23 @@
     .var-neg { color: var(--red); font-weight: 700; }
     .var-alert { background: #fee2e2; padding: 2px 7px; border-radius: 4px; }
 
+    /* TAB BUTTONS */
+    .tab-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.95em;
+      font-weight: 600;
+      cursor: pointer;
+      opacity: 0.55;
+      transition: opacity 0.2s, transform 0.2s;
+      letter-spacing: 0.3px;
+    }
+    .tab-btn:hover { opacity: 0.8; transform: translateY(-1px); }
+    .tab-btn.active { opacity: 1; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transform: translateY(-2px); }
+
     /* LOADING */
     .spinner-wrap { display: flex; justify-content: center; padding: 40px; }
     .spinner {
@@ -544,10 +561,27 @@
     <button class="btn" onclick="updateDashboard()">🔄 Update</button>
   </div>
 
-  <!-- SALES TREND (full width, with target pace line) -->
-  <div class="chart-container">
-    <div class="chart-wrapper tall">
-      <canvas id="salesTrendChart"></canvas>
+  <!-- DAILY SALES vs DAILY TARGET — per product -->
+  <div class="chart-container" id="targetChartSection">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3em;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:1px;">
+        📈 Daily Sales vs Daily Target
+        <span style="font-size:0.7em;font-weight:400;color:#64748b;text-transform:none;letter-spacing:0;margin-left:8px;">Green = above target · Red = below target</span>
+      </div>
+      <div style="display:flex;gap:8px;" id="productTabs">
+        <button class="tab-btn active" onclick="switchTab('DX')" id="tab-DX" style="background:linear-gradient(135deg,#111827,#1f2937)">⚫ DX Diesel</button>
+        <button class="tab-btn" onclick="switchTab('UX')" id="tab-UX" style="background:linear-gradient(135deg,#064e3b,#065f46)">🟢 UX Unleaded</button>
+        <button class="tab-btn" onclick="switchTab('VP')" id="tab-VP" style="background:linear-gradient(135deg,#7f1d1d,#991b1b)">🔴 VP V-Power</button>
+      </div>
+    </div>
+    <div id="targetChart-DX" class="product-chart-panel">
+      <div class="chart-wrapper tall"><canvas id="targetChartDX"></canvas></div>
+    </div>
+    <div id="targetChart-UX" class="product-chart-panel" style="display:none;">
+      <div class="chart-wrapper tall"><canvas id="targetChartUX"></canvas></div>
+    </div>
+    <div id="targetChart-VP" class="product-chart-panel" style="display:none;">
+      <div class="chart-wrapper tall"><canvas id="targetChartVP"></canvas></div>
     </div>
   </div>
 
@@ -963,86 +997,159 @@
     const selectedMonth = getSelectedMonth();
     const daysInMonth = getDaysInMonth(selectedMonth);
 
-    // -- DAILY SALES TREND with target pace line --
+    // -- PER-PRODUCT DAILY SALES vs DAILY TARGET (shaded gap) --
     const dailySales = {};
     data.forEach(row => {
       if (!dailySales[row.date]) dailySales[row.date] = {};
       dailySales[row.date][row.product] = (dailySales[row.date][row.product]||0)+row.meterSale;
     });
     const dates = Object.keys(dailySales).sort();
-    const products = ['DX','UX','VP'];
-    const datasets = products.map(p => ({
-      label: PRODUCT_NAMES[p],
-      data: dates.map(d => dailySales[d][p]||0),
-      borderColor: PRODUCT_COLORS[p],
-      backgroundColor: PRODUCT_COLORS[p]+'22',
-      tension: 0.4, fill: false, borderWidth: 2.5,
-      pointRadius: 4, pointHoverRadius: 6
-    }));
 
-    // Add cumulative total vs cumulative target pace
-    let cumTotal = 0;
-    const totalTarget = Object.values(MONTHLY_TARGETS).reduce((a,b)=>a+b,0);
-    const dailyPace = totalTarget / daysInMonth;
+    // Custom plugin: shade gap between actual and target line
+    // green where actual >= target, red where actual < target
+    const shadedGapPlugin = {
+      id: 'shadedGap',
+      afterDatasetsDraw(chart) {
+        const { ctx, chartArea: { top, bottom }, scales: { x, y } } = chart;
+        // dataset 0 = actual, dataset 1 = target
+        const actualMeta = chart.getDatasetMeta(0);
+        const targetMeta = chart.getDatasetMeta(1);
+        if (!actualMeta.data.length || !targetMeta.data.length) return;
 
-    const cumSalesData = dates.map(d => {
-      const dayTotal = products.reduce((s,p) => s+(dailySales[d][p]||0),0);
-      cumTotal += dayTotal;
-      return cumTotal;
-    });
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(chart.chartArea.left, top, chart.chartArea.right - chart.chartArea.left, bottom - top);
+        ctx.clip();
 
-    const cumPaceData = dates.map((_, i) => Math.round(dailyPace*(i+1)));
+        const n = actualMeta.data.length;
+        for (let i = 0; i < n - 1; i++) {
+          const ax0 = actualMeta.data[i].x,   ay0 = actualMeta.data[i].y;
+          const ax1 = actualMeta.data[i+1].x, ay1 = actualMeta.data[i+1].y;
+          const tx0 = targetMeta.data[i].x,   ty0 = targetMeta.data[i].y;
+          const tx1 = targetMeta.data[i+1].x, ty1 = targetMeta.data[i+1].y;
 
-    datasets.push({
-      label: '📈 Cumulative Actual',
-      data: cumSalesData,
-      borderColor: '#6366f1',
-      backgroundColor: 'transparent',
-      borderWidth: 2,
-      borderDash: [],
-      tension: 0.4, fill: false,
-      yAxisID: 'y2', pointRadius: 3
-    });
-    datasets.push({
-      label: '🎯 Target Pace',
-      data: cumPaceData,
-      borderColor: '#f59e0b',
-      backgroundColor: 'transparent',
-      borderWidth: 2.5,
-      borderDash: [8,4],
-      tension: 0,
-      fill: false,
-      yAxisID: 'y2',
-      pointRadius: 0
-    });
+          // Check if lines cross between i and i+1
+          const da0 = ay0 - ty0, da1 = ay1 - ty1;
+          const hasCross = (da0 > 0 && da1 < 0) || (da0 < 0 && da1 > 0);
 
-    charts.salesTrend = new Chart(document.getElementById('salesTrendChart').getContext('2d'), {
-      type: 'line',
-      data: { labels: dates.map(fmtDisp), datasets },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          title: { display: true, text: 'Daily Sales Trend + Cumulative vs Target Pace', font: { size: 15, weight: 'bold' } },
-          legend: { position: 'top' },
-          tooltip: {
-            callbacks: {
-              afterBody: (items) => {
-                const idx = items[0]?.dataIndex;
-                if (idx === undefined) return;
-                const actual = cumSalesData[idx];
-                const pace = cumPaceData[idx];
-                const diff = actual - pace;
-                return `\nVs Target Pace: ${diff >= 0 ? '+' : ''}${diff.toLocaleString()} L`;
+          if (!hasCross) {
+            // Simple quad — one colour
+            const isAbove = da0 <= 0; // note: canvas y is inverted, above target = ay < ty
+            ctx.beginPath();
+            ctx.moveTo(ax0, ay0);
+            ctx.lineTo(ax1, ay1);
+            ctx.lineTo(tx1, ty1);
+            ctx.lineTo(tx0, ty0);
+            ctx.closePath();
+            ctx.fillStyle = isAbove ? 'rgba(16,185,129,0.22)' : 'rgba(220,38,38,0.20)';
+            ctx.fill();
+          } else {
+            // Find crossing X
+            const crossT = da0 / (da0 - da1);
+            const crossX = ax0 + crossT * (ax1 - ax0);
+            const crossY = ay0 + crossT * (ay1 - ay0);
+
+            // First segment
+            ctx.beginPath();
+            ctx.moveTo(ax0, ay0); ctx.lineTo(crossX, crossY);
+            ctx.lineTo(tx0 + crossT*(tx1-tx0), crossY); // target at crossing
+            ctx.lineTo(tx0, ty0); ctx.closePath();
+            ctx.fillStyle = da0 <= 0 ? 'rgba(16,185,129,0.22)' : 'rgba(220,38,38,0.20)';
+            ctx.fill();
+
+            // Second segment
+            ctx.beginPath();
+            ctx.moveTo(crossX, crossY); ctx.lineTo(ax1, ay1);
+            ctx.lineTo(tx1, ty1);
+            ctx.lineTo(tx0 + crossT*(tx1-tx0), crossY); ctx.closePath();
+            ctx.fillStyle = da1 <= 0 ? 'rgba(16,185,129,0.22)' : 'rgba(220,38,38,0.20)';
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
+    };
+
+    function buildProductTargetChart(canvasId, product) {
+      const productColor = PRODUCT_COLORS[product];
+      const dailyTarget = MONTHLY_TARGETS[product] / daysInMonth;
+      const actualData = dates.map(d => dailySales[d]?.[product] || 0);
+      const targetLine = dates.map(() => parseFloat(dailyTarget.toFixed(2)));
+
+      if (charts[`target_${product}`]) charts[`target_${product}`].destroy();
+
+      charts[`target_${product}`] = new Chart(document.getElementById(canvasId).getContext('2d'), {
+        type: 'line',
+        plugins: [shadedGapPlugin],
+        data: {
+          labels: dates.map(fmtDisp),
+          datasets: [
+            {
+              label: `${PRODUCT_NAMES[product]} — Actual Daily Sales`,
+              data: actualData,
+              borderColor: productColor,
+              backgroundColor: 'transparent',
+              borderWidth: 2.5,
+              tension: 0.35,
+              fill: false,
+              pointRadius: 5,
+              pointHoverRadius: 7,
+              pointBackgroundColor: actualData.map(v => v >= dailyTarget ? '#10b981' : '#dc2626'),
+              pointBorderColor: 'white',
+              pointBorderWidth: 1.5,
+              order: 1
+            },
+            {
+              label: `Daily Target (${dailyTarget.toLocaleString(undefined,{maximumFractionDigits:1})} L/day)`,
+              data: targetLine,
+              borderColor: '#f59e0b',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              borderDash: [10, 5],
+              tension: 0,
+              fill: false,
+              pointRadius: 0,
+              order: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                afterBody(items) {
+                  const idx = items[0]?.dataIndex;
+                  if (idx === undefined) return '';
+                  const actual = actualData[idx];
+                  const diff = actual - dailyTarget;
+                  const sign = diff >= 0 ? '+' : '';
+                  const status = diff >= 0 ? '✅ Above target' : '🔴 Below target';
+                  return [`${status}: ${sign}${diff.toLocaleString(undefined,{maximumFractionDigits:1})} L`];
+                }
               }
             }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(0,0,0,0.05)' } },
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(0,0,0,0.06)' },
+              ticks: { callback: v => v.toLocaleString() + ' L' },
+              title: { display: true, text: 'Litres Sold' }
+            }
           }
-        },
-        scales: {
-          y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString()+'L' }, title: { display: true, text: 'Daily Sales (L)' } },
-          y2: { position: 'right', beginAtZero: true, ticks: { callback: v => v.toLocaleString()+'L' }, title: { display: true, text: 'Cumulative (L)' }, grid: { drawOnChartArea: false } }
         }
-      }
-    });
+      });
+    }
+
+    // Build all three charts upfront (hidden ones are fine, chart renders on show)
+    buildProductTargetChart('targetChartDX', 'DX');
+    buildProductTargetChart('targetChartUX', 'UX');
+    buildProductTargetChart('targetChartVP', 'VP');
 
     // -- TARGET VS ACTUAL BAR CHART --
     const productSales = { UX:0, DX:0, VP:0 };
@@ -1231,6 +1338,18 @@
   }
 
   // ============================================================================
+  // TAB SWITCHER for per-product charts
+  // ============================================================================
+  function switchTab(product) {
+    ['DX','UX','VP'].forEach(p => {
+      document.getElementById(`targetChart-${p}`).style.display = p === product ? 'block' : 'none';
+      document.getElementById(`tab-${p}`).classList.toggle('active', p === product);
+    });
+    // Trigger resize so chart renders correctly after being hidden
+    setTimeout(() => { if (charts[`target_${product}`]) charts[`target_${product}`].resize(); }, 50);
+  }
+
+  // ============================================================================
   // MAIN UPDATE
   // ============================================================================
   function updateDashboard() {
@@ -1247,6 +1366,8 @@
     createCharts(filtered);
     updateInsights(filtered);
     updateDataTable(filtered);
+    // Reset tab to DX after rebuild
+    switchTab('DX');
   }
 
   window.onload = () => {
