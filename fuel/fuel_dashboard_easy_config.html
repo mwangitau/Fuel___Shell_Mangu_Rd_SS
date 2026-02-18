@@ -20,38 +20,6 @@
       padding: 30px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     }
-    
-    /* Configuration Helper Section */
-    .config-helper {
-      background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-      border-left: 5px solid #4caf50;
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 25px;
-    }
-    .config-helper h3 {
-      margin-top: 0;
-      color: #2e7d32;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .config-helper code {
-      background: #fff;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-family: 'Courier New', monospace;
-      color: #d32f2f;
-    }
-    .config-helper ol {
-      margin: 10px 0;
-      padding-left: 25px;
-    }
-    .config-helper li {
-      margin: 8px 0;
-      line-height: 1.6;
-    }
-    
     h1 {
       text-align: center;
       color: #2c3e50;
@@ -79,47 +47,11 @@
       position: relative;
       overflow: hidden;
     }
-    .metric-card::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-      transform: rotate(45deg);
-      transition: all 0.5s;
-      opacity: 0;
-    }
-    .metric-card:hover {
-      transform: translateY(-5px) scale(1.02);
-    }
-    .metric-card:hover::before {
-      opacity: 1;
-      animation: shimmer 0.6s ease-in-out;
-    }
-    @keyframes shimmer {
-      0% { transform: translateX(-100%) rotate(45deg); }
-      100% { transform: translateX(100%) rotate(45deg); }
-    }
-    .metric-value {
-      font-size: 2.2em;
-      font-weight: bold;
-      margin-bottom: 8px;
-      position: relative;
-      z-index: 1;
-    }
-    .metric-label {
-      font-size: 0.95em;
-      opacity: 0.95;
-      position: relative;
-      z-index: 1;
-    }
-    .metric-icon {
-      font-size: 1.5em;
-      margin-bottom: 10px;
-      opacity: 0.8;
-    }
+    .metric-card:hover { transform: translateY(-5px) scale(1.02); }
+    .metric-value { font-size: 2.2em; font-weight: bold; margin-bottom: 8px; }
+    .metric-label { font-size: 0.95em; opacity: 0.95; }
+    .metric-icon { font-size: 1.5em; margin-bottom: 10px; opacity: 0.8; }
+
     .chart-container {
       background: white;
       border-radius: 15px;
@@ -128,9 +60,7 @@
       box-shadow: 0 8px 20px rgba(0,0,0,0.1);
       transition: transform 0.2s ease;
     }
-    .chart-container:hover {
-      transform: translateY(-2px);
-    }
+    .chart-container:hover { transform: translateY(-2px); }
     .charts-grid {
       display: grid;
       grid-template-columns: 2fr 1fr;
@@ -153,10 +83,7 @@
       align-items: center;
       gap: 10px;
     }
-    .insights-list {
-      list-style: none;
-      padding: 0;
-    }
+    .insights-list { list-style: none; padding: 0; }
     .insights-list li {
       background: white;
       margin: 12px 0;
@@ -165,12 +92,9 @@
       border-left: 4px solid #e74c3c;
       box-shadow: 0 3px 8px rgba(0,0,0,0.08);
       transition: all 0.3s ease;
-      position: relative;
     }
-    .insights-list li:hover {
-      transform: translateX(5px);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-    }
+    .insights-list li:hover { transform: translateX(5px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
+
     .filter-section {
       display: flex;
       gap: 15px;
@@ -178,16 +102,8 @@
       flex-wrap: wrap;
       align-items: center;
     }
-    .filter-group {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    .filter-label {
-      font-size: 0.9em;
-      color: #555;
-      font-weight: 600;
-    }
+    .filter-group { display: flex; flex-direction: column; gap: 5px; }
+    .filter-label { font-size: 0.9em; color: #555; font-weight: 600; }
     select, button {
       padding: 12px 18px;
       border: none;
@@ -199,14 +115,30 @@
       transition: all 0.3s ease;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
-    select:hover, button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+    select:hover, button:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
+    button { background: linear-gradient(135deg, #e74c3c, #c0392b); font-weight: 600; }
+
+    /* TARGET LEGEND PILL */
+    .target-legend {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      padding: 12px 18px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      font-size: 0.88em;
+      color: #444;
     }
-    button {
-      background: linear-gradient(135deg, #e74c3c, #c0392b);
-      font-weight: 600;
+    .legend-item { display: flex; align-items: center; gap: 7px; font-weight: 500; }
+    .legend-dot {
+      width: 28px; height: 4px; border-radius: 2px;
     }
+    .legend-swatch {
+      width: 16px; height: 16px; border-radius: 4px; opacity: 0.7;
+    }
+
     .data-table {
       width: 100%;
       border-collapse: collapse;
@@ -228,27 +160,18 @@
       top: 0;
       z-index: 10;
     }
-    .data-table tbody tr:hover {
-      background: rgba(102, 126, 234, 0.05);
-    }
-    .loading-spinner {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 200px;
-    }
+    .data-table tbody tr:hover { background: rgba(102,126,234,0.05); }
+
+    .loading-spinner { display: flex; justify-content: center; align-items: center; height: 200px; }
     .spinner {
-      width: 40px;
-      height: 40px;
+      width: 40px; height: 40px;
       border: 4px solid #f3f3f3;
       border-top: 4px solid #667eea;
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
     .date-range {
       background: rgba(255,255,255,0.9);
       padding: 10px;
@@ -268,16 +191,9 @@
       text-align: center;
     }
     @media (max-width: 768px) {
-      .charts-grid {
-        grid-template-columns: 1fr;
-      }
-      .metrics-grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      }
-      .filter-section {
-        flex-direction: column;
-        align-items: stretch;
-      }
+      .charts-grid { grid-template-columns: 1fr; }
+      .metrics-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+      .filter-section { flex-direction: column; align-items: stretch; }
     }
   </style>
 </head>
@@ -291,9 +207,7 @@
     <div class="filter-section">
       <div class="filter-group">
         <label class="filter-label">📅 Month</label>
-        <select id="monthFilter" onchange="loadFuelData()">
-          <!-- Options will be auto-populated from dataSources -->
-        </select>
+        <select id="monthFilter" onchange="loadFuelData()"></select>
       </div>
       <div class="filter-group">
         <label class="filter-label">Attendant Filter</label>
@@ -313,8 +227,30 @@
       <button onclick="updateAnalysis()">🔄 Update Analysis</button>
     </div>
     
-    <div class="chart-container" style="height: 500px;">
-      <canvas id="dailySalesChart"></canvas>
+    <!-- DAILY TREND CHART with target line -->
+    <div class="chart-container">
+      <div style="position:relative; height:450px;">
+        <canvas id="dailySalesChart"></canvas>
+      </div>
+      <div class="target-legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#667eea;"></div>
+          Daily Volume (Actual)
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#f59e0b; border-top: 3px dashed #f59e0b; background:none; width:28px;"></div>
+          Daily Target Line
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:rgba(16,185,129,0.3); border:1px solid #10b981;"></div>
+          Above Target
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:rgba(220,38,38,0.2); border:1px solid #dc2626;"></div>
+          Below Target
+        </div>
+        <div id="dailyTargetInfo" style="margin-left:auto; font-weight:600; color:#764ba2;"></div>
+      </div>
     </div>
     
     <div class="charts-grid">
@@ -341,61 +277,50 @@
     <footer>
       <p><strong>© 2026 Kiryan Energy Ltd — All Rights Reserved</strong></p>
       <p><strong>Confidential:</strong> These dashboards are for official use only and must not be copied, shared, or distributed without prior written permission from Kiryan Energy Ltd.</p>
-      <p>Data refreshed automatically • Dashboard v2.1 • Easy Config</p>
+      <p>Data refreshed automatically • Dashboard v2.2 • Target Tracking Enabled</p>
     </footer>
   </div>
 
   <script>
     // ============================================================================
-    // 📝 CONFIGURATION SECTION - ADD YOUR MONTHS HERE!
+    // DATA SOURCES
     // ============================================================================
-    // To add a new month, simply add a new line like:
-    // "MonthName": "YOUR_GOOGLE_SHEETS_CSV_LINK",
-    // 
-    // The dropdown will automatically update with all months below!
-    // ============================================================================
-    
     const dataSources = {
       "September 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?output=csv",
       "October 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1064673143&output=csv",
       "November 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=1064673143&single=true&output=csv",
       "December 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS6iyMOviuAKEPtY-l7IOcbpkpWIm6hHVz5ongtl9A6xv2idj2VqJ5shpPcteJ-QAMsdQvMgYUpaQec/pub?gid=1064673143&single=true&output=csv",
       "January 2026": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRT8Kama3jzM7pEBPHUY-hUKgiV5Mbp0VC5CN4_-r2MckRoU2xxGcwQb31qeRKjXLg2NHH0eDQlmu3C/pub?gid=1064673143&single=true&output=csv",
-      // Add more months here as needed:
-      // "December": "YOUR_CSV_LINK_HERE",
-      // "January": "YOUR_CSV_LINK_HERE",
     };
-    
-    // ============================================================================
-    // 🔧 AUTOMATIC SETUP - NO NEED TO EDIT BELOW THIS LINE!
-    // ============================================================================
 
+    // ============================================================================
+    // STATION MONTHLY TARGET (UX + DX + VP combined)
+    // ============================================================================
+    const STATION_MONTHLY_TARGET = 88593 + 91152 + 11104; // = 190,849 L
+
+    // ============================================================================
+    // HELPERS
+    // ============================================================================
     let processedData = [], attendantsSet = new Set(), charts = {};
 
-    // Auto-populate month dropdown on page load
+    function getDaysInMonth(monthStr) {
+      const d = new Date(monthStr + ' 1');
+      return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    }
+
     function initializeMonthFilter() {
       const monthFilter = document.getElementById('monthFilter');
       monthFilter.innerHTML = '';
-      
-      // Get months in reverse chronological order (newest first)
       const months = Object.keys(dataSources).reverse();
-      
-      // Add individual months first
       months.forEach(month => {
         const option = document.createElement('option');
-        option.value = month;
-        option.textContent = month;
+        option.value = month; option.textContent = month;
         monthFilter.appendChild(option);
       });
-      
-      // Add combined option at the end
       const combinedOption = document.createElement('option');
       combinedOption.value = 'combined';
       combinedOption.textContent = 'Combined (All Months)';
       monthFilter.appendChild(combinedOption);
-      
-      console.log(`✅ Initialized with ${months.length} months: ${months.join(', ')}`);
-      console.log(`   Default selection: ${months[0]} (most recent)`);
     }
 
     function csvToArray(csv, delimiter = ',') {
@@ -404,9 +329,7 @@
       return lines.slice(1).map(line => {
         const items = line.split(delimiter);
         let obj = {};
-        headers.forEach((h, i) => {
-          obj[h] = items[i] ? items[i].trim() : "";
-        });
+        headers.forEach((h, i) => { obj[h] = items[i] ? items[i].trim() : ""; });
         return obj;
       });
     }
@@ -415,148 +338,89 @@
       const parts = str.split(".");
       if (parts.length < 3) return str;
       if (parts[0].length === 4) {
-        return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+        return `${parts[0]}-${parts[1].padStart(2,"0")}-${parts[2].padStart(2,"0")}`;
       }
-      return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+      return `${parts[2]}-${parts[1].padStart(2,"0")}-${parts[0].padStart(2,"0")}`;
     }
 
     function formatDisplayDate(dateStr) {
       const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'short', 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
+      return date.toLocaleDateString('en-US', { weekday:'short', year:'numeric', month:'short', day:'numeric' });
     }
 
+    function fmtShort(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    }
+
+    // ============================================================================
+    // DATA LOADING
+    // ============================================================================
     async function loadFuelData() {
       try {
         document.getElementById('metricsGrid').innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
-        
         const selectedMonth = document.getElementById('monthFilter').value;
-        processedData = [];
-        attendantsSet = new Set();
-        
+        processedData = []; attendantsSet = new Set();
+
         if (selectedMonth === 'combined') {
-          // Load all months
           for (const [month, url] of Object.entries(dataSources)) {
             await loadMonthData(url, month);
           }
-          console.log(`✅ Combined data: ${processedData.length} days from ${Object.keys(dataSources).length} months`);
         } else {
-          // Load single month
           await loadMonthData(dataSources[selectedMonth], selectedMonth);
-          console.log(`✅ ${selectedMonth} data: ${processedData.length} days`);
-        }
-        
-        if (processedData.length === 0) {
-          throw new Error('No valid fuel data found after processing all rows.');
         }
 
+        if (processedData.length === 0) throw new Error('No valid fuel data found.');
         processedData.sort((a, b) => new Date(a.date) - new Date(b.date));
-        
         updateDateRange();
         populateFilters();
         updateAnalysis();
-        
       } catch (error) {
-        console.error('❌ Error loading data:', error);
-        
-        const errorMessage = `
-          <div style="color: red; text-align: left; padding: 20px; max-width: 600px; margin: 0 auto;">
-            <h3 style="color: #e74c3c;">❌ Data Loading Error</h3>
-            <p><strong>Error:</strong> ${error.message}</p>
-            <p><strong>Troubleshooting Tips:</strong></p>
-            <ul style="text-align: left; margin: 15px 0;">
-              <li>Make sure your Google Sheet is <strong>Published to web</strong> (File → Share → Publish to web)</li>
-              <li>Verify the CSV link is correct and accessible</li>
-              <li>Check that column names match: <code>DAY</code>, <code>NAME OF CSA</code>, <code>PUMP 1</code>, <code>PUMP 2</code>, <code>PUMP 3</code></li>
-              <li>Ensure date format is: <code>YYYY.MM.DD</code> or <code>DD.MM.YYYY</code></li>
-            </ul>
-            
-            <button onclick="loadFuelData()" style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px 5px;">
-              🔄 Retry
-            </button>
-          </div>
-        `;
-        
-        document.getElementById('metricsGrid').innerHTML = errorMessage;
+        document.getElementById('metricsGrid').innerHTML = `
+          <div style="color:red;text-align:center;padding:20px;">
+            <h3>❌ Error: ${error.message}</h3>
+            <button onclick="loadFuelData()">🔄 Retry</button>
+          </div>`;
       }
     }
 
     async function loadMonthData(csvUrl, monthName) {
       const response = await fetch(csvUrl);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText} for ${monthName}`);
-      }
-      
+      if (!response.ok) throw new Error(`HTTP ${response.status} for ${monthName}`);
       const text = await response.text();
-      if (!text || text.trim() === '') {
-        throw new Error(`Empty response from Google Sheets for ${monthName}`);
-      }
-      
-      console.log(`📥 Loading ${monthName} data...`);
       const rows = csvToArray(text);
-      console.log(`   Parsed ${rows.length} rows`);
-      
-      let validRows = 0;
-      rows.forEach((row) => {
+
+      rows.forEach(row => {
         const dayValue = row.DAY;
         if (!dayValue || dayValue === "TOTALS" || dayValue === '') return;
-        
         let dateStr = dayValue;
         if (dayValue.includes('PRICE CHANGE')) {
-          const dateMatch = dayValue.match(/(\d{4}\.\d{1,2}\.\d{1,2})/);
-          if (dateMatch) {
-            dateStr = dateMatch[1];
-          } else {
-            return;
-          }
-        } else if (!dayValue.match(/\d/)) {
-          return;
-        }
-        
+          const m = dayValue.match(/(\d{4}\.\d{1,2}\.\d{1,2})/);
+          if (m) dateStr = m[1]; else return;
+        } else if (!dayValue.match(/\d/)) return;
+
         const date = formatDate(dateStr);
         if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) return;
-        
-        const pump1 = {
-          attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(),
-          value: Math.abs(parseFloat(row['PUMP 1']) || 0)
-        };
-        
-        const pump2 = {
-          attendant: (row['NAME OF CSA.1'] || 'Unknown').toString().trim(),
-          value: Math.abs(parseFloat(row['PUMP 2']) || 0)
-        };
-        
-        const pump3 = {
-          attendant: (row['NAME OF CSA.2'] || 'Unknown').toString().trim(),
-          value: Math.abs(parseFloat(row['PUMP 3']) || 0)
-        };
-        
+
+        const pump1 = { attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(), value: Math.abs(parseFloat(row['PUMP 1']) || 0) };
+        const pump2 = { attendant: (row['NAME OF CSA.1'] || 'Unknown').toString().trim(), value: Math.abs(parseFloat(row['PUMP 2']) || 0) };
+        const pump3 = { attendant: (row['NAME OF CSA.2'] || 'Unknown').toString().trim(), value: Math.abs(parseFloat(row['PUMP 3']) || 0) };
         const total = pump1.value + pump2.value + pump3.value;
-        
+
         processedData.push({ date, pump1, pump2, pump3, total });
-        validRows++;
-        
-        [pump1, pump2, pump3].forEach(pump => {
-          if (pump.attendant && pump.attendant !== 'Unknown' && pump.attendant !== '') {
-            attendantsSet.add(pump.attendant);
-          }
+        [pump1, pump2, pump3].forEach(p => {
+          if (p.attendant && p.attendant !== 'Unknown' && p.attendant !== '') attendantsSet.add(p.attendant);
         });
       });
-      
-      console.log(`   ✅ ${validRows} valid days added from ${monthName}`);
     }
 
     function updateDateRange() {
       if (processedData.length > 0) {
-        const startDate = formatDisplayDate(processedData[0].date);
-        const endDate = formatDisplayDate(processedData[processedData.length - 1].date);
+        const start = formatDisplayDate(processedData[0].date);
+        const end = formatDisplayDate(processedData[processedData.length - 1].date);
         const selectedMonth = document.getElementById('monthFilter').value;
-        const monthLabel = selectedMonth === 'combined' ? 'All Months' : selectedMonth;
-        document.getElementById('dateRange').innerHTML = `📅 <strong>${monthLabel}</strong> - Data Range: ${startDate} to ${endDate} (${processedData.length} days)`;
+        const label = selectedMonth === 'combined' ? 'All Months' : selectedMonth;
+        document.getElementById('dateRange').innerHTML = `📅 <strong>${label}</strong> — Data Range: ${start} to ${end} (${processedData.length} days)`;
       }
     }
 
@@ -565,8 +429,7 @@
       af.innerHTML = '<option value="all">All Attendants</option>';
       Array.from(attendantsSet).sort().forEach(att => {
         const opt = document.createElement('option');
-        opt.value = att;
-        opt.textContent = att;
+        opt.value = att; opt.textContent = att;
         af.appendChild(opt);
       });
     }
@@ -574,34 +437,27 @@
     function getFilteredData() {
       const att = document.getElementById('attendantFilter').value;
       const pump = document.getElementById('pumpFilter').value;
-      
       return processedData.map(r => {
         let pumps = {};
-        ["pump1", "pump2", "pump3"].forEach((key, i) => {
-          const pName = i === 0 ? "PUMP 1" : i === 1 ? "PUMP 2" : "PUMP3";
+        ["pump1","pump2","pump3"].forEach((key, i) => {
+          const pName = i===0 ? "PUMP 1" : i===1 ? "PUMP 2" : "PUMP3";
           pumps[key] = { ...r[key] };
-          
-          if ((att !== "all" && r[key].attendant !== att) || 
-              (pump !== "all" && pName !== pump)) {
+          if ((att !== "all" && r[key].attendant !== att) || (pump !== "all" && pName !== pump)) {
             pumps[key] = { attendant: r[key].attendant, value: 0 };
           }
         });
-        
-        return {
-          date: r.date,
-          ...pumps,
-          total: pumps.pump1.value + pumps.pump2.value + pumps.pump3.value
-        };
+        return { date: r.date, ...pumps, total: pumps.pump1.value + pumps.pump2.value + pumps.pump3.value };
       });
     }
 
+    // ============================================================================
+    // METRICS
+    // ============================================================================
     function updateMetrics(filtered) {
-      const dailyTotals = {}, attendantTotals = {}, pumpTotals = { "PUMP 1": 0, "PUMP 2": 0, "PUMP3": 0 };
-      
+      const dailyTotals = {}, attendantTotals = {}, pumpTotals = { "PUMP 1":0, "PUMP 2":0, "PUMP3":0 };
       filtered.forEach(r => {
-        dailyTotals[r.date] = (dailyTotals[r.date] || 0) + r.total;
-        
-        [["PUMP 1", r.pump1], ["PUMP 2", r.pump2], ["PUMP3", r.pump3]].forEach(([name, p]) => {
+        dailyTotals[r.date] = (dailyTotals[r.date]||0) + r.total;
+        [["PUMP 1",r.pump1],["PUMP 2",r.pump2],["PUMP3",r.pump3]].forEach(([name,p]) => {
           if (!attendantTotals[p.attendant]) attendantTotals[p.attendant] = 0;
           attendantTotals[p.attendant] += p.value;
           pumpTotals[name] += p.value;
@@ -609,16 +465,19 @@
       });
 
       const dailyValues = Object.values(dailyTotals);
-      const activeDays = dailyValues.filter(dayTotal => dayTotal > 0);
-      const total = dailyValues.reduce((a, b) => a + b, 0);
+      const activeDays = dailyValues.filter(v => v > 0);
+      const total = dailyValues.reduce((a,b)=>a+b,0);
       const avg = activeDays.length > 0 ? total / activeDays.length : 0;
-      
-      const bestDay = Object.keys(dailyTotals).reduce((a, b) => 
-        dailyTotals[a] > dailyTotals[b] ? a : b, Object.keys(dailyTotals)[0] || "-");
-      const topAtt = Object.keys(attendantTotals).reduce((a, b) => 
-        attendantTotals[a] > attendantTotals[b] ? a : b, "-");
-      const topPump = Object.keys(pumpTotals).reduce((a, b) => 
-        pumpTotals[a] > pumpTotals[b] ? a : b, "-");
+      const bestDay = Object.keys(dailyTotals).reduce((a,b)=>dailyTotals[a]>dailyTotals[b]?a:b, Object.keys(dailyTotals)[0]||"-");
+      const topAtt = Object.keys(attendantTotals).reduce((a,b)=>attendantTotals[a]>attendantTotals[b]?a:b,"-");
+      const topPump = Object.keys(pumpTotals).reduce((a,b)=>pumpTotals[a]>pumpTotals[b]?a:b,"-");
+
+      // Days above/below target
+      const selectedMonth = document.getElementById('monthFilter').value;
+      const daysInMonth = selectedMonth === 'combined' ? 30 : getDaysInMonth(selectedMonth);
+      const dailyTarget = STATION_MONTHLY_TARGET / daysInMonth;
+      const daysAbove = Object.values(dailyTotals).filter(v => v >= dailyTarget).length;
+      const daysBelow = Object.values(dailyTotals).filter(v => v > 0 && v < dailyTarget).length;
 
       document.getElementById('metricsGrid').innerHTML = `
         <div class="metric-card">
@@ -629,72 +488,189 @@
         <div class="metric-card">
           <div class="metric-icon">📈</div>
           <div class="metric-value">${Math.round(avg).toLocaleString()} L</div>
-          <div class="metric-label">Overall Average Volume</div>
+          <div class="metric-label">Daily Average Volume</div>
         </div>
         <div class="metric-card">
-          <div class="metric-icon">🏆</div>
-          <div class="metric-value">${formatDisplayDate(bestDay)}</div>
-          <div class="metric-label">Best Sales Day</div>
+          <div class="metric-icon">🎯</div>
+          <div class="metric-value">${Math.round(dailyTarget).toLocaleString()} L</div>
+          <div class="metric-label">Daily Target</div>
+        </div>
+        <div class="metric-card" style="background:linear-gradient(135deg,#059669,#047857)">
+          <div class="metric-icon">✅</div>
+          <div class="metric-value">${daysAbove}</div>
+          <div class="metric-label">Days Above Target</div>
+        </div>
+        <div class="metric-card" style="background:linear-gradient(135deg,#dc2626,#991b1b)">
+          <div class="metric-icon">🔴</div>
+          <div class="metric-value">${daysBelow}</div>
+          <div class="metric-label">Days Below Target</div>
         </div>
         <div class="metric-card">
           <div class="metric-icon">👨‍💼</div>
-          <div class="metric-value">${topAtt}</div>
+          <div class="metric-value" style="font-size:1.4em">${topAtt}</div>
           <div class="metric-label">Top Performer</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-icon">⛽</div>
-          <div class="metric-value">${topPump.replace('PUMP3', 'Pump 3').replace('PUMP ', 'Pump ')}</div>
-          <div class="metric-label">Best Pump</div>
         </div>`;
-      
+
       return { dailyTotals, attendantTotals, pumpTotals };
     }
 
+    // ============================================================================
+    // CHARTS
+    // ============================================================================
     function createCharts(dailyTotals, attendantTotals, pumpTotals) {
-      Object.values(charts).forEach(chart => chart.destroy());
+      Object.values(charts).forEach(c => c.destroy());
       charts = {};
 
+      const selectedMonth = document.getElementById('monthFilter').value;
+      const daysInMonth = selectedMonth === 'combined' ? 30 : getDaysInMonth(selectedMonth);
+      const dailyTarget = STATION_MONTHLY_TARGET / daysInMonth;
+
+      // Update the info pill
+      document.getElementById('dailyTargetInfo').textContent =
+        `🎯 Daily Target: ${dailyTarget.toLocaleString(undefined, {maximumFractionDigits:1})} L/day  (${STATION_MONTHLY_TARGET.toLocaleString()} L ÷ ${daysInMonth} days)`;
+
+      const sortedDates = Object.keys(dailyTotals).sort();
+      const actualValues = sortedDates.map(d => dailyTotals[d]);
+      const targetValues = sortedDates.map(() => parseFloat(dailyTarget.toFixed(2)));
+
+      // ── CUSTOM PLUGIN: shaded gap between actual and target ──
+      const shadedGapPlugin = {
+        id: 'shadedGap',
+        afterDatasetsDraw(chart) {
+          const { ctx, chartArea: { top, bottom, left, right } } = chart;
+          const actualMeta = chart.getDatasetMeta(0); // actual line
+          const targetMeta = chart.getDatasetMeta(1); // target line
+          if (!actualMeta.data.length || !targetMeta.data.length) return;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(left, top, right - left, bottom - top);
+          ctx.clip();
+
+          const n = actualMeta.data.length;
+          for (let i = 0; i < n - 1; i++) {
+            const ax0 = actualMeta.data[i].x,   ay0 = actualMeta.data[i].y;
+            const ax1 = actualMeta.data[i+1].x, ay1 = actualMeta.data[i+1].y;
+            const tx0 = targetMeta.data[i].x,   ty0 = targetMeta.data[i].y;
+            const tx1 = targetMeta.data[i+1].x, ty1 = targetMeta.data[i+1].y;
+
+            // da < 0 means actual is ABOVE target (canvas y is inverted)
+            const da0 = ay0 - ty0, da1 = ay1 - ty1;
+            const hasCross = (da0 > 0 && da1 < 0) || (da0 < 0 && da1 > 0);
+
+            if (!hasCross) {
+              ctx.beginPath();
+              ctx.moveTo(ax0, ay0); ctx.lineTo(ax1, ay1);
+              ctx.lineTo(tx1, ty1); ctx.lineTo(tx0, ty0);
+              ctx.closePath();
+              // da0 <= 0 means actual >= target (above)
+              ctx.fillStyle = da0 <= 0 ? 'rgba(16,185,129,0.22)' : 'rgba(220,38,38,0.18)';
+              ctx.fill();
+            } else {
+              const t = da0 / (da0 - da1);
+              const crossX = ax0 + t * (ax1 - ax0);
+              const crossY = ay0 + t * (ay1 - ay0);
+              const tCrossY = ty0 + t * (ty1 - ty0);
+
+              // First segment
+              ctx.beginPath();
+              ctx.moveTo(ax0, ay0); ctx.lineTo(crossX, crossY);
+              ctx.lineTo(crossX, tCrossY); ctx.lineTo(tx0, ty0);
+              ctx.closePath();
+              ctx.fillStyle = da0 <= 0 ? 'rgba(16,185,129,0.22)' : 'rgba(220,38,38,0.18)';
+              ctx.fill();
+
+              // Second segment
+              ctx.beginPath();
+              ctx.moveTo(crossX, crossY); ctx.lineTo(ax1, ay1);
+              ctx.lineTo(tx1, ty1); ctx.lineTo(crossX, tCrossY);
+              ctx.closePath();
+              ctx.fillStyle = da1 <= 0 ? 'rgba(16,185,129,0.22)' : 'rgba(220,38,38,0.18)';
+              ctx.fill();
+            }
+          }
+          ctx.restore();
+        }
+      };
+
+      // ── DAILY SALES CHART ──
       charts.daily = new Chart(document.getElementById('dailySalesChart').getContext('2d'), {
         type: 'line',
+        plugins: [shadedGapPlugin],
         data: {
-          labels: Object.keys(dailyTotals).map(date => formatDisplayDate(date)),
-          datasets: [{
-            label: 'Daily Volume (L)',
-            data: Object.values(dailyTotals),
-            borderColor: '#667eea',
-            backgroundColor: 'rgba(102,126,234,0.1)',
-            tension: 0.4,
-            fill: true,
-            pointBackgroundColor: '#667eea',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 2,
-            pointRadius: 4
-          }]
+          labels: sortedDates.map(fmtShort),
+          datasets: [
+            {
+              label: 'Daily Volume (L)',
+              data: actualValues,
+              borderColor: '#667eea',
+              backgroundColor: 'transparent',
+              tension: 0.4,
+              fill: false,
+              borderWidth: 2.5,
+              pointRadius: 5,
+              pointHoverRadius: 7,
+              // colour each dot green or red
+              pointBackgroundColor: actualValues.map(v => v >= dailyTarget ? '#10b981' : '#dc2626'),
+              pointBorderColor: 'white',
+              pointBorderWidth: 1.5,
+              order: 1
+            },
+            {
+              label: `Daily Target (${Math.round(dailyTarget).toLocaleString()} L)`,
+              data: targetValues,
+              borderColor: '#f59e0b',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              borderDash: [10, 5],
+              tension: 0,
+              fill: false,
+              pointRadius: 0,
+              order: 2
+            }
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
           plugins: {
-            title: { display: true, text: 'Daily Fuel Volume Sales Trend', font: { size: 16, weight: 'bold' } },
-            legend: { display: false }
+            title: {
+              display: true,
+              text: 'Daily Station Volume vs Daily Target',
+              font: { size: 16, weight: 'bold' }
+            },
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                afterBody(items) {
+                  const idx = items[0]?.dataIndex;
+                  if (idx === undefined) return '';
+                  const actual = actualValues[idx];
+                  const diff = actual - dailyTarget;
+                  const sign = diff >= 0 ? '+' : '';
+                  const status = diff >= 0 ? '✅ Above target' : '🔴 Below target';
+                  return [`${status}: ${sign}${diff.toLocaleString(undefined,{maximumFractionDigits:1})} L`];
+                }
+              }
+            }
           },
           scales: {
-            y: { 
-              beginAtZero: true, 
-              ticks: { 
-                callback: v => v.toLocaleString() + " L",
-                stepSize: 500
-              },
-              grid: { color: 'rgba(0,0,0,0.1)' }
+            y: {
+              beginAtZero: true,
+              ticks: { callback: v => v.toLocaleString() + ' L', stepSize: 500 },
+              grid: { color: 'rgba(0,0,0,0.06)' },
+              title: { display: true, text: 'Litres Sold' }
             },
-            x: { 
-              grid: { color: 'rgba(0,0,0,0.1)' },
+            x: {
+              grid: { color: 'rgba(0,0,0,0.06)' },
               ticks: { maxRotation: 45 }
             }
           }
         }
       });
 
+      // ── ATTENDANT PERFORMANCE ──
       charts.attendant = new Chart(document.getElementById('attendantPerformanceChart').getContext('2d'), {
         type: 'bar',
         data: {
@@ -702,43 +678,37 @@
           datasets: [{
             label: 'Total Volume (L)',
             data: Object.values(attendantTotals),
-            backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe'],
+            backgroundColor: ['#667eea','#764ba2','#f093fb','#4facfe','#00f2fe'],
             borderRadius: 8,
             borderSkipped: false
           }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           plugins: {
             title: { display: true, text: 'Attendant Performance Comparison', font: { size: 16, weight: 'bold' } },
             legend: { display: false }
           },
           scales: {
-            y: { 
-              beginAtZero: true,
-              ticks: { callback: v => v.toLocaleString() + " L" },
-              grid: { color: 'rgba(0,0,0,0.1)' }
-            },
+            y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString()+' L' }, grid: { color: 'rgba(0,0,0,0.1)' } },
             x: { grid: { display: false } }
           }
         }
       });
 
+      // ── PUMP COMPARISON ──
       charts.pump = new Chart(document.getElementById('pumpComparisonChart').getContext('2d'), {
         type: 'doughnut',
         data: {
-          labels: Object.keys(pumpTotals).map(p => p.replace('PUMP3', 'Pump 3').replace('PUMP ', 'Pump ')),
+          labels: Object.keys(pumpTotals).map(p => p.replace('PUMP3','Pump 3').replace('PUMP ','Pump ')),
           datasets: [{
             data: Object.values(pumpTotals),
-            backgroundColor: ['#667eea', '#764ba2', '#f093fb'],
-            borderWidth: 3,
-            borderColor: '#ffffff'
+            backgroundColor: ['#667eea','#764ba2','#f093fb'],
+            borderWidth: 3, borderColor: '#ffffff'
           }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           plugins: {
             title: { display: true, text: 'Volume Distribution by Pump', font: { size: 16, weight: 'bold' } },
             legend: { position: 'bottom' }
@@ -747,65 +717,81 @@
       });
     }
 
+    // ============================================================================
+    // INSIGHTS
+    // ============================================================================
     function updateInsights(dailyTotals, attendantTotals, pumpTotals) {
-      const total = Object.values(dailyTotals).reduce((a, b) => a + b, 0);
+      const selectedMonth = document.getElementById('monthFilter').value;
+      const daysInMonth = selectedMonth === 'combined' ? 30 : getDaysInMonth(selectedMonth);
+      const dailyTarget = STATION_MONTHLY_TARGET / daysInMonth;
+
+      const total = Object.values(dailyTotals).reduce((a,b)=>a+b,0);
       const days = Object.keys(dailyTotals).length;
       const avg = days > 0 ? total / days : 0;
-      const topAtt = Object.keys(attendantTotals).reduce((a, b) => 
-        attendantTotals[a] > attendantTotals[b] ? a : b, "-");
-      const topPump = Object.keys(pumpTotals).reduce((a, b) => 
-        pumpTotals[a] > pumpTotals[b] ? a : b, "-");
-      const bestDay = Object.keys(dailyTotals).reduce((a, b) => 
-        dailyTotals[a] > dailyTotals[b] ? a : b, "-");
-      const worstDay = Object.keys(dailyTotals).reduce((a, b) => 
-        dailyTotals[a] < dailyTotals[b] ? a : b, "-");
+      const topAtt = Object.keys(attendantTotals).reduce((a,b)=>attendantTotals[a]>attendantTotals[b]?a:b,"-");
+      const topPump = Object.keys(pumpTotals).reduce((a,b)=>pumpTotals[a]>pumpTotals[b]?a:b,"-");
+      const bestDay = Object.keys(dailyTotals).reduce((a,b)=>dailyTotals[a]>dailyTotals[b]?a:b,"-");
+      const worstDay = Object.keys(dailyTotals).reduce((a,b)=>dailyTotals[a]<dailyTotals[b]?a:b,"-");
+      const daysAbove = Object.values(dailyTotals).filter(v=>v>=dailyTarget).length;
+      const daysBelow = Object.values(dailyTotals).filter(v=>v>0&&v<dailyTarget).length;
+
+      // How far total is from monthly target
+      const monthTarget = STATION_MONTHLY_TARGET;
+      const shortfall = monthTarget - total;
+      const daysLeft = Math.max(daysInMonth - days, 0);
+      const neededPerDay = daysLeft > 0 ? shortfall / daysLeft : 0;
 
       const insights = [
-        `📊 Total fuel volume sold: <strong>${total.toLocaleString()} L</strong> over ${days} active days`,
-        `🏆 Best performing attendant: <strong>${topAtt}</strong> with ${attendantTotals[topAtt]?.toLocaleString() || 0} L`,
-        `⛽ Most productive pump: <strong>${topPump.replace('PUMP3', 'Pump 3').replace('PUMP ', 'Pump ')}</strong>`,
-        `📈 Overall average volume: <strong>${Math.round(avg).toLocaleString()} L</strong>`,
-        `🔥 Peak volume day: <strong>${formatDisplayDate(bestDay)}</strong> (${dailyTotals[bestDay]?.toLocaleString() || 0} L)`,
-        `📉 Lowest volume day: <strong>${formatDisplayDate(worstDay)}</strong> (${dailyTotals[worstDay]?.toLocaleString() || 0} L)`
+        `📊 Total volume sold: <strong>${total.toLocaleString()} L</strong> over ${days} active days`,
+        `🎯 Monthly target: <strong>${monthTarget.toLocaleString()} L</strong> — ${shortfall > 0
+          ? `still need <strong>${shortfall.toLocaleString(undefined,{maximumFractionDigits:0})} L</strong> (${neededPerDay > 0 ? neededPerDay.toLocaleString(undefined,{maximumFractionDigits:0})+' L/day for '+daysLeft+' remaining days' : 'month complete'})`
+          : `<strong style="color:#059669">TARGET ACHIEVED! 🎉</strong>`}`,
+        `✅ Days above daily target: <strong>${daysAbove}</strong> &nbsp;|&nbsp; 🔴 Days below: <strong>${daysBelow}</strong>`,
+        `🏆 Best attendant: <strong>${topAtt}</strong> — ${attendantTotals[topAtt]?.toLocaleString()||0} L`,
+        `⛽ Most productive pump: <strong>${topPump.replace('PUMP3','Pump 3').replace('PUMP ','Pump ')}</strong>`,
+        `🔥 Peak day: <strong>${formatDisplayDate(bestDay)}</strong> (${dailyTotals[bestDay]?.toLocaleString()||0} L)`,
+        `📉 Lowest day: <strong>${formatDisplayDate(worstDay)}</strong> (${dailyTotals[worstDay]?.toLocaleString()||0} L)`
       ];
 
-      document.getElementById('insightsList').innerHTML = insights.map(i => `<li>${i}</li>`).join('');
+      document.getElementById('insightsList').innerHTML = insights.map(i=>`<li>${i}</li>`).join('');
     }
 
+    // ============================================================================
+    // DATA TABLE
+    // ============================================================================
     function updateDataTable(filtered) {
-      let html = `
-        <thead>
-          <tr>
-            <th>📅 Date</th>
-            <th>👨‍💼 Pump 1 Attendant</th>
-            <th>📊 Pump 1 Volume</th>
-            <th>👨‍💼 Pump 2 Attendant</th>
-            <th>📊 Pump 2 Volume</th>
-            <th>👨‍💼 Pump 3 Attendant</th>
-            <th>📊 Pump 3 Volume</th>
-            <th>💰 Daily Total</th>
-          </tr>
-        </thead>
-        <tbody>`;
-      
+      let html = `<thead><tr>
+        <th>📅 Date</th>
+        <th>👨‍💼 Pump 1 Attendant</th><th>📊 Pump 1 Vol</th>
+        <th>👨‍💼 Pump 2 Attendant</th><th>📊 Pump 2 Vol</th>
+        <th>👨‍💼 Pump 3 Attendant</th><th>📊 Pump 3 Vol</th>
+        <th>💰 Daily Total</th><th>vs Target</th>
+      </tr></thead><tbody>`;
+
+      const selectedMonth = document.getElementById('monthFilter').value;
+      const daysInMonth = selectedMonth === 'combined' ? 30 : getDaysInMonth(selectedMonth);
+      const dailyTarget = STATION_MONTHLY_TARGET / daysInMonth;
+
       filtered.forEach(r => {
-        html += `
-          <tr>
-            <td>${formatDisplayDate(r.date)}</td>
-            <td>${r.pump1.attendant}</td>
-            <td>${r.pump1.value.toLocaleString()} L</td>
-            <td>${r.pump2.attendant}</td>
-            <td>${r.pump2.value.toLocaleString()} L</td>
-            <td>${r.pump3.attendant}</td>
-            <td>${r.pump3.value.toLocaleString()} L</td>
-            <td><strong>${r.total.toLocaleString()} L</strong></td>
-          </tr>`;
+        const diff = r.total - dailyTarget;
+        const diffStr = diff >= 0
+          ? `<span style="color:#059669;font-weight:700">+${diff.toLocaleString(undefined,{maximumFractionDigits:0})} L ✅</span>`
+          : `<span style="color:#dc2626;font-weight:700">${diff.toLocaleString(undefined,{maximumFractionDigits:0})} L 🔴</span>`;
+        html += `<tr>
+          <td>${formatDisplayDate(r.date)}</td>
+          <td>${r.pump1.attendant}</td><td>${r.pump1.value.toLocaleString()} L</td>
+          <td>${r.pump2.attendant}</td><td>${r.pump2.value.toLocaleString()} L</td>
+          <td>${r.pump3.attendant}</td><td>${r.pump3.value.toLocaleString()} L</td>
+          <td><strong>${r.total.toLocaleString()} L</strong></td>
+          <td>${diffStr}</td>
+        </tr>`;
       });
-      
-      html += `</tbody>`;
-      document.getElementById('dataTable').innerHTML = html;
+      document.getElementById('dataTable').innerHTML = html + '</tbody>';
     }
 
+    // ============================================================================
+    // MAIN UPDATE
+    // ============================================================================
     function updateAnalysis() {
       const filtered = getFilteredData();
       const { dailyTotals, attendantTotals, pumpTotals } = updateMetrics(filtered);
@@ -814,7 +800,6 @@
       updateDataTable(filtered);
     }
 
-    // Initialize and load data on page load
     window.onload = () => {
       initializeMonthFilter();
       loadFuelData();
