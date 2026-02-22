@@ -6,805 +6,895 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-      margin: 0; 
-      padding: 20px; 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0; padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
     }
     .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      background: rgba(255,255,255,0.95);
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      max-width: 1400px; margin: 0 auto;
+      background: rgba(255,255,255,0.97);
+      border-radius: 20px; padding: 30px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.12);
     }
     h1 {
-      text-align: center;
-      color: #2c3e50;
-      margin-bottom: 30px;
-      font-size: 2.5em;
+      text-align: center; margin-bottom: 8px; font-size: 2.4em;
       background: linear-gradient(45deg, #3498db, #9b59b6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
+    .subtitle { text-align:center; color:#64748b; margin-bottom:25px; font-size:0.95em; }
+
+    /* METRICS */
     .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px; margin-bottom: 24px;
     }
     .metric-card {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      padding: 25px;
-      border-radius: 15px;
-      text-align: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
+      background: linear-gradient(135deg, #667eea, #764ba2); color: white;
+      padding: 22px; border-radius: 14px; text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12); transition: all 0.3s ease;
     }
-    .metric-card:hover { transform: translateY(-5px) scale(1.02); }
-    .metric-value { font-size: 2.2em; font-weight: bold; margin-bottom: 8px; }
-    .metric-label { font-size: 0.95em; opacity: 0.95; }
-    .metric-icon { font-size: 1.5em; margin-bottom: 10px; opacity: 0.8; }
+    .metric-card:hover { transform: translateY(-4px); }
+    .metric-value { font-size: 2em; font-weight: bold; margin-bottom: 6px; }
+    .metric-label { font-size: 0.88em; opacity: 0.92; }
+    .metric-icon { font-size: 1.4em; margin-bottom: 8px; opacity: 0.85; }
 
+    /* PUMP TARGET PROGRESS CARDS */
+    .pump-targets-section {
+      background: white; border-radius: 16px; padding: 24px;
+      margin-bottom: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    .section-title {
+      font-size: 1.2em; font-weight: 700; color: #1e293b;
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 18px; display: flex; align-items: center; gap: 10px;
+    }
+    .section-title::after {
+      content: ''; flex: 1; height: 2px;
+      background: linear-gradient(to right, #667eea, transparent);
+    }
+    .pump-cards-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+    }
+    .pump-target-card {
+      border-radius: 14px; padding: 20px; color: white;
+      transition: transform 0.2s;
+    }
+    .pump-target-card:hover { transform: translateY(-3px); }
+    .pump-target-card.pump1 { background: linear-gradient(135deg, #1e3a8a, #1d4ed8); }
+    .pump-target-card.pump2 { background: linear-gradient(135deg, #5b21b6, #7c3aed); }
+    .pump-target-card.pump3 { background: linear-gradient(135deg, #064e3b, #065f46); }
+
+    .ptc-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .ptc-name { font-size: 1.3em; font-weight: 800; letter-spacing: 0.5px; }
+    .ptc-csa { font-size: 0.8em; opacity: 0.75; margin-top: 3px; }
+    .ptc-total { text-align: right; }
+    .ptc-total-val { font-size: 1.8em; font-weight: 700; line-height: 1; }
+    .ptc-total-lbl { font-size: 0.72em; opacity: 0.65; }
+
+    .ptc-products {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;
+    }
+    .ptc-product {
+      background: rgba(255,255,255,0.12); border-radius: 8px; padding: 8px 10px;
+    }
+    .ptc-product-name { font-size: 0.72em; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
+    .ptc-product-val { font-size: 1.1em; font-weight: 700; }
+    .ptc-product-daily { font-size: 0.72em; opacity: 0.65; }
+
+    .ptc-progress-label {
+      display: flex; justify-content: space-between; font-size: 0.78em; opacity: 0.8; margin-bottom: 5px;
+    }
+    .ptc-bar { background: rgba(255,255,255,0.2); height: 10px; border-radius: 5px; overflow: hidden; position: relative; margin-bottom: 5px; }
+    .ptc-fill { height: 100%; border-radius: 5px; transition: width 1s ease; }
+    .ptc-fill.good { background: linear-gradient(to right, #34d399, #10b981); }
+    .ptc-fill.warn { background: linear-gradient(to right, #fbbf24, #f59e0b); }
+    .ptc-fill.bad  { background: linear-gradient(to right, #f87171, #ef4444); }
+    .ptc-pace-marker {
+      position: absolute; top: -2px; width: 3px; height: 14px;
+      background: white; border-radius: 2px; transform: translateX(-50%);
+      box-shadow: 0 0 4px rgba(255,255,255,0.9);
+    }
+    .ptc-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 0.75em; font-weight: 700; text-transform: uppercase;
+      margin-top: 6px;
+    }
+    .ptc-badge.on-track { background: rgba(52,211,153,0.25); color: #34d399; }
+    .ptc-badge.below    { background: rgba(251,191,36,0.25);  color: #fbbf24; }
+    .ptc-badge.critical { background: rgba(248,113,113,0.25); color: #f87171; }
+
+    /* CHART TABS */
     .chart-container {
-      background: white;
-      border-radius: 15px;
-      padding: 25px;
-      margin-bottom: 25px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-      transition: transform 0.2s ease;
+      background: white; border-radius: 15px; padding: 25px;
+      margin-bottom: 25px; box-shadow: 0 8px 20px rgba(0,0,0,0.08);
     }
-    .chart-container:hover { transform: translateY(-2px); }
-    .charts-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 25px;
-      margin-bottom: 25px;
+    .chart-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .tab-btn {
+      padding: 8px 18px; border: none; border-radius: 8px;
+      color: white; font-size: 0.9em; font-weight: 600; cursor: pointer;
+      opacity: 0.5; transition: all 0.2s;
     }
-    .analysis-section {
-      background: linear-gradient(135deg, #f8f9fa, #ffffff);
-      border-radius: 15px;
-      padding: 25px;
-      margin-bottom: 25px;
-      border-left: 5px solid #3498db;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    }
-    .analysis-section h3 {
-      color: #2c3e50;
-      margin-bottom: 15px;
-      font-size: 1.4em;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .insights-list { list-style: none; padding: 0; }
-    .insights-list li {
-      background: white;
-      margin: 12px 0;
-      padding: 18px;
-      border-radius: 10px;
-      border-left: 4px solid #e74c3c;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
-      transition: all 0.3s ease;
-    }
-    .insights-list li:hover { transform: translateX(5px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
+    .tab-btn:hover { opacity: 0.8; transform: translateY(-1px); }
+    .tab-btn.active { opacity: 1; box-shadow: 0 4px 12px rgba(0,0,0,0.25); transform: translateY(-2px); }
+    .tab-btn.pump1-btn { background: linear-gradient(135deg, #1e3a8a, #1d4ed8); }
+    .tab-btn.pump2-btn { background: linear-gradient(135deg, #5b21b6, #7c3aed); }
+    .tab-btn.pump3-btn { background: linear-gradient(135deg, #064e3b, #065f46); }
+    .tab-btn.all-btn   { background: linear-gradient(135deg, #667eea, #764ba2); }
 
+    .target-legend {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      margin-top: 14px; padding: 10px 16px;
+      background: #f8f9fa; border-radius: 10px; font-size: 0.85em; color: #444;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; opacity: 0.75; }
+
+    .charts-grid {
+      display: grid; grid-template-columns: 2fr 1fr;
+      gap: 25px; margin-bottom: 25px;
+    }
+
+    /* FILTERS */
     .filter-section {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 25px;
-      flex-wrap: wrap;
-      align-items: center;
+      display: flex; gap: 15px; margin-bottom: 25px;
+      flex-wrap: wrap; align-items: center;
     }
     .filter-group { display: flex; flex-direction: column; gap: 5px; }
-    .filter-label { font-size: 0.9em; color: #555; font-weight: 600; }
+    .filter-label { font-size: 0.88em; color: #555; font-weight: 600; }
     select, button {
-      padding: 12px 18px;
-      border: none;
-      border-radius: 10px;
+      padding: 11px 16px; border: none; border-radius: 10px;
       background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      color: white; cursor: pointer; font-size: 14px;
+      transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
     select:hover, button:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
-    button { background: linear-gradient(135deg, #e74c3c, #c0392b); font-weight: 600; }
+    button.update-btn { background: linear-gradient(135deg, #e74c3c, #c0392b); font-weight: 600; }
 
-    /* TARGET LEGEND PILL */
-    .target-legend {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      flex-wrap: wrap;
-      margin-top: 14px;
-      padding: 12px 18px;
-      background: #f8f9fa;
-      border-radius: 10px;
-      font-size: 0.88em;
-      color: #444;
-    }
-    .legend-item { display: flex; align-items: center; gap: 7px; font-weight: 500; }
-    .legend-dot {
-      width: 28px; height: 4px; border-radius: 2px;
-    }
-    .legend-swatch {
-      width: 16px; height: 16px; border-radius: 4px; opacity: 0.7;
-    }
-
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    .data-table th, .data-table td {
-      padding: 15px 12px;
-      text-align: left;
-      border-bottom: 1px solid #eee;
-    }
-    .data-table th {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      font-weight: bold;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
+    /* TABLE */
+    .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; }
+    .data-table th, .data-table td { padding: 12px 11px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.87em; }
+    .data-table th { background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-weight: bold; position: sticky; top: 0; z-index: 10; }
     .data-table tbody tr:hover { background: rgba(102,126,234,0.05); }
 
-    .loading-spinner { display: flex; justify-content: center; align-items: center; height: 200px; }
-    .spinner {
-      width: 40px; height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #667eea;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+    .analysis-section {
+      background: linear-gradient(135deg, #f8f9fa, #fff);
+      border-radius: 15px; padding: 25px; margin-bottom: 25px;
+      border-left: 5px solid #667eea; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .analysis-section h3 { color: #2c3e50; margin-bottom: 15px; font-size: 1.3em; }
+    .insights-list { list-style: none; padding: 0; }
+    .insights-list li {
+      background: white; margin: 10px 0; padding: 15px 18px;
+      border-radius: 10px; border-left: 4px solid #667eea;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07); transition: all 0.2s;
+    }
+    .insights-list li:hover { transform: translateX(5px); }
 
     .date-range {
-      background: rgba(255,255,255,0.9);
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 0.9em;
-      color: #666;
-      margin-bottom: 15px;
+      background: rgba(255,255,255,0.9); padding: 10px; border-radius: 8px;
+      font-size: 0.9em; color: #666; margin-bottom: 15px;
     }
+    .loading-spinner { display: flex; justify-content: center; align-items: center; height: 200px; }
+    .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     footer {
-      margin-top: 40px;
-      padding: 25px;
+      margin-top: 40px; padding: 25px;
       background: linear-gradient(135deg, #2c3e50, #34495e);
-      color: white;
-      border-radius: 15px;
-      font-size: 13px;
-      line-height: 1.6;
-      text-align: center;
+      color: white; border-radius: 15px; font-size: 13px; line-height: 1.6; text-align: center;
+    }
+    @media (max-width: 900px) {
+      .pump-cards-grid { grid-template-columns: 1fr; }
+      .charts-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 768px) {
-      .charts-grid { grid-template-columns: 1fr; }
-      .metrics-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+      .metrics-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
       .filter-section { flex-direction: column; align-items: stretch; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>⛽ Shell Mangu Fuel Pump Analysis - Volume Sales (Litres)</h1>
-    
-    <div class="date-range" id="dateRange"></div>
-    <div class="metrics-grid" id="metricsGrid"></div>
-    
-    <div class="filter-section">
-      <div class="filter-group">
-        <label class="filter-label">📅 Month</label>
-        <select id="monthFilter" onchange="loadFuelData()"></select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Attendant Filter</label>
-        <select id="attendantFilter">
-          <option value="all">All Attendants</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Pump Filter</label>
-        <select id="pumpFilter">
-          <option value="all">All Pumps</option>
-          <option value="PUMP 1">Pump 1</option>
-          <option value="PUMP 2">Pump 2</option>
-          <option value="PUMP3">Pump 3</option>
-        </select>
-      </div>
-      <button onclick="updateAnalysis()">🔄 Update Analysis</button>
-    </div>
-    
-    <!-- DAILY TREND CHART with target line -->
-    <div class="chart-container">
-      <div style="position:relative; height:450px;">
-        <canvas id="dailySalesChart"></canvas>
-      </div>
-      <div class="target-legend">
-        <div class="legend-item">
-          <div class="legend-dot" style="background:#667eea;"></div>
-          Daily Volume (Actual)
-        </div>
-        <div class="legend-item">
-          <div class="legend-dot" style="background:#f59e0b; border-top: 3px dashed #f59e0b; background:none; width:28px;"></div>
-          Daily Target Line
-        </div>
-        <div class="legend-item">
-          <div class="legend-swatch" style="background:rgba(16,185,129,0.3); border:1px solid #10b981;"></div>
-          Above Target
-        </div>
-        <div class="legend-item">
-          <div class="legend-swatch" style="background:rgba(220,38,38,0.2); border:1px solid #dc2626;"></div>
-          Below Target
-        </div>
-        <div id="dailyTargetInfo" style="margin-left:auto; font-weight:600; color:#764ba2;"></div>
-      </div>
-    </div>
-    
-    <div class="charts-grid">
-      <div class="chart-container">
-        <canvas id="attendantPerformanceChart"></canvas>
-      </div>
-      <div class="chart-container">
-        <canvas id="pumpComparisonChart"></canvas>
-      </div>
-    </div>
-    
-    <div class="analysis-section">
-      <h3>📊 Key Insights</h3>
-      <ul class="insights-list" id="insightsList"></ul>
-    </div>
-    
-    <div class="analysis-section">
-      <h3>📋 Detailed Data</h3>
-      <div style="overflow-x: auto; max-height: 400px;">
-        <table class="data-table" id="dataTable"></table>
-      </div>
-    </div>
-    
-    <footer>
-      <p><strong>© 2026 Kiryan Energy Ltd — All Rights Reserved</strong></p>
-      <p><strong>Confidential:</strong> These dashboards are for official use only and must not be copied, shared, or distributed without prior written permission from Kiryan Energy Ltd.</p>
-      <p>Data refreshed automatically • Dashboard v2.2 • Target Tracking Enabled</p>
-    </footer>
+<div class="container">
+  <h1>⛽ Shell Mangu Fuel Pump Analysis</h1>
+  <div class="subtitle">Volume Sales (Litres) · Per-Pump Target Tracking · CSA Accreditation</div>
+
+  <div class="date-range" id="dateRange"></div>
+  <div class="metrics-grid" id="metricsGrid">
+    <div class="loading-spinner" style="grid-column:1/-1"><div class="spinner"></div></div>
   </div>
 
-  <script>
-    // ============================================================================
-    // DATA SOURCES
-    // ============================================================================
-    const dataSources = {
-      "September 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?output=csv",
-      "October 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1064673143&output=csv",
-      "November 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=1064673143&single=true&output=csv",
-      "December 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS6iyMOviuAKEPtY-l7IOcbpkpWIm6hHVz5ongtl9A6xv2idj2VqJ5shpPcteJ-QAMsdQvMgYUpaQec/pub?gid=1064673143&single=true&output=csv",
-      "January 2026": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRT8Kama3jzM7pEBPHUY-hUKgiV5Mbp0VC5CN4_-r2MckRoU2xxGcwQb31qeRKjXLg2NHH0eDQlmu3C/pub?gid=1064673143&single=true&output=csv",
-      "February 2026": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRWCk42WV4zp0FBWtNJmxIsFW88QPRxE-2S8cnKG205VfA9ntl_2xMhrTyuRPWS82kDtaszDFDyv7r5/pub?gid=1064673143&single=true&output=csv",
-    };
+  <!-- PER-PUMP TARGET PROGRESS -->
+  <div class="pump-targets-section">
+    <div class="section-title">🎯 Per-Pump Target Progress</div>
+    <div class="pump-cards-grid" id="pumpTargetCards">
+      <div class="loading-spinner"><div class="spinner"></div></div>
+    </div>
+  </div>
 
-    // ============================================================================
-    // STATION MONTHLY TARGET (UX + DX + VP combined)
-    // ============================================================================
-    const STATION_MONTHLY_TARGET = 88593 + 91152 + 11104; // = 190,849 L
+  <!-- FILTERS -->
+  <div class="filter-section">
+    <div class="filter-group">
+      <label class="filter-label">📅 Month</label>
+      <select id="monthFilter" onchange="loadFuelData()"></select>
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Attendant Filter</label>
+      <select id="attendantFilter"><option value="all">All Attendants</option></select>
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Pump Filter</label>
+      <select id="pumpFilter">
+        <option value="all">All Pumps</option>
+        <option value="pump1">Pump 1</option>
+        <option value="pump2">Pump 2</option>
+        <option value="pump3">Pump 3</option>
+      </select>
+    </div>
+    <button class="update-btn" onclick="updateAnalysis()">🔄 Update</button>
+  </div>
 
-    // ============================================================================
-    // HELPERS
-    // ============================================================================
-    let processedData = [], attendantsSet = new Set(), charts = {};
+  <!-- DAILY TREND CHART with per-pump target tabs -->
+  <div class="chart-container">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+      <div style="font-weight:700;font-size:1.1em;color:#1e293b;">
+        📈 Daily Volume vs Daily Target
+        <span style="font-size:0.72em;font-weight:400;color:#64748b;margin-left:8px;">Green = above · Red = below</span>
+      </div>
+      <div class="chart-tabs">
+        <button class="tab-btn all-btn active" onclick="switchChartTab('all')" id="tab-all">📊 All Pumps</button>
+        <button class="tab-btn pump1-btn" onclick="switchChartTab('pump1')" id="tab-pump1">🔵 Pump 1</button>
+        <button class="tab-btn pump2-btn" onclick="switchChartTab('pump2')" id="tab-pump2">🟣 Pump 2</button>
+        <button class="tab-btn pump3-btn" onclick="switchChartTab('pump3')" id="tab-pump3">🟢 Pump 3</button>
+      </div>
+    </div>
 
-    function getDaysInMonth(monthStr) {
-      const d = new Date(monthStr + ' 1');
-      return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-    }
+    <div id="chartPanel-all" style="position:relative;height:420px;"><canvas id="chart-all"></canvas></div>
+    <div id="chartPanel-pump1" style="display:none;position:relative;height:420px;"><canvas id="chart-pump1"></canvas></div>
+    <div id="chartPanel-pump2" style="display:none;position:relative;height:420px;"><canvas id="chart-pump2"></canvas></div>
+    <div id="chartPanel-pump3" style="display:none;position:relative;height:420px;"><canvas id="chart-pump3"></canvas></div>
 
-    function initializeMonthFilter() {
-      const monthFilter = document.getElementById('monthFilter');
-      monthFilter.innerHTML = '';
-      const months = Object.keys(dataSources).reverse();
-      months.forEach(month => {
-        const option = document.createElement('option');
-        option.value = month; option.textContent = month;
-        monthFilter.appendChild(option);
-      });
-      const combinedOption = document.createElement('option');
-      combinedOption.value = 'combined';
-      combinedOption.textContent = 'Combined (All Months)';
-      monthFilter.appendChild(combinedOption);
-    }
+    <div class="target-legend">
+      <div class="legend-item"><div style="width:28px;height:3px;background:#667eea;border-radius:2px;"></div> Actual Volume</div>
+      <div class="legend-item"><div style="width:28px;height:0;border-top:2px dashed #f59e0b;"></div> Daily Target</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(16,185,129,0.3);border:1px solid #10b981;"></div> Above Target</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(220,38,38,0.2);border:1px solid #dc2626;"></div> Below Target</div>
+      <div id="dailyTargetInfo" style="margin-left:auto;font-weight:600;color:#764ba2;font-size:0.88em;"></div>
+    </div>
+  </div>
 
-    function csvToArray(csv, delimiter = ',') {
-      const lines = csv.trim().split('\n');
-      const headers = lines[0].split(delimiter).map(h => h.trim());
-      return lines.slice(1).map(line => {
-        const items = line.split(delimiter);
-        let obj = {};
-        headers.forEach((h, i) => { obj[h] = items[i] ? items[i].trim() : ""; });
-        return obj;
-      });
-    }
+  <!-- ATTENDANT + PUMP CHARTS -->
+  <div class="charts-grid">
+    <div class="chart-container" style="height:380px;">
+      <canvas id="attendantChart"></canvas>
+    </div>
+    <div class="chart-container" style="height:380px;">
+      <canvas id="pumpChart"></canvas>
+    </div>
+  </div>
 
-    function formatDate(str) {
-      const parts = str.split(".");
-      if (parts.length < 3) return str;
-      if (parts[0].length === 4) {
-        return `${parts[0]}-${parts[1].padStart(2,"0")}-${parts[2].padStart(2,"0")}`;
+  <!-- INSIGHTS -->
+  <div class="analysis-section">
+    <h3>📊 Key Insights & CSA Performance</h3>
+    <ul class="insights-list" id="insightsList"></ul>
+  </div>
+
+  <!-- DATA TABLE -->
+  <div class="analysis-section">
+    <h3>📋 Detailed Daily Data</h3>
+    <div style="overflow-x:auto;max-height:420px;">
+      <table class="data-table" id="dataTable"></table>
+    </div>
+  </div>
+
+  <footer>
+    <p><strong>© 2026 Kiryan Energy Ltd — All Rights Reserved</strong></p>
+    <p><strong>Confidential:</strong> For official use only. Not for distribution.</p>
+    <p>Dashboard v3.0 · Per-Pump Target Tracking · CSA Accreditation Enabled</p>
+  </footer>
+</div>
+
+<script>
+  // ============================================================================
+  // DATA SOURCES
+  // ============================================================================
+  const dataSources = {
+    "September 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSy-gNhdVGwWtpwJIZ2358iDhM0RQlQoen-_wayM6Dc0rkp9mRx40uLo4ia2QD3Kr_QNn75xp8OJKEx/pub?output=csv",
+    "October 2025":   "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=1064673143&output=csv",
+    "November 2025":  "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=1064673143&single=true&output=csv",
+    "December 2025":  "https://docs.google.com/spreadsheets/d/e/2PACX-1vS6iyMOviuAKEPtY-l7IOcbpkpWIm6hHVz5ongtl9A6xv2idj2VqJ5shpPcteJ-QAMsdQvMgYUpaQec/pub?gid=1064673143&single=true&output=csv",
+    "January 2026":   "https://docs.google.com/spreadsheets/d/e/2PACX-1vRT8Kama3jzM7pEBPHUY-hUKgiV5Mbp0VC5CN4_-r2MckRoU2xxGcwQb31qeRKjXLg2NHH0eDQlmu3C/pub?gid=1064673143&single=true&output=csv",
+    "February 2026":  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRWCk42WV4zp0FBWtNJmxIsFW88QPRxE-2S8cnKG205VfA9ntl_2xMhrTyuRPWS82kDtaszDFDyv7r5/pub?gid=1064673143&single=true&output=csv",
+  };
+
+  // ============================================================================
+  // PER-PUMP MONTHLY TARGETS (from your Final Target Structure)
+  // Pump 1: UX=35437, DX=22788, VP=0  → Total=58,225
+  // Pump 2: UX=53156, DX=36461, VP=0  → Total=89,617
+  // Pump 3: UX=0,     DX=31903, VP=11104 → Total=43,007
+  // ============================================================================
+  const PUMP_TARGETS = {
+    pump1: { UX: 35437, DX: 22788, VP: 0,     total: 58225 },
+    pump2: { UX: 53156, DX: 36461, VP: 0,     total: 89617 },
+    pump3: { UX: 0,     DX: 31903, VP: 11104, total: 43007 },
+  };
+  const PUMP_COLORS = { pump1: '#1d4ed8', pump2: '#7c3aed', pump3: '#059669' };
+  const PUMP_LABELS = { pump1: 'Pump 1', pump2: 'Pump 2', pump3: 'Pump 3' };
+  const STATION_TOTAL_TARGET = 58225 + 89617 + 43007; // 190,849
+
+  // ============================================================================
+  // STATE
+  // ============================================================================
+  let processedData = [], attendantsSet = new Set(), charts = {};
+
+  function getDaysInMonth(monthStr) {
+    if (monthStr === 'combined') return 30;
+    const d = new Date(monthStr + ' 1');
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  }
+
+  function initializeMonthFilter() {
+    const sel = document.getElementById('monthFilter');
+    sel.innerHTML = '';
+    Object.keys(dataSources).reverse().forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = m; sel.appendChild(opt);
+    });
+    const comb = document.createElement('option');
+    comb.value = 'combined'; comb.textContent = 'Combined (All Months)';
+    sel.appendChild(comb);
+  }
+
+  function csvToArray(csv) {
+    const lines = csv.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+    return lines.slice(1).map(line => {
+      const items = line.split(',');
+      let obj = {};
+      headers.forEach((h, i) => { obj[h] = items[i] ? items[i].trim() : ''; });
+      return obj;
+    });
+  }
+
+  function formatDate(str) {
+    const parts = str.split('.');
+    if (parts.length < 3) return str;
+    if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
+    return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+  }
+
+  function fmtLong(d) {
+    return new Date(d).toLocaleDateString('en-US', { weekday:'short', year:'numeric', month:'short', day:'numeric' });
+  }
+  function fmtShort(d) {
+    return new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  }
+
+  // ============================================================================
+  // DATA LOAD
+  // ============================================================================
+  async function loadFuelData() {
+    document.getElementById('metricsGrid').innerHTML = '<div class="loading-spinner" style="grid-column:1/-1"><div class="spinner"></div></div>';
+    try {
+      const sel = document.getElementById('monthFilter').value;
+      processedData = []; attendantsSet = new Set();
+      if (sel === 'combined') {
+        for (const [m, url] of Object.entries(dataSources)) await loadMonthData(url, m);
+      } else {
+        await loadMonthData(dataSources[sel], sel);
       }
-      return `${parts[2]}-${parts[1].padStart(2,"0")}-${parts[0].padStart(2,"0")}`;
+      if (!processedData.length) throw new Error('No valid data found.');
+      processedData.sort((a,b) => new Date(a.date)-new Date(b.date));
+      updateDateRange();
+      populateFilters();
+      updateAnalysis();
+    } catch(e) {
+      document.getElementById('metricsGrid').innerHTML = `<div style="grid-column:1/-1;text-align:center;color:red;padding:30px;"><h3>❌ ${e.message}</h3><button onclick="loadFuelData()">🔄 Retry</button></div>`;
     }
+  }
 
-    function formatDisplayDate(dateStr) {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { weekday:'short', year:'numeric', month:'short', day:'numeric' });
-    }
+  async function loadMonthData(url, monthName) {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${monthName}`);
+    const rows = csvToArray(await resp.text());
+    rows.forEach(row => {
+      const dv = row.DAY;
+      if (!dv || dv === 'TOTALS' || dv === '') return;
+      let dateStr = dv;
+      if (dv.includes('PRICE CHANGE')) {
+        const m = dv.match(/(\d{4}\.\d{1,2}\.\d{1,2})/);
+        if (m) dateStr = m[1]; else return;
+      } else if (!dv.match(/\d/)) return;
+      const date = formatDate(dateStr);
+      if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) return;
 
-    function fmtShort(dateStr) {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { month:'short', day:'numeric' });
-    }
+      const pump1 = { attendant: (row['NAME OF CSA']||'Unknown').trim(),   value: Math.abs(parseFloat(row['PUMP 1'])||0) };
+      const pump2 = { attendant: (row['NAME OF CSA.1']||'Unknown').trim(), value: Math.abs(parseFloat(row['PUMP 2'])||0) };
+      const pump3 = { attendant: (row['NAME OF CSA.2']||'Unknown').trim(), value: Math.abs(parseFloat(row['PUMP 3'])||0) };
 
-    // ============================================================================
-    // DATA LOADING
-    // ============================================================================
-    async function loadFuelData() {
-      try {
-        document.getElementById('metricsGrid').innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
-        const selectedMonth = document.getElementById('monthFilter').value;
-        processedData = []; attendantsSet = new Set();
+      processedData.push({ date, pump1, pump2, pump3, total: pump1.value+pump2.value+pump3.value });
+      [pump1,pump2,pump3].forEach(p => { if (p.attendant && p.attendant !== 'Unknown') attendantsSet.add(p.attendant); });
+    });
+  }
 
-        if (selectedMonth === 'combined') {
-          for (const [month, url] of Object.entries(dataSources)) {
-            await loadMonthData(url, month);
-          }
-        } else {
-          await loadMonthData(dataSources[selectedMonth], selectedMonth);
+  function updateDateRange() {
+    if (!processedData.length) return;
+    const sel = document.getElementById('monthFilter').value;
+    const label = sel === 'combined' ? 'All Months' : sel;
+    document.getElementById('dateRange').innerHTML = `📅 <strong>${label}</strong> — ${fmtLong(processedData[0].date)} to ${fmtLong(processedData[processedData.length-1].date)} (${processedData.length} days)`;
+  }
+
+  function populateFilters() {
+    const af = document.getElementById('attendantFilter');
+    af.innerHTML = '<option value="all">All Attendants</option>';
+    [...attendantsSet].sort().forEach(a => {
+      const o = document.createElement('option'); o.value = a; o.textContent = a; af.appendChild(o);
+    });
+  }
+
+  function getFilteredData() {
+    const att = document.getElementById('attendantFilter').value;
+    const pf  = document.getElementById('pumpFilter').value;
+    return processedData.map(r => {
+      const pumps = {};
+      ['pump1','pump2','pump3'].forEach((key,i) => {
+        const pName = ['pump1','pump2','pump3'][i];
+        pumps[key] = { ...r[key] };
+        if ((att !== 'all' && r[key].attendant !== att) || (pf !== 'all' && pf !== pName)) {
+          pumps[key] = { attendant: r[key].attendant, value: 0 };
         }
-
-        if (processedData.length === 0) throw new Error('No valid fuel data found.');
-        processedData.sort((a, b) => new Date(a.date) - new Date(b.date));
-        updateDateRange();
-        populateFilters();
-        updateAnalysis();
-      } catch (error) {
-        document.getElementById('metricsGrid').innerHTML = `
-          <div style="color:red;text-align:center;padding:20px;">
-            <h3>❌ Error: ${error.message}</h3>
-            <button onclick="loadFuelData()">🔄 Retry</button>
-          </div>`;
-      }
-    }
-
-    async function loadMonthData(csvUrl, monthName) {
-      const response = await fetch(csvUrl);
-      if (!response.ok) throw new Error(`HTTP ${response.status} for ${monthName}`);
-      const text = await response.text();
-      const rows = csvToArray(text);
-
-      rows.forEach(row => {
-        const dayValue = row.DAY;
-        if (!dayValue || dayValue === "TOTALS" || dayValue === '') return;
-        let dateStr = dayValue;
-        if (dayValue.includes('PRICE CHANGE')) {
-          const m = dayValue.match(/(\d{4}\.\d{1,2}\.\d{1,2})/);
-          if (m) dateStr = m[1]; else return;
-        } else if (!dayValue.match(/\d/)) return;
-
-        const date = formatDate(dateStr);
-        if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) return;
-
-        const pump1 = { attendant: (row['NAME OF CSA'] || 'Unknown').toString().trim(), value: Math.abs(parseFloat(row['PUMP 1']) || 0) };
-        const pump2 = { attendant: (row['NAME OF CSA.1'] || 'Unknown').toString().trim(), value: Math.abs(parseFloat(row['PUMP 2']) || 0) };
-        const pump3 = { attendant: (row['NAME OF CSA.2'] || 'Unknown').toString().trim(), value: Math.abs(parseFloat(row['PUMP 3']) || 0) };
-        const total = pump1.value + pump2.value + pump3.value;
-
-        processedData.push({ date, pump1, pump2, pump3, total });
-        [pump1, pump2, pump3].forEach(p => {
-          if (p.attendant && p.attendant !== 'Unknown' && p.attendant !== '') attendantsSet.add(p.attendant);
-        });
       });
-    }
+      return { date: r.date, ...pumps, total: pumps.pump1.value+pumps.pump2.value+pumps.pump3.value };
+    });
+  }
 
-    function updateDateRange() {
-      if (processedData.length > 0) {
-        const start = formatDisplayDate(processedData[0].date);
-        const end = formatDisplayDate(processedData[processedData.length - 1].date);
-        const selectedMonth = document.getElementById('monthFilter').value;
-        const label = selectedMonth === 'combined' ? 'All Months' : selectedMonth;
-        document.getElementById('dateRange').innerHTML = `📅 <strong>${label}</strong> — Data Range: ${start} to ${end} (${processedData.length} days)`;
-      }
-    }
+  // ============================================================================
+  // METRICS
+  // ============================================================================
+  function updateMetrics(filtered) {
+    const sel = document.getElementById('monthFilter').value;
+    const daysInMonth = getDaysInMonth(sel);
 
-    function populateFilters() {
-      const af = document.getElementById('attendantFilter');
-      af.innerHTML = '<option value="all">All Attendants</option>';
-      Array.from(attendantsSet).sort().forEach(att => {
-        const opt = document.createElement('option');
-        opt.value = att; opt.textContent = att;
-        af.appendChild(opt);
+    // Aggregate
+    const dailyTotals = {}, attTotals = {};
+    const pumpDailyTotals = { pump1: {}, pump2: {}, pump3: {} };
+    const pumpMonthTotals = { pump1: 0, pump2: 0, pump3: 0 };
+
+    filtered.forEach(r => {
+      dailyTotals[r.date] = (dailyTotals[r.date]||0) + r.total;
+      ['pump1','pump2','pump3'].forEach(pk => {
+        const p = r[pk];
+        pumpDailyTotals[pk][r.date] = (pumpDailyTotals[pk][r.date]||0) + p.value;
+        pumpMonthTotals[pk] += p.value;
+        if (p.attendant && p.attendant !== 'Unknown') {
+          attTotals[p.attendant] = (attTotals[p.attendant]||0) + p.value;
+        }
       });
-    }
+    });
 
-    function getFilteredData() {
-      const att = document.getElementById('attendantFilter').value;
-      const pump = document.getElementById('pumpFilter').value;
-      return processedData.map(r => {
-        let pumps = {};
-        ["pump1","pump2","pump3"].forEach((key, i) => {
-          const pName = i===0 ? "PUMP 1" : i===1 ? "PUMP 2" : "PUMP3";
-          pumps[key] = { ...r[key] };
-          if ((att !== "all" && r[key].attendant !== att) || (pump !== "all" && pName !== pump)) {
-            pumps[key] = { attendant: r[key].attendant, value: 0 };
-          }
-        });
-        return { date: r.date, ...pumps, total: pumps.pump1.value + pumps.pump2.value + pumps.pump3.value };
+    const total = Object.values(dailyTotals).reduce((a,b)=>a+b,0);
+    const avg = total / (Object.keys(dailyTotals).length||1);
+    const stationDailyTarget = STATION_TOTAL_TARGET / daysInMonth;
+    const daysAbove = Object.values(dailyTotals).filter(v=>v>=stationDailyTarget).length;
+    const daysBelow = Object.values(dailyTotals).filter(v=>v>0&&v<stationDailyTarget).length;
+    const topAtt = Object.keys(attTotals).reduce((a,b)=>attTotals[a]>attTotals[b]?a:b, '-');
+    const overallPct = ((total/STATION_TOTAL_TARGET)*100).toFixed(1);
+
+    document.getElementById('metricsGrid').innerHTML = `
+      <div class="metric-card">
+        <div class="metric-icon">📊</div>
+        <div class="metric-value">${total.toLocaleString()} L</div>
+        <div class="metric-label">Total Volume Sold</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">📈</div>
+        <div class="metric-value">${Math.round(avg).toLocaleString()} L</div>
+        <div class="metric-label">Daily Average</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">🎯</div>
+        <div class="metric-value">${overallPct}%</div>
+        <div class="metric-label">Overall Target Progress</div>
+      </div>
+      <div class="metric-card" style="background:linear-gradient(135deg,#059669,#047857)">
+        <div class="metric-icon">✅</div>
+        <div class="metric-value">${daysAbove}</div>
+        <div class="metric-label">Days Above Target</div>
+      </div>
+      <div class="metric-card" style="background:linear-gradient(135deg,#dc2626,#991b1b)">
+        <div class="metric-icon">🔴</div>
+        <div class="metric-value">${daysBelow}</div>
+        <div class="metric-label">Days Below Target</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">🏆</div>
+        <div class="metric-value" style="font-size:1.3em">${topAtt}</div>
+        <div class="metric-label">Top Performer</div>
+      </div>`;
+
+    updatePumpTargetCards(pumpMonthTotals, pumpDailyTotals, daysInMonth);
+    return { dailyTotals, attTotals, pumpDailyTotals, pumpMonthTotals };
+  }
+
+  // ============================================================================
+  // PER-PUMP TARGET CARDS
+  // ============================================================================
+  function updatePumpTargetCards(pumpMonthTotals, pumpDailyTotals, daysInMonth) {
+    const sel = document.getElementById('monthFilter').value;
+    const now = new Date();
+    const monthDate = new Date(sel + ' 1');
+    const isCurrent = sel !== 'combined' && now.getFullYear()===monthDate.getFullYear() && now.getMonth()===monthDate.getMonth();
+    const daysElapsed = isCurrent ? Math.min(now.getDate(), daysInMonth) : daysInMonth;
+    const daysLeft = Math.max(daysInMonth - daysElapsed, 0);
+
+    const cardClasses = { pump1: 'pump1', pump2: 'pump2', pump3: 'pump3' };
+    const productLabels = { UX: '🟢 UX', DX: '⚫ DX', VP: '🔴 VP' };
+
+    // Get last known CSA for each pump
+    const lastCSA = { pump1: '', pump2: '', pump3: '' };
+    processedData.slice().reverse().forEach(r => {
+      ['pump1','pump2','pump3'].forEach(pk => {
+        if (!lastCSA[pk] && r[pk].attendant && r[pk].attendant !== 'Unknown') {
+          lastCSA[pk] = r[pk].attendant;
+        }
       });
-    }
+    });
 
-    // ============================================================================
-    // METRICS
-    // ============================================================================
-    function updateMetrics(filtered) {
-      const dailyTotals = {}, attendantTotals = {}, pumpTotals = { "PUMP 1":0, "PUMP 2":0, "PUMP3":0 };
-      filtered.forEach(r => {
-        dailyTotals[r.date] = (dailyTotals[r.date]||0) + r.total;
-        [["PUMP 1",r.pump1],["PUMP 2",r.pump2],["PUMP3",r.pump3]].forEach(([name,p]) => {
-          if (!attendantTotals[p.attendant]) attendantTotals[p.attendant] = 0;
-          attendantTotals[p.attendant] += p.value;
-          pumpTotals[name] += p.value;
-        });
-      });
+    const html = ['pump1','pump2','pump3'].map(pk => {
+      const tgt = PUMP_TARGETS[pk];
+      const sold = pumpMonthTotals[pk];
+      const pct = Math.min((sold/tgt.total)*100, 100);
+      const remaining = Math.max(tgt.total - sold, 0);
+      const dailyNeeded = daysLeft > 0 ? remaining/daysLeft : 0;
+      const expectedPace = (tgt.total/daysInMonth)*daysElapsed;
+      const pacePct = Math.min((expectedPace/tgt.total)*100, 100);
 
-      const dailyValues = Object.values(dailyTotals);
-      const activeDays = dailyValues.filter(v => v > 0);
-      const total = dailyValues.reduce((a,b)=>a+b,0);
-      const avg = activeDays.length > 0 ? total / activeDays.length : 0;
-      const bestDay = Object.keys(dailyTotals).reduce((a,b)=>dailyTotals[a]>dailyTotals[b]?a:b, Object.keys(dailyTotals)[0]||"-");
-      const topAtt = Object.keys(attendantTotals).reduce((a,b)=>attendantTotals[a]>attendantTotals[b]?a:b,"-");
-      const topPump = Object.keys(pumpTotals).reduce((a,b)=>pumpTotals[a]>pumpTotals[b]?a:b,"-");
+      let fillClass, badgeClass, badgeText;
+      if (pct >= pacePct - 5) { fillClass='good'; badgeClass='on-track'; badgeText='✅ On Track'; }
+      else if (pct >= pacePct - 15) { fillClass='warn'; badgeClass='below'; badgeText='⚠️ Below Pace'; }
+      else { fillClass='bad'; badgeClass='critical'; badgeText='🚨 Behind Target'; }
 
-      // Days above/below target
-      const selectedMonth = document.getElementById('monthFilter').value;
-      const daysInMonth = selectedMonth === 'combined' ? 30 : getDaysInMonth(selectedMonth);
-      const dailyTarget = STATION_MONTHLY_TARGET / daysInMonth;
-      const daysAbove = Object.values(dailyTotals).filter(v => v >= dailyTarget).length;
-      const daysBelow = Object.values(dailyTotals).filter(v => v > 0 && v < dailyTarget).length;
+      // Products breakdown — only show non-zero targets
+      const productBreakdown = Object.entries(tgt)
+        .filter(([k,v]) => k !== 'total' && v > 0)
+        .map(([k,v]) => `
+          <div class="ptc-product">
+            <div class="ptc-product-name">${productLabels[k]||k}</div>
+            <div class="ptc-product-val">${v.toLocaleString()} L</div>
+            <div class="ptc-product-daily">${(v/daysInMonth).toLocaleString(undefined,{maximumFractionDigits:0})} L/day</div>
+          </div>`).join('');
 
-      document.getElementById('metricsGrid').innerHTML = `
-        <div class="metric-card">
-          <div class="metric-icon">📊</div>
-          <div class="metric-value">${total.toLocaleString()} L</div>
-          <div class="metric-label">Total Volume Sold</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-icon">📈</div>
-          <div class="metric-value">${Math.round(avg).toLocaleString()} L</div>
-          <div class="metric-label">Daily Average Volume</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-icon">🎯</div>
-          <div class="metric-value">${Math.round(dailyTarget).toLocaleString()} L</div>
-          <div class="metric-label">Daily Target</div>
-        </div>
-        <div class="metric-card" style="background:linear-gradient(135deg,#059669,#047857)">
-          <div class="metric-icon">✅</div>
-          <div class="metric-value">${daysAbove}</div>
-          <div class="metric-label">Days Above Target</div>
-        </div>
-        <div class="metric-card" style="background:linear-gradient(135deg,#dc2626,#991b1b)">
-          <div class="metric-icon">🔴</div>
-          <div class="metric-value">${daysBelow}</div>
-          <div class="metric-label">Days Below Target</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-icon">👨‍💼</div>
-          <div class="metric-value" style="font-size:1.4em">${topAtt}</div>
-          <div class="metric-label">Top Performer</div>
+      return `
+        <div class="pump-target-card ${cardClasses[pk]}">
+          <div class="ptc-header">
+            <div>
+              <div class="ptc-name">${PUMP_LABELS[pk]}</div>
+              <div class="ptc-csa">👤 ${lastCSA[pk]||'No CSA recorded'}</div>
+            </div>
+            <div class="ptc-total">
+              <div class="ptc-total-val">${sold.toLocaleString(undefined,{maximumFractionDigits:0})} L</div>
+              <div class="ptc-total-lbl">of ${tgt.total.toLocaleString()} L</div>
+            </div>
+          </div>
+          <div class="ptc-products">${productBreakdown}</div>
+          <div class="ptc-progress-label">
+            <span>${pct.toFixed(1)}% achieved</span>
+            <span>Expected: ${pacePct.toFixed(1)}%</span>
+          </div>
+          <div class="ptc-bar">
+            <div class="ptc-fill ${fillClass}" style="width:${pct}%"></div>
+            <div class="ptc-pace-marker" style="left:${pacePct}%"></div>
+          </div>
+          <div style="font-size:0.78em;opacity:0.65;margin-bottom:4px;">
+            ${daysLeft > 0 ? `Need <strong>${dailyNeeded.toLocaleString(undefined,{maximumFractionDigits:0})} L/day</strong> over ${daysLeft} remaining days` : 'Month complete'}
+          </div>
+          <div class="ptc-badge ${badgeClass}">${badgeText}</div>
         </div>`;
+    }).join('');
 
-      return { dailyTotals, attendantTotals, pumpTotals };
-    }
+    document.getElementById('pumpTargetCards').innerHTML = html;
+  }
 
-    // ============================================================================
-    // CHARTS
-    // ============================================================================
-    function createCharts(dailyTotals, attendantTotals, pumpTotals) {
-      Object.values(charts).forEach(c => c.destroy());
-      charts = {};
-
-      const selectedMonth = document.getElementById('monthFilter').value;
-      const daysInMonth = selectedMonth === 'combined' ? 30 : getDaysInMonth(selectedMonth);
-      const dailyTarget = STATION_MONTHLY_TARGET / daysInMonth;
-
-      // Update the info pill
-      document.getElementById('dailyTargetInfo').textContent =
-        `🎯 Daily Target: ${dailyTarget.toLocaleString(undefined, {maximumFractionDigits:1})} L/day  (${STATION_MONTHLY_TARGET.toLocaleString()} L ÷ ${daysInMonth} days)`;
-
-      const sortedDates = Object.keys(dailyTotals).sort();
-      const actualValues = sortedDates.map(d => dailyTotals[d]);
-      const targetValues = sortedDates.map(() => parseFloat(dailyTarget.toFixed(2)));
-
-      // ── CUSTOM PLUGIN: shaded gap between actual and target ──
-      const shadedGapPlugin = {
-        id: 'shadedGap',
-        afterDatasetsDraw(chart) {
-          const { ctx, chartArea: { top, bottom, left, right } } = chart;
-          const actualMeta = chart.getDatasetMeta(0); // actual line
-          const targetMeta = chart.getDatasetMeta(1); // target line
-          if (!actualMeta.data.length || !targetMeta.data.length) return;
-
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(left, top, right - left, bottom - top);
-          ctx.clip();
-
-          const n = actualMeta.data.length;
-          for (let i = 0; i < n - 1; i++) {
-            const ax0 = actualMeta.data[i].x,   ay0 = actualMeta.data[i].y;
-            const ax1 = actualMeta.data[i+1].x, ay1 = actualMeta.data[i+1].y;
-            const tx0 = targetMeta.data[i].x,   ty0 = targetMeta.data[i].y;
-            const tx1 = targetMeta.data[i+1].x, ty1 = targetMeta.data[i+1].y;
-
-            // da < 0 means actual is ABOVE target (canvas y is inverted)
-            const da0 = ay0 - ty0, da1 = ay1 - ty1;
-            const hasCross = (da0 > 0 && da1 < 0) || (da0 < 0 && da1 > 0);
-
-            if (!hasCross) {
-              ctx.beginPath();
-              ctx.moveTo(ax0, ay0); ctx.lineTo(ax1, ay1);
-              ctx.lineTo(tx1, ty1); ctx.lineTo(tx0, ty0);
-              ctx.closePath();
-              // da0 <= 0 means actual >= target (above)
-              ctx.fillStyle = da0 <= 0 ? 'rgba(16,185,129,0.22)' : 'rgba(220,38,38,0.18)';
-              ctx.fill();
-            } else {
-              const t = da0 / (da0 - da1);
-              const crossX = ax0 + t * (ax1 - ax0);
-              const crossY = ay0 + t * (ay1 - ay0);
-              const tCrossY = ty0 + t * (ty1 - ty0);
-
-              // First segment
-              ctx.beginPath();
-              ctx.moveTo(ax0, ay0); ctx.lineTo(crossX, crossY);
-              ctx.lineTo(crossX, tCrossY); ctx.lineTo(tx0, ty0);
-              ctx.closePath();
-              ctx.fillStyle = da0 <= 0 ? 'rgba(16,185,129,0.22)' : 'rgba(220,38,38,0.18)';
-              ctx.fill();
-
-              // Second segment
-              ctx.beginPath();
-              ctx.moveTo(crossX, crossY); ctx.lineTo(ax1, ay1);
-              ctx.lineTo(tx1, ty1); ctx.lineTo(crossX, tCrossY);
-              ctx.closePath();
-              ctx.fillStyle = da1 <= 0 ? 'rgba(16,185,129,0.22)' : 'rgba(220,38,38,0.18)';
-              ctx.fill();
-            }
-          }
-          ctx.restore();
+  // ============================================================================
+  // CHARTS
+  // ============================================================================
+  const shadedGapPlugin = {
+    id: 'shadedGap',
+    afterDatasetsDraw(chart) {
+      const { ctx, chartArea: { top, bottom, left, right } } = chart;
+      const am = chart.getDatasetMeta(0), tm = chart.getDatasetMeta(1);
+      if (!am.data.length || !tm.data.length) return;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(left, top, right-left, bottom-top); ctx.clip();
+      const n = am.data.length;
+      for (let i = 0; i < n-1; i++) {
+        const ax0=am.data[i].x, ay0=am.data[i].y, ax1=am.data[i+1].x, ay1=am.data[i+1].y;
+        const tx0=tm.data[i].x, ty0=tm.data[i].y, tx1=tm.data[i+1].x, ty1=tm.data[i+1].y;
+        const da0=ay0-ty0, da1=ay1-ty1;
+        const cross = (da0>0&&da1<0)||(da0<0&&da1>0);
+        if (!cross) {
+          ctx.beginPath(); ctx.moveTo(ax0,ay0); ctx.lineTo(ax1,ay1); ctx.lineTo(tx1,ty1); ctx.lineTo(tx0,ty0); ctx.closePath();
+          ctx.fillStyle = da0<=0 ? 'rgba(16,185,129,0.22)' : 'rgba(220,38,38,0.18)'; ctx.fill();
+        } else {
+          const t=da0/(da0-da1), cx=ax0+t*(ax1-ax0), cy=ay0+t*(ay1-ay0), tcy=ty0+t*(ty1-ty0);
+          ctx.beginPath(); ctx.moveTo(ax0,ay0); ctx.lineTo(cx,cy); ctx.lineTo(cx,tcy); ctx.lineTo(tx0,ty0); ctx.closePath();
+          ctx.fillStyle = da0<=0 ? 'rgba(16,185,129,0.22)' : 'rgba(220,38,38,0.18)'; ctx.fill();
+          ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(ax1,ay1); ctx.lineTo(tx1,ty1); ctx.lineTo(cx,tcy); ctx.closePath();
+          ctx.fillStyle = da1<=0 ? 'rgba(16,185,129,0.22)' : 'rgba(220,38,38,0.18)'; ctx.fill();
         }
-      };
+      }
+      ctx.restore();
+    }
+  };
 
-      // ── DAILY SALES CHART ──
-      charts.daily = new Chart(document.getElementById('dailySalesChart').getContext('2d'), {
-        type: 'line',
-        plugins: [shadedGapPlugin],
-        data: {
-          labels: sortedDates.map(fmtShort),
-          datasets: [
-            {
-              label: 'Daily Volume (L)',
-              data: actualValues,
-              borderColor: '#667eea',
-              backgroundColor: 'transparent',
-              tension: 0.4,
-              fill: false,
-              borderWidth: 2.5,
-              pointRadius: 5,
-              pointHoverRadius: 7,
-              // colour each dot green or red
-              pointBackgroundColor: actualValues.map(v => v >= dailyTarget ? '#10b981' : '#dc2626'),
-              pointBorderColor: 'white',
-              pointBorderWidth: 1.5,
-              order: 1
-            },
-            {
-              label: `Daily Target (${Math.round(dailyTarget).toLocaleString()} L)`,
-              data: targetValues,
-              borderColor: '#f59e0b',
-              backgroundColor: 'transparent',
-              borderWidth: 2,
-              borderDash: [10, 5],
-              tension: 0,
-              fill: false,
-              pointRadius: 0,
-              order: 2
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            title: {
-              display: true,
-              text: 'Daily Station Volume vs Daily Target',
-              font: { size: 16, weight: 'bold' }
-            },
-            legend: { position: 'top' },
-            tooltip: {
-              callbacks: {
-                afterBody(items) {
-                  const idx = items[0]?.dataIndex;
-                  if (idx === undefined) return '';
-                  const actual = actualValues[idx];
-                  const diff = actual - dailyTarget;
-                  const sign = diff >= 0 ? '+' : '';
-                  const status = diff >= 0 ? '✅ Above target' : '🔴 Below target';
-                  return [`${status}: ${sign}${diff.toLocaleString(undefined,{maximumFractionDigits:1})} L`];
-                }
+  function buildShadedChart(canvasId, labels, actualData, dailyTarget, lineColor, titleText) {
+    const existing = Chart.getChart(canvasId);
+    if (existing) existing.destroy();
+    const targetData = labels.map(() => parseFloat(dailyTarget.toFixed(2)));
+    return new Chart(document.getElementById(canvasId).getContext('2d'), {
+      type: 'line',
+      plugins: [shadedGapPlugin],
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Actual Volume (L)',
+            data: actualData,
+            borderColor: lineColor,
+            backgroundColor: 'transparent',
+            borderWidth: 2.5, tension: 0.35, fill: false,
+            pointRadius: 5, pointHoverRadius: 7,
+            pointBackgroundColor: actualData.map(v => v >= dailyTarget ? '#10b981' : '#dc2626'),
+            pointBorderColor: 'white', pointBorderWidth: 1.5, order: 1
+          },
+          {
+            label: `Target (${Math.round(dailyTarget).toLocaleString()} L/day)`,
+            data: targetData,
+            borderColor: '#f59e0b', backgroundColor: 'transparent',
+            borderWidth: 2, borderDash: [10,5], tension: 0,
+            fill: false, pointRadius: 0, order: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          title: { display: true, text: titleText, font: { size: 14, weight: 'bold' } },
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              afterBody(items) {
+                const idx = items[0]?.dataIndex;
+                if (idx === undefined) return '';
+                const diff = actualData[idx] - dailyTarget;
+                const s = diff >= 0 ? '+' : '';
+                return [`${diff>=0?'✅ Above':'🔴 Below'} target: ${s}${diff.toLocaleString(undefined,{maximumFractionDigits:1})} L`];
               }
             }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { callback: v => v.toLocaleString() + ' L', stepSize: 500 },
-              grid: { color: 'rgba(0,0,0,0.06)' },
-              title: { display: true, text: 'Litres Sold' }
-            },
-            x: {
-              grid: { color: 'rgba(0,0,0,0.06)' },
-              ticks: { maxRotation: 45 }
-            }
           }
-        }
-      });
-
-      // ── ATTENDANT PERFORMANCE ──
-      charts.attendant = new Chart(document.getElementById('attendantPerformanceChart').getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: Object.keys(attendantTotals),
-          datasets: [{
-            label: 'Total Volume (L)',
-            data: Object.values(attendantTotals),
-            backgroundColor: ['#667eea','#764ba2','#f093fb','#4facfe','#00f2fe'],
-            borderRadius: 8,
-            borderSkipped: false
-          }]
         },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            title: { display: true, text: 'Attendant Performance Comparison', font: { size: 16, weight: 'bold' } },
-            legend: { display: false }
-          },
-          scales: {
-            y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString()+' L' }, grid: { color: 'rgba(0,0,0,0.1)' } },
-            x: { grid: { display: false } }
-          }
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString()+' L' }, title: { display: true, text: 'Litres' } },
+          x: { ticks: { maxRotation: 45 }, grid: { color: 'rgba(0,0,0,0.05)' } }
         }
-      });
+      }
+    });
+  }
 
-      // ── PUMP COMPARISON ──
-      charts.pump = new Chart(document.getElementById('pumpComparisonChart').getContext('2d'), {
-        type: 'doughnut',
-        data: {
-          labels: Object.keys(pumpTotals).map(p => p.replace('PUMP3','Pump 3').replace('PUMP ','Pump ')),
-          datasets: [{
-            data: Object.values(pumpTotals),
-            backgroundColor: ['#667eea','#764ba2','#f093fb'],
-            borderWidth: 3, borderColor: '#ffffff'
-          }]
+  function createCharts(dailyTotals, attTotals, pumpDailyTotals) {
+    Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+    charts = {};
+
+    const sel = document.getElementById('monthFilter').value;
+    const daysInMonth = getDaysInMonth(sel);
+    const sortedDates = Object.keys(dailyTotals).sort();
+    const labels = sortedDates.map(fmtShort);
+
+    // Station daily target info
+    const stationDaily = STATION_TOTAL_TARGET / daysInMonth;
+    document.getElementById('dailyTargetInfo').textContent =
+      `🎯 Station daily target: ${stationDaily.toLocaleString(undefined,{maximumFractionDigits:0})} L/day`;
+
+    // ALL PUMPS combined chart
+    charts.all = buildShadedChart(
+      'chart-all', labels,
+      sortedDates.map(d => dailyTotals[d]||0),
+      stationDaily, '#667eea',
+      'All Pumps — Daily Station Volume vs Target'
+    );
+
+    // Per-pump charts
+    ['pump1','pump2','pump3'].forEach(pk => {
+      const pumpDaily = PUMP_TARGETS[pk].total / daysInMonth;
+      const actualData = sortedDates.map(d => pumpDailyTotals[pk][d]||0);
+      charts[pk] = buildShadedChart(
+        `chart-${pk}`, labels, actualData, pumpDaily,
+        PUMP_COLORS[pk],
+        `${PUMP_LABELS[pk]} — Daily Volume vs Target (${Math.round(pumpDaily).toLocaleString()} L/day)`
+      );
+    });
+
+    // ATTENDANT chart
+    const attLabels = Object.keys(attTotals).sort((a,b)=>attTotals[b]-attTotals[a]);
+    const attColors = ['#667eea','#764ba2','#f093fb','#4facfe','#00f2fe','#f59e0b','#10b981'];
+    const attChart = Chart.getChart('attendantChart');
+    if (attChart) attChart.destroy();
+    charts.attendant = new Chart(document.getElementById('attendantChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: attLabels,
+        datasets: [{
+          label: 'Total Volume (L)',
+          data: attLabels.map(a => attTotals[a]),
+          backgroundColor: attLabels.map((_,i) => attColors[i % attColors.length]),
+          borderRadius: 8, borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          title: { display: true, text: 'CSA Performance — Total Volume Sold', font: { size: 14, weight: 'bold' } },
+          legend: { display: false }
         },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            title: { display: true, text: 'Volume Distribution by Pump', font: { size: 16, weight: 'bold' } },
-            legend: { position: 'bottom' }
-          }
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString()+' L' } },
+          x: { grid: { display: false } }
         }
-      });
+      }
+    });
+
+    // PUMP doughnut
+    const pumpChart = Chart.getChart('pumpChart');
+    if (pumpChart) pumpChart.destroy();
+    charts.pump = new Chart(document.getElementById('pumpChart').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Pump 1','Pump 2','Pump 3'],
+        datasets: [{
+          data: ['pump1','pump2','pump3'].map(pk => Object.values(pumpDailyTotals[pk]).reduce((a,b)=>a+b,0)),
+          backgroundColor: [PUMP_COLORS.pump1, PUMP_COLORS.pump2, PUMP_COLORS.pump3],
+          borderWidth: 3, borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          title: { display: true, text: 'Volume Distribution by Pump', font: { size: 14, weight: 'bold' } },
+          legend: { position: 'bottom' }
+        }
+      }
+    });
+  }
+
+  // ============================================================================
+  // TAB SWITCHER
+  // ============================================================================
+  function switchChartTab(tab) {
+    ['all','pump1','pump2','pump3'].forEach(t => {
+      document.getElementById(`chartPanel-${t}`).style.display = t === tab ? 'block' : 'none';
+      document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+    });
+    // Update target info pill
+    const sel = document.getElementById('monthFilter').value;
+    const daysInMonth = getDaysInMonth(sel);
+    if (tab === 'all') {
+      document.getElementById('dailyTargetInfo').textContent =
+        `🎯 Station: ${Math.round(STATION_TOTAL_TARGET/daysInMonth).toLocaleString()} L/day`;
+    } else {
+      const tgt = PUMP_TARGETS[tab];
+      document.getElementById('dailyTargetInfo').textContent =
+        `🎯 ${PUMP_LABELS[tab]}: ${Math.round(tgt.total/daysInMonth).toLocaleString()} L/day`;
     }
+    setTimeout(() => { if (charts[tab]) charts[tab].resize(); }, 50);
+  }
 
-    // ============================================================================
-    // INSIGHTS
-    // ============================================================================
-    function updateInsights(dailyTotals, attendantTotals, pumpTotals) {
-      const selectedMonth = document.getElementById('monthFilter').value;
-      const daysInMonth = selectedMonth === 'combined' ? 30 : getDaysInMonth(selectedMonth);
-      const dailyTarget = STATION_MONTHLY_TARGET / daysInMonth;
+  // ============================================================================
+  // INSIGHTS
+  // ============================================================================
+  function updateInsights(dailyTotals, attTotals, pumpDailyTotals) {
+    const sel = document.getElementById('monthFilter').value;
+    const daysInMonth = getDaysInMonth(sel);
+    const daysElapsed = Object.keys(dailyTotals).length || 1;
+    const daysLeft = Math.max(daysInMonth - daysElapsed, 0);
+    const total = Object.values(dailyTotals).reduce((a,b)=>a+b,0);
+    const stationDaily = STATION_TOTAL_TARGET / daysInMonth;
+    const daysAbove = Object.values(dailyTotals).filter(v=>v>=stationDaily).length;
+    const bestDay = Object.keys(dailyTotals).reduce((a,b)=>dailyTotals[a]>dailyTotals[b]?a:b,'-');
+    const worstDay = Object.keys(dailyTotals).reduce((a,b)=>dailyTotals[a]<dailyTotals[b]?a:b,'-');
+    const shortfall = STATION_TOTAL_TARGET - total;
+    const neededPerDay = daysLeft > 0 ? shortfall/daysLeft : 0;
 
-      const total = Object.values(dailyTotals).reduce((a,b)=>a+b,0);
-      const days = Object.keys(dailyTotals).length;
-      const avg = days > 0 ? total / days : 0;
-      const topAtt = Object.keys(attendantTotals).reduce((a,b)=>attendantTotals[a]>attendantTotals[b]?a:b,"-");
-      const topPump = Object.keys(pumpTotals).reduce((a,b)=>pumpTotals[a]>pumpTotals[b]?a:b,"-");
-      const bestDay = Object.keys(dailyTotals).reduce((a,b)=>dailyTotals[a]>dailyTotals[b]?a:b,"-");
-      const worstDay = Object.keys(dailyTotals).reduce((a,b)=>dailyTotals[a]<dailyTotals[b]?a:b,"-");
-      const daysAbove = Object.values(dailyTotals).filter(v=>v>=dailyTarget).length;
-      const daysBelow = Object.values(dailyTotals).filter(v=>v>0&&v<dailyTarget).length;
+    // CSA ranking
+    const csaRanking = Object.entries(attTotals).sort((a,b)=>b[1]-a[1]);
 
-      // How far total is from monthly target
-      const monthTarget = STATION_MONTHLY_TARGET;
-      const shortfall = monthTarget - total;
-      const daysLeft = Math.max(daysInMonth - days, 0);
-      const neededPerDay = daysLeft > 0 ? shortfall / daysLeft : 0;
+    // Per-pump status
+    const pumpInsights = ['pump1','pump2','pump3'].map(pk => {
+      const tgt = PUMP_TARGETS[pk].total;
+      const sold = Object.values(pumpDailyTotals[pk]).reduce((a,b)=>a+b,0);
+      const pct = (sold/tgt*100).toFixed(1);
+      const remaining = Math.max(tgt-sold,0);
+      const needed = daysLeft>0 ? (remaining/daysLeft).toFixed(0) : 0;
+      const expectedPace = (tgt/daysInMonth)*daysElapsed;
+      const status = sold >= expectedPace ? '✅' : sold >= expectedPace*0.85 ? '⚠️' : '🚨';
+      return `${status} <strong>${PUMP_LABELS[pk]}</strong>: ${pct}% of target — need <strong>${Number(needed).toLocaleString()} L/day</strong> remaining.`;
+    });
 
-      const insights = [
-        `📊 Total volume sold: <strong>${total.toLocaleString()} L</strong> over ${days} active days`,
-        `🎯 Monthly target: <strong>${monthTarget.toLocaleString()} L</strong> — ${shortfall > 0
-          ? `still need <strong>${shortfall.toLocaleString(undefined,{maximumFractionDigits:0})} L</strong> (${neededPerDay > 0 ? neededPerDay.toLocaleString(undefined,{maximumFractionDigits:0})+' L/day for '+daysLeft+' remaining days' : 'month complete'})`
-          : `<strong style="color:#059669">TARGET ACHIEVED! 🎉</strong>`}`,
-        `✅ Days above daily target: <strong>${daysAbove}</strong> &nbsp;|&nbsp; 🔴 Days below: <strong>${daysBelow}</strong>`,
-        `🏆 Best attendant: <strong>${topAtt}</strong> — ${attendantTotals[topAtt]?.toLocaleString()||0} L`,
-        `⛽ Most productive pump: <strong>${topPump.replace('PUMP3','Pump 3').replace('PUMP ','Pump ')}</strong>`,
-        `🔥 Peak day: <strong>${formatDisplayDate(bestDay)}</strong> (${dailyTotals[bestDay]?.toLocaleString()||0} L)`,
-        `📉 Lowest day: <strong>${formatDisplayDate(worstDay)}</strong> (${dailyTotals[worstDay]?.toLocaleString()||0} L)`
-      ];
+    const insights = [
+      `📊 Total station volume: <strong>${total.toLocaleString()} L</strong> over ${daysElapsed} days`,
+      `🎯 Station target: <strong>${STATION_TOTAL_TARGET.toLocaleString()} L</strong> — ${shortfall>0 ? `need <strong>${shortfall.toLocaleString(undefined,{maximumFractionDigits:0})} L</strong> more (${neededPerDay>0?neededPerDay.toLocaleString(undefined,{maximumFractionDigits:0})+' L/day for '+daysLeft+' days':'month complete'})` : '<strong style="color:#059669">TARGET ACHIEVED 🎉</strong>'}`,
+      `✅ Days above daily target: <strong>${daysAbove}</strong> of ${daysElapsed}`,
+      ...pumpInsights,
+      csaRanking.length > 0 ? `🏆 CSA Rankings: ${csaRanking.map((([name,vol],i)=>`<strong>#${i+1} ${name}</strong> (${vol.toLocaleString()} L)`)).join(' · ')}` : '',
+      `🔥 Peak day: <strong>${fmtLong(bestDay)}</strong> — ${(dailyTotals[bestDay]||0).toLocaleString()} L`,
+      `📉 Lowest day: <strong>${fmtLong(worstDay)}</strong> — ${(dailyTotals[worstDay]||0).toLocaleString()} L`,
+    ].filter(Boolean);
 
-      document.getElementById('insightsList').innerHTML = insights.map(i=>`<li>${i}</li>`).join('');
-    }
+    document.getElementById('insightsList').innerHTML = insights.map(i=>`<li>${i}</li>`).join('');
+  }
 
-    // ============================================================================
-    // DATA TABLE
-    // ============================================================================
-    function updateDataTable(filtered) {
-      let html = `<thead><tr>
-        <th>📅 Date</th>
-        <th>👨‍💼 Pump 1 Attendant</th><th>📊 Pump 1 Vol</th>
-        <th>👨‍💼 Pump 2 Attendant</th><th>📊 Pump 2 Vol</th>
-        <th>👨‍💼 Pump 3 Attendant</th><th>📊 Pump 3 Vol</th>
-        <th>💰 Daily Total</th><th>vs Target</th>
-      </tr></thead><tbody>`;
+  // ============================================================================
+  // DATA TABLE
+  // ============================================================================
+  function updateDataTable(filtered) {
+    const sel = document.getElementById('monthFilter').value;
+    const daysInMonth = getDaysInMonth(sel);
+    const stationDaily = STATION_TOTAL_TARGET / daysInMonth;
+    const p1Daily = PUMP_TARGETS.pump1.total / daysInMonth;
+    const p2Daily = PUMP_TARGETS.pump2.total / daysInMonth;
+    const p3Daily = PUMP_TARGETS.pump3.total / daysInMonth;
 
-      const selectedMonth = document.getElementById('monthFilter').value;
-      const daysInMonth = selectedMonth === 'combined' ? 30 : getDaysInMonth(selectedMonth);
-      const dailyTarget = STATION_MONTHLY_TARGET / daysInMonth;
-
-      filtered.forEach(r => {
-        const diff = r.total - dailyTarget;
-        const diffStr = diff >= 0
-          ? `<span style="color:#059669;font-weight:700">+${diff.toLocaleString(undefined,{maximumFractionDigits:0})} L ✅</span>`
-          : `<span style="color:#dc2626;font-weight:700">${diff.toLocaleString(undefined,{maximumFractionDigits:0})} L 🔴</span>`;
-        html += `<tr>
-          <td>${formatDisplayDate(r.date)}</td>
-          <td>${r.pump1.attendant}</td><td>${r.pump1.value.toLocaleString()} L</td>
-          <td>${r.pump2.attendant}</td><td>${r.pump2.value.toLocaleString()} L</td>
-          <td>${r.pump3.attendant}</td><td>${r.pump3.value.toLocaleString()} L</td>
-          <td><strong>${r.total.toLocaleString()} L</strong></td>
-          <td>${diffStr}</td>
-        </tr>`;
-      });
-      document.getElementById('dataTable').innerHTML = html + '</tbody>';
-    }
-
-    // ============================================================================
-    // MAIN UPDATE
-    // ============================================================================
-    function updateAnalysis() {
-      const filtered = getFilteredData();
-      const { dailyTotals, attendantTotals, pumpTotals } = updateMetrics(filtered);
-      createCharts(dailyTotals, attendantTotals, pumpTotals);
-      updateInsights(dailyTotals, attendantTotals, pumpTotals);
-      updateDataTable(filtered);
-    }
-
-    window.onload = () => {
-      initializeMonthFilter();
-      loadFuelData();
+    const vsTarget = (val, target) => {
+      const diff = val - target;
+      return diff >= 0
+        ? `<span style="color:#059669;font-weight:700">+${diff.toLocaleString(undefined,{maximumFractionDigits:0})}L ✅</span>`
+        : `<span style="color:#dc2626;font-weight:700">${diff.toLocaleString(undefined,{maximumFractionDigits:0})}L 🔴</span>`;
     };
-  </script>
+
+    let html = `<thead><tr>
+      <th>📅 Date</th>
+      <th>👤 Pump 1 CSA</th><th>📊 P1 Vol</th><th>vs P1 Target</th>
+      <th>👤 Pump 2 CSA</th><th>📊 P2 Vol</th><th>vs P2 Target</th>
+      <th>👤 Pump 3 CSA</th><th>📊 P3 Vol</th><th>vs P3 Target</th>
+      <th>💰 Total</th><th>vs Station</th>
+    </tr></thead><tbody>`;
+
+    filtered.forEach(r => {
+      html += `<tr>
+        <td>${fmtShort(r.date)}</td>
+        <td><strong>${r.pump1.attendant}</strong></td>
+        <td>${r.pump1.value.toLocaleString()} L</td>
+        <td>${vsTarget(r.pump1.value, p1Daily)}</td>
+        <td><strong>${r.pump2.attendant}</strong></td>
+        <td>${r.pump2.value.toLocaleString()} L</td>
+        <td>${vsTarget(r.pump2.value, p2Daily)}</td>
+        <td><strong>${r.pump3.attendant}</strong></td>
+        <td>${r.pump3.value.toLocaleString()} L</td>
+        <td>${vsTarget(r.pump3.value, p3Daily)}</td>
+        <td><strong>${r.total.toLocaleString()} L</strong></td>
+        <td>${vsTarget(r.total, stationDaily)}</td>
+      </tr>`;
+    });
+
+    document.getElementById('dataTable').innerHTML = html + '</tbody>';
+  }
+
+  // ============================================================================
+  // MAIN UPDATE
+  // ============================================================================
+  function updateAnalysis() {
+    const filtered = getFilteredData();
+    const { dailyTotals, attTotals, pumpDailyTotals, pumpMonthTotals } = updateMetrics(filtered);
+    createCharts(dailyTotals, attTotals, pumpDailyTotals);
+    updateInsights(dailyTotals, attTotals, pumpDailyTotals);
+    updateDataTable(filtered);
+    switchChartTab('all');
+  }
+
+  window.onload = () => { initializeMonthFilter(); loadFuelData(); };
+</script>
 </body>
 </html>
