@@ -533,7 +533,18 @@
     });
 
     const total = Object.values(dailyTotals).reduce((a,b)=>a+b,0);
-    const daysAccumulated = Object.keys(dailyTotals).length || 1;
+
+    // Daily average: for the current month divide by yesterday's date (completed days only).
+    // For past months divide by the number of days with data.
+    const now = new Date();
+    const selMonth = sel !== 'combined' ? new Date(sel + ' 1') : null;
+    const isCurrentMonth = selMonth &&
+      now.getFullYear() === selMonth.getFullYear() &&
+      now.getMonth()    === selMonth.getMonth();
+    const yesterday = now.getDate() - 1; // days completed as of today
+    const daysAccumulated = isCurrentMonth
+      ? Math.max(yesterday, 1)                      // e.g. today=23 → divide by 22
+      : (Object.keys(dailyTotals).length || 1);     // past months: use actual data days
     const avg = total / daysAccumulated;
     const stationDailyTarget = STATION_TOTAL_TARGET / daysInMonth;
     const daysAbove = Object.values(dailyTotals).filter(v=>v>=stationDailyTarget).length;
