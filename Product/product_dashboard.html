@@ -568,13 +568,17 @@
         📈 Daily Sales vs Daily Target
         <span style="font-size:0.7em;font-weight:400;color:#64748b;text-transform:none;letter-spacing:0;margin-left:8px;">Green = above target · Red = below target</span>
       </div>
-      <div style="display:flex;gap:8px;" id="productTabs">
-        <button class="tab-btn active" onclick="switchTab('DX')" id="tab-DX" style="background:linear-gradient(135deg,#111827,#1f2937)">⚫ DX Diesel</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="productTabs">
+        <button class="tab-btn active" onclick="switchTab('ALL')" id="tab-ALL" style="background:linear-gradient(135deg,#1e3c72,#7e22ce)">📊 All Products</button>
+        <button class="tab-btn" onclick="switchTab('DX')" id="tab-DX" style="background:linear-gradient(135deg,#111827,#1f2937)">⚫ DX Diesel</button>
         <button class="tab-btn" onclick="switchTab('UX')" id="tab-UX" style="background:linear-gradient(135deg,#064e3b,#065f46)">🟢 UX Unleaded</button>
         <button class="tab-btn" onclick="switchTab('VP')" id="tab-VP" style="background:linear-gradient(135deg,#7f1d1d,#991b1b)">🔴 VP V-Power</button>
       </div>
     </div>
-    <div id="targetChart-DX" class="product-chart-panel">
+    <div id="targetChart-ALL" class="product-chart-panel" style="display:none;">
+      <div class="chart-wrapper tall"><canvas id="targetChartALL"></canvas></div>
+    </div>
+    <div id="targetChart-DX" class="product-chart-panel" style="display:none;">
       <div class="chart-wrapper tall"><canvas id="targetChartDX"></canvas></div>
     </div>
     <div id="targetChart-UX" class="product-chart-panel" style="display:none;">
@@ -1147,10 +1151,101 @@
       });
     }
 
-    // Build all three charts upfront (hidden ones are fine, chart renders on show)
+    // Build all three individual product charts
     buildProductTargetChart('targetChartDX', 'DX');
     buildProductTargetChart('targetChartUX', 'UX');
     buildProductTargetChart('targetChartVP', 'VP');
+
+    // ── ALL PRODUCTS combined chart — 3 lines + 3 individual target lines ──
+    if (charts['target_ALL']) charts['target_ALL'].destroy();
+    charts['target_ALL'] = new Chart(document.getElementById('targetChartALL').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: dates.map(fmtDisp),
+        datasets: [
+          // Actual sales lines
+          {
+            label: '⚫ DX Diesel',
+            data: dates.map(d => dailySales[d]?.['DX'] || 0),
+            borderColor: '#6b7280',
+            backgroundColor: 'transparent',
+            borderWidth: 2.5, tension: 0.35, fill: false,
+            pointRadius: 4, pointHoverRadius: 6,
+            pointBackgroundColor: dates.map(d => (dailySales[d]?.['DX']||0) >= MONTHLY_TARGETS['DX']/daysInMonth ? '#10b981' : '#dc2626'),
+            pointBorderColor: 'white', pointBorderWidth: 1.5, order: 1
+          },
+          {
+            label: '🟢 UX Unleaded',
+            data: dates.map(d => dailySales[d]?.['UX'] || 0),
+            borderColor: '#10b981',
+            backgroundColor: 'transparent',
+            borderWidth: 2.5, tension: 0.35, fill: false,
+            pointRadius: 4, pointHoverRadius: 6,
+            pointBackgroundColor: dates.map(d => (dailySales[d]?.['UX']||0) >= MONTHLY_TARGETS['UX']/daysInMonth ? '#10b981' : '#dc2626'),
+            pointBorderColor: 'white', pointBorderWidth: 1.5, order: 2
+          },
+          {
+            label: '🔴 VP V-Power',
+            data: dates.map(d => dailySales[d]?.['VP'] || 0),
+            borderColor: '#dc2626',
+            backgroundColor: 'transparent',
+            borderWidth: 2.5, tension: 0.35, fill: false,
+            pointRadius: 4, pointHoverRadius: 6,
+            pointBackgroundColor: dates.map(d => (dailySales[d]?.['VP']||0) >= MONTHLY_TARGETS['VP']/daysInMonth ? '#10b981' : '#dc2626'),
+            pointBorderColor: 'white', pointBorderWidth: 1.5, order: 3
+          },
+          // Individual target lines (dashed, matching product colours)
+          {
+            label: `DX Target (${(MONTHLY_TARGETS['DX']/daysInMonth).toLocaleString(undefined,{maximumFractionDigits:0})} L/day)`,
+            data: dates.map(() => parseFloat((MONTHLY_TARGETS['DX']/daysInMonth).toFixed(2))),
+            borderColor: '#6b7280', borderWidth: 1.5, borderDash: [8,4],
+            backgroundColor: 'transparent', pointRadius: 0, tension: 0, fill: false, order: 4
+          },
+          {
+            label: `UX Target (${(MONTHLY_TARGETS['UX']/daysInMonth).toLocaleString(undefined,{maximumFractionDigits:0})} L/day)`,
+            data: dates.map(() => parseFloat((MONTHLY_TARGETS['UX']/daysInMonth).toFixed(2))),
+            borderColor: '#10b981', borderWidth: 1.5, borderDash: [8,4],
+            backgroundColor: 'transparent', pointRadius: 0, tension: 0, fill: false, order: 5
+          },
+          {
+            label: `VP Target (${(MONTHLY_TARGETS['VP']/daysInMonth).toLocaleString(undefined,{maximumFractionDigits:0})} L/day)`,
+            data: dates.map(() => parseFloat((MONTHLY_TARGETS['VP']/daysInMonth).toFixed(2))),
+            borderColor: '#dc2626', borderWidth: 1.5, borderDash: [8,4],
+            backgroundColor: 'transparent', pointRadius: 0, tension: 0, fill: false, order: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              afterBody(items) {
+                const idx = items[0]?.dataIndex;
+                if (idx === undefined) return [];
+                return ['DX','UX','VP'].map(p => {
+                  const actual = dailySales[dates[idx]]?.[p] || 0;
+                  const tgt = MONTHLY_TARGETS[p] / daysInMonth;
+                  const diff = actual - tgt;
+                  return `${PRODUCT_NAMES[p]}: ${diff>=0?'✅ +':'🔴 '}${diff.toLocaleString(undefined,{maximumFractionDigits:0})} L vs target`;
+                });
+              }
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(0,0,0,0.05)' } },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            ticks: { callback: v => v.toLocaleString() + ' L' },
+            title: { display: true, text: 'Litres Sold' }
+          }
+        }
+      }
+    });
 
     // -- TARGET VS ACTUAL BAR CHART --
     const productSales = { UX:0, DX:0, VP:0 };
@@ -1339,11 +1434,10 @@
   // TAB SWITCHER for per-product charts
   // ============================================================================
   function switchTab(product) {
-    ['DX','UX','VP'].forEach(p => {
+    ['ALL','DX','UX','VP'].forEach(p => {
       document.getElementById(`targetChart-${p}`).style.display = p === product ? 'block' : 'none';
       document.getElementById(`tab-${p}`).classList.toggle('active', p === product);
     });
-    // Trigger resize so chart renders correctly after being hidden
     setTimeout(() => { if (charts[`target_${product}`]) charts[`target_${product}`].resize(); }, 50);
   }
 
@@ -1365,7 +1459,7 @@
     updateInsights(filtered);
     updateDataTable(filtered);
     // Reset tab to DX after rebuild
-    switchTab('DX');
+    switchTab('ALL');
   }
 
   window.onload = () => {
