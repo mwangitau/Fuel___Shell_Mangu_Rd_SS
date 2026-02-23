@@ -7,7 +7,7 @@
 
 **Comprehensive performance analytics dashboards for Shell Mangu Road Service Station operations in Kenya.**
 
-🔗 **Live Site:** [mwangitau.github.io/Fuel___Shell_Mangu_Rd_SS](https://mwangitau.github.io/Fuel___Shell_Mangu_Rd_SS/)
+🔗 **Live Site:** [https://shell-mangu-rd-service-station.vercel.app/](https://shell-mangu-rd-service-station.vercel.app/)
 
 ---
 
@@ -285,7 +285,7 @@ Licensing enquiries: mwangijohngitau1@gmail.com
 
 <div align="center">
 
-**[🚀 View Live Dashboards](https://mwangitau.github.io/Fuel___Shell_Mangu_Rd_SS/)**
+**[🚀 View Live Dashboards](https://shell-mangu-rd-service-station.vercel.app/)**
 
 *Built for operational excellence at Shell Mangu Road Service Station*
 
