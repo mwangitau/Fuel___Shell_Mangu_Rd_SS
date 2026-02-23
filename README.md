@@ -52,7 +52,7 @@ Tracks daily pump volumes for all three fuel pumps against monthly targets with 
 | Pump 3 | — | 31,903 | 11,104 | **43,007** |
 | **Station Total** | | | | **190,849** |
 
-**Data months:** September 2025 → February 2026
+**Data months:** January 2026 → February 2026
 
 ---
 
@@ -77,7 +77,7 @@ Tracks inventory, meter vs dip sale variance, stock levels, and target performan
 | DX — Diesel | 91,152 |
 | VP — V-Power | 11,104 |
 
-**Data months:** October 2025 → February 2026
+**Data months:** January 2026 → February 2026
 
 ---
 
@@ -108,7 +108,7 @@ Tracks LPG cylinder refill sales and new customer acquisition across all four cy
 | 25KG | Secondary | ~18% of monthly target |
 | 6KG | Low volume | ~10% of monthly target |
 
-**Data months:** October 2025 → February 2026
+**Data months:** January 2026 → February 2026
 
 ---
 
