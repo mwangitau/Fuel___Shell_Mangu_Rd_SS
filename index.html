@@ -25,6 +25,133 @@
       --danger:   #ef4444;
     }
 
+    /* ─── LIGHT THEME ─── */
+    [data-theme="light"] {
+      --night:  #f1f5f9;
+      --deep:   #e2e8f0;
+      --steel:  #cbd5e1;
+      --panel:  rgba(255,255,255,0.90);
+      --rim:    rgba(0,0,0,0.08);
+      --glow:   #d97706;
+      --glow2:  #ea580c;
+      --dx:     #475569;
+      --ux:     #059669;
+      --vp:     #dc2626;
+      --lpg:    #ea580c;
+      --text:   #0f172a;
+      --muted:  #64748b;
+      --success:#059669;
+      --danger: #dc2626;
+    }
+
+    /* light: flip grid lines to dark-on-light */
+    [data-theme="light"] body::before {
+      background-image:
+        linear-gradient(rgba(15,31,61,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15,31,61,0.04) 1px, transparent 1px);
+    }
+
+    /* light: orb colours shift to warmer, softer tones */
+    [data-theme="light"] .orb-1 {
+      background: radial-gradient(circle, rgba(245,158,11,0.18) 0%, transparent 70%);
+    }
+    [data-theme="light"] .orb-2 {
+      background: radial-gradient(circle, rgba(234,88,12,0.12) 0%, transparent 70%);
+    }
+    [data-theme="light"] .orb-3 {
+      background: radial-gradient(circle, rgba(5,150,105,0.09) 0%, transparent 70%);
+    }
+
+    /* light: cards need a visible shadow to lift off the background */
+    [data-theme="light"] .ticker-card,
+    [data-theme="light"] .dash-card {
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    }
+    [data-theme="light"] .ticker-card:hover {
+      border-color: rgba(0,0,0,0.18);
+      box-shadow: 0 20px 48px rgba(0,0,0,0.14);
+    }
+    [data-theme="light"] .dash-card:hover {
+      box-shadow: 0 32px 64px rgba(0,0,0,0.18);
+      border-color: rgba(0,0,0,0.18);
+    }
+
+    /* light: ticker value white → near-black */
+    [data-theme="light"] .ticker-value { color: #0f172a; }
+
+    /* light: card titles white → near-black */
+    [data-theme="light"] .card-title { color: #0f172a; }
+
+    /* light: brand gradient stays amber/orange but anchors to dark */
+    [data-theme="light"] .brand-name {
+      background: linear-gradient(135deg, #1e3c72 0%, var(--glow) 60%, var(--glow2) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    /* light: skeleton shimmer */
+    [data-theme="light"] .skeleton {
+      background: linear-gradient(90deg, var(--steel) 25%, rgba(255,255,255,0.8) 50%, var(--steel) 75%);
+      background-size: 200% 100%;
+    }
+
+    /* light: card arrow */
+    [data-theme="light"] .card-arrow { background: rgba(0,0,0,0.07); color: #1e3c72; }
+    [data-theme="light"] .dash-card:hover .card-arrow { background: rgba(217,119,6,0.15); }
+
+    /* light: footer copy */
+    [data-theme="light"] .footer-copy strong { color: #334155; }
+
+    /* ─── THEME TOGGLE BUTTON ─── */
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--panel);
+      border: 1px solid var(--rim);
+      border-radius: 100px;
+      cursor: pointer;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+      transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s;
+      outline: none;
+      user-select: none;
+    }
+    .theme-toggle:hover {
+      border-color: var(--glow);
+      color: var(--glow);
+      box-shadow: 0 0 12px rgba(245,158,11,0.15);
+    }
+    .theme-toggle .toggle-track {
+      width: 32px; height: 18px;
+      background: var(--rim);
+      border-radius: 9px;
+      position: relative;
+      transition: background 0.3s ease;
+      flex-shrink: 0;
+    }
+    .theme-toggle .toggle-thumb {
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: transform 0.3s ease, background 0.3s ease;
+    }
+    [data-theme="light"] .theme-toggle .toggle-track { background: rgba(217,119,6,0.25); }
+    [data-theme="light"] .theme-toggle .toggle-thumb { transform: translateX(14px); background: var(--glow); }
+
+    /* header right cluster */
+    .header-right-cluster {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html { scroll-behavior: smooth; }
@@ -35,6 +162,7 @@
       color: var(--text);
       min-height: 100vh;
       overflow-x: hidden;
+      transition: background 0.4s ease, color 0.35s ease;
     }
 
     /* ─── BACKGROUND GRID ─── */
@@ -458,10 +586,17 @@
         <div class="brand-name">Kiryan Energy Ltd</div>
         <div class="brand-sub">Mangu Shell Service Station · Operations Analytics</div>
       </div>
-      <div class="live-badge">
-        <div class="live-dot"></div>
-        <span>Live ·</span>
-        <span id="live-time">—</span>
+      <div class="header-right-cluster">
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle theme">
+          <span id="themeIcon">☀️</span>
+          <div class="toggle-track"><div class="toggle-thumb"></div></div>
+          <span id="themeLabel">Light</span>
+        </button>
+        <div class="live-badge">
+          <div class="live-dot"></div>
+          <span>Live ·</span>
+          <span id="live-time">—</span>
+        </div>
       </div>
     </header>
 
@@ -854,6 +989,26 @@
       }
       setTickerError('LPG', 'Data unavailable');
     }
+
+    // ─── THEME TOGGLE ─────────────────────────────────────────────────────────
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const isLight = theme === 'light';
+      document.getElementById('themeIcon').textContent  = isLight ? '🌙' : '☀️';
+      document.getElementById('themeLabel').textContent = isLight ? 'Dark' : 'Light';
+      localStorage.setItem('ke-theme', theme);
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    }
+
+    // Load saved preference on boot (before paint to avoid flash)
+    (function() {
+      const saved = localStorage.getItem('ke-theme') || 'dark';
+      applyTheme(saved);
+    })();
 
     // ─── BOOT ─────────────────────────────────────────────────────────────────
     fetchFuelData();
