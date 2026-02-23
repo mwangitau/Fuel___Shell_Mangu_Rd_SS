@@ -701,17 +701,16 @@
     const kg45 = refills.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.totalKG,0);
     const totalKG = kg6 + kg13 + kg25 + kg45;
 
-    // Station target breakdown reflecting your actual sales mix:
-    // 13KG = dominant (~55%) | 45KG = 135KG/wk ≈ 540KG/mo (~17%) | 25KG (~18%) | 6KG = low (~10%)
+    // Sales order: 13KG (dominant) > 6KG (second best) > 45KG (fixed, 1 customer) > 25KG (rarely sold)
     const stationTarget = LPG_MONTHLY_TARGET;
     const dailyTarget = stationTarget / daysInMonth;
     const expectedKG = dailyTarget * daysElapsed;
 
-    // 45KG weekly supply = 135 KG × ~4 weeks = 540 KG/month
-    const t45 = 135 * 4;                        // 540 KG
-    const t6  = stationTarget * 0.10;           // 10% — low customer base
-    const t25 = stationTarget * 0.18;           // 18%
-    const t13 = stationTarget - t6 - t25 - t45; // remainder — dominant
+    // 45KG = fixed weekly supply for one customer = 135 KG × 4 weeks = 540 KG/month
+    const t45 = 135 * 4;                         // 540 KG — fixed, 1 customer
+    const t25 = stationTarget * 0.05;            // ~5%  — rarely sold
+    const t6  = stationTarget * 0.20;            // ~20% — second best seller
+    const t13 = stationTarget - t6 - t25 - t45; // remainder ~57% — dominant
 
     function buildCard(cls, label, sold, target) {
       const pct = Math.min((sold/target)*100, 100);
@@ -751,11 +750,11 @@
     }
 
     document.getElementById('targetCards').innerHTML =
-      buildCard('c13kg',   '🟣 13 KG — Dominant',   kg13, t13) +
-      buildCard('station', '📊 Station Total',       totalKG, stationTarget) +
-      buildCard('c45kg',   '🟢 45 KG — Weekly Supply (135 KG/wk)', kg45, t45) +
-      buildCard('c25kg',   '🟠 25 KG',               kg25, t25) +
-      buildCard('c6kg',    '🔵 6 KG',                kg6,  t6);
+      buildCard('c13kg',   '🟣 13 KG — Dominant',                    kg13, t13) +
+      buildCard('c6kg',    '🔵 6 KG — Second Best Seller',            kg6,  t6)  +
+      buildCard('c45kg',   '🟢 45 KG — Weekly Supply (1 Customer)',   kg45, t45) +
+      buildCard('c25kg',   '🟠 25 KG — Rarely Sold',                 kg25, t25) +
+      buildCard('station', '📊 Station Total',                        totalKG, stationTarget);
 
     // expand grid to 5 cards
     document.querySelector('.target-cards').style.gridTemplateColumns = 'repeat(auto-fit, minmax(260px, 1fr))';
@@ -942,10 +941,10 @@
     charts.dist = new Chart(document.getElementById('productDistChart').getContext('2d'), {
       type: 'doughnut',
       data: {
-        labels: ['13 KG — Dominant','45 KG — Weekly','25 KG','6 KG'],
+        labels: ['13 KG — Dominant','6 KG — Second','45 KG — 1 Customer','25 KG — Rarely Sold'],
         datasets: [{
-          data: [tot13, tot45, tot25, tot6],
-          backgroundColor: ['#7c3aed','#059669','#ea580c','#1d4ed8'],
+          data: [tot13, tot6, tot45, tot25],
+          backgroundColor: ['#7c3aed','#1d4ed8','#059669','#ea580c'],
           borderWidth: 3, borderColor: '#fff'
         }]
       },
@@ -1047,7 +1046,7 @@
         : '<strong style="color:#059669">TARGET ACHIEVED 🎉</strong>'}`,
       `✅ Days above daily target (${dailyTarget.toFixed(1)} KG): <strong>${daysAbove}</strong> &nbsp;|&nbsp; 🔴 Below: <strong>${daysBelow}</strong>`,
       `📊 Sales mix — 🟣 13KG: <strong>${refills.filter(r=>r.size==='13KG').reduce((a,r)=>a+r.totalKG,0).toFixed(1)} KG</strong> · 🟢 45KG: <strong>${refills.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.totalKG,0).toFixed(1)} KG</strong> · 🟠 25KG: <strong>${refills.filter(r=>r.size==='25KG').reduce((a,r)=>a+r.totalKG,0).toFixed(1)} KG</strong> · 🔵 6KG: <strong>${refills.filter(r=>r.size==='6KG').reduce((a,r)=>a+r.totalKG,0).toFixed(1)} KG</strong>`,
-      (() => { const pcs45 = refills.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.pieces,0); const weeks = daysElapsed/7; return pcs45>0 ? `🟢 45KG avg weekly supply: <strong>${(refills.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.totalKG,0)/weeks).toFixed(1)} KG/week</strong> (target: 135 KG/week · ${pcs45} cylinders)` : ''; })(),
+      (() => { const pcs45 = refills.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.pieces,0); const weeks = daysElapsed/7; return pcs45>0 ? `🟢 45KG weekly supply (1 customer): <strong>${(refills.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.totalKG,0)/weeks).toFixed(1)} KG/week</strong> vs 135 KG/week target · ${pcs45} cylinders` : ''; })(),
       bestDay  ? `🔥 Best refill day: <strong>${fmtLong(bestDay[0])}</strong> — ${bestDay[1].toFixed(1)} KG` : '',
       worstDay ? `📉 Lowest refill day: <strong>${fmtLong(worstDay[0])}</strong> — ${worstDay[1].toFixed(1)} KG` : '',
       `🆕 New customers this period: <strong>${newThisMonth.toLocaleString()}</strong> total — 🟣 13KG: ${Math.floor(newCusts.filter(r=>r.size==='13KG').reduce((a,r)=>a+r.pieces,0))} · 🔵 6KG: ${Math.floor(newCusts.filter(r=>r.size==='6KG').reduce((a,r)=>a+r.pieces,0))} · 🟠 25KG: ${Math.floor(newCusts.filter(r=>r.size==='25KG').reduce((a,r)=>a+r.pieces,0))} · 🟢 45KG: ${Math.floor(newCusts.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.pieces,0))} cylinders`,
