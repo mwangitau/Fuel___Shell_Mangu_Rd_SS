@@ -3,973 +3,1081 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gas Sales Dashboard</title>
+  <title>LPG Gas Dashboard — Kiryan Energy Ltd</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap');
+
+    :root {
+      --blue-deep: #0f1f3d;
+      --blue-mid:  #1e3c72;
+      --purple:    #7e22ce;
+      --red:       #dc2626;
+      --green:     #059669;
+      --amber:     #d97706;
+      --orange:    #ea580c;
+      --bg:        #f0f4f8;
+      --card-bg:   #ffffff;
+      --text-primary: #0f172a;
+      --text-muted:   #64748b;
+      /* Product colours */
+      --c6kg:  #1d4ed8;
+      --c13kg: #7c3aed;
+      --c45kg: #059669;
     }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
-      padding: 10px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      font-family: 'Barlow', sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 0% 0%,   rgba(30,60,114,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse at 100% 100%, rgba(126,34,206,0.10) 0%, transparent 60%);
       min-height: 100vh;
+      padding: 24px;
     }
-    .container {
-      max-width: 1600px;
-      margin: 0 auto;
-      background: rgba(255,255,255,0.98);
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+
+    .container { max-width: 1600px; margin: 0 auto; }
+
+    /* ── HEADER ── */
+    .header {
+      background: linear-gradient(135deg, var(--blue-deep) 0%, var(--blue-mid) 55%, var(--orange) 100%);
+      border-radius: 20px; padding: 32px 40px; margin-bottom: 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 8px 32px rgba(15,31,61,0.25);
+      position: relative; overflow: hidden;
     }
-    
-    /* Configuration Helper Section */
-    .config-helper {
-      background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-      border-left: 5px solid #4caf50;
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 25px;
+    .header::before {
+      content: '🔥'; position: absolute; right: -10px; top: -20px;
+      font-size: 160px; opacity: 0.07; transform: rotate(-15deg);
     }
-    .config-helper h3 {
-      margin-top: 0;
-      color: #2e7d32;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .header-left h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 2.6em; font-weight: 900; color: white;
+      letter-spacing: 1px; text-transform: uppercase; line-height: 1;
     }
-    .config-helper code {
-      background: #fff;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-family: 'Courier New', monospace;
-      color: #d32f2f;
+    .header-left .subtitle { color: rgba(255,255,255,0.65); font-size: 0.95em; margin-top: 6px; }
+    .header-right { text-align: right; color: rgba(255,255,255,0.8); font-size: 0.9em; }
+    .header-right strong { display: block; font-size: 1.1em; color: white; }
+
+    /* ── METRIC CARDS ── */
+    .metrics-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px; margin-bottom: 24px;
     }
-    .config-helper ol {
-      margin: 10px 0;
-      padding-left: 25px;
+    .metric-card {
+      background: var(--card-bg); border-radius: 14px; padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      border-top: 4px solid var(--blue-mid);
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .config-helper li {
-      margin: 8px 0;
-      line-height: 1.6;
+    .metric-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+    .metric-card.green-top  { border-top-color: var(--green); }
+    .metric-card.red-top    { border-top-color: var(--red); }
+    .metric-card.amber-top  { border-top-color: var(--amber); }
+    .metric-card.orange-top { border-top-color: var(--orange); }
+    .metric-card.purple-top { border-top-color: var(--purple); }
+    .m-icon  { font-size: 1.6em; margin-bottom: 8px; opacity: 0.8; }
+    .m-value {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 2em; font-weight: 700; color: var(--text-primary); line-height: 1;
     }
-    
-    h1 {
-      text-align: center;
-      color: #1e293b;
-      margin-bottom: 10px;
-      font-size: clamp(1.8em, 5vw, 2.8em);
-      background: linear-gradient(45deg, #667eea, #764ba2);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      line-height: 1.2;
+    .m-label { font-size: 0.82em; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.35em; font-weight: 700; color: var(--text-primary);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
     }
-    .subtitle {
-      text-align: center;
-      color: #64748b;
-      font-size: clamp(0.9em, 3vw, 1.1em);
-      margin-bottom: 20px;
+    .section-title::after {
+      content: ''; flex: 1; height: 2px;
+      background: linear-gradient(to right, var(--blue-mid), transparent);
     }
-    .control-panel {
-      display: flex;
-      gap: 15px;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-      background: linear-gradient(135deg, #f8fafc, #e2e8f0);
-      padding: 20px;
-      border-radius: 15px;
-      margin-bottom: 30px;
+
+    /* ── TARGET PROGRESS CARDS ── */
+    .target-section {
+      background: var(--card-bg); border-radius: 16px; padding: 28px;
+      margin-bottom: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);
     }
-    .control-group {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
+    .target-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .target-card {
+      border-radius: 14px; padding: 22px; color: white;
+      transition: transform 0.2s; position: relative; overflow: hidden;
     }
-    .control-label {
-      font-size: 0.9em;
-      color: #475569;
-      font-weight: 600;
+    .target-card:hover { transform: translateY(-3px); }
+    .target-card.c6kg  { background: linear-gradient(135deg, #0f172a, #1e3a8a); }
+    .target-card.c13kg { background: linear-gradient(135deg, #3b0764, #581c87); }
+    .target-card.station { background: linear-gradient(135deg, #431407, #9a3412); }
+
+    .tc-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.4em; font-weight: 900; letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 14px;
     }
-    select, button {
-      padding: 12px 18px;
-      border: none;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-      font-weight: 600;
-      width: 100%;
-      min-width: 150px;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
+    .tc-numbers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .tc-num-item .tc-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.6em; font-weight: 700; line-height: 1;
     }
-    select:hover, button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+    .tc-num-item .tc-lbl { font-size: 0.78em; opacity: 0.65; margin-top: 3px; }
+
+    .progress-track {
+      background: rgba(255,255,255,0.18); height: 12px; border-radius: 6px;
+      overflow: hidden; margin-bottom: 8px; position: relative;
     }
-    select:active, button:active {
-      transform: translateY(0);
+    .progress-fill {
+      height: 100%; border-radius: 6px; transition: width 1s ease;
     }
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
+    .progress-fill.on-track { background: linear-gradient(to right, #34d399, #10b981); }
+    .progress-fill.below    { background: linear-gradient(to right, #fbbf24, #f59e0b); }
+    .progress-fill.critical { background: linear-gradient(to right, #f87171, #ef4444); }
+    .pace-marker {
+      position: absolute; top: -2px; width: 3px; height: 16px;
+      background: white; border-radius: 2px; transform: translateX(-50%);
+      z-index: 2; box-shadow: 0 0 6px rgba(255,255,255,0.8);
     }
-    .last-updated {
-      font-size: 0.85em;
-      color: #64748b;
-      font-style: italic;
-      text-align: center;
-      margin-top: 10px;
+    .tc-pct { display: flex; justify-content: space-between; font-size: 0.82em; opacity: 0.75; }
+    .tc-badge {
+      display: inline-block; padding: 4px 12px; border-radius: 20px;
+      font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 10px;
     }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
+    .badge-on-track { background: rgba(52,211,153,0.25); color: #34d399; }
+    .badge-below    { background: rgba(251,191,36,0.25);  color: #fbbf24; }
+    .badge-critical { background: rgba(248,113,113,0.25); color: #f87171; }
+
+    /* ── NEW CUSTOMERS SECTION ── */
+    .customers-section {
+      background: var(--card-bg); border-radius: 16px; padding: 28px;
+      margin-bottom: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);
     }
-    .stat-card {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      padding: 25px;
-      border-radius: 15px;
-      text-align: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
+    .customer-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+    .customer-card {
+      border-radius: 14px; padding: 20px; color: white;
+      transition: transform 0.2s;
     }
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-      transform: rotate(45deg);
-      transition: all 0.5s;
-      opacity: 0;
+    .customer-card:hover { transform: translateY(-3px); }
+    .customer-card.c6  { background: linear-gradient(135deg, #0f172a, #1e3a8a); }
+    .customer-card.c13 { background: linear-gradient(135deg, #3b0764, #581c87); }
+    .customer-card.total { background: linear-gradient(135deg, #431407, #9a3412); }
+    .cc-icon { font-size: 2em; margin-bottom: 8px; }
+    .cc-val  {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 2.4em; font-weight: 900; line-height: 1;
     }
-    .stat-card:hover {
-      transform: translateY(-8px) scale(1.03);
-      box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+    .cc-label { font-size: 0.85em; opacity: 0.75; margin-top: 4px; }
+    .cc-sub   { font-size: 0.78em; opacity: 0.6; margin-top: 6px; font-style: italic; }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      background: var(--card-bg); border-radius: 14px; padding: 18px 24px;
+      margin-bottom: 24px; display: flex; gap: 16px; align-items: flex-end;
+      flex-wrap: wrap; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
     }
-    .stat-card:hover::before {
-      opacity: 1;
-      animation: shimmer 0.6s ease-in-out;
+    .filter-group label {
+      display: block; font-size: 0.78em; font-weight: 600;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
     }
-    @keyframes shimmer {
-      0% { transform: translateX(-100%) rotate(45deg); }
-      100% { transform: translateX(100%) rotate(45deg); }
+    select {
+      padding: 10px 16px; border: 2px solid #e2e8f0; border-radius: 10px;
+      background: white; color: var(--text-primary);
+      font-family: 'Barlow', sans-serif; font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: border-color 0.2s; outline: none;
     }
-    .stat-icon {
-      font-size: 2em;
-      margin-bottom: 10px;
-      opacity: 0.9;
+    select:hover, select:focus { border-color: var(--blue-mid); }
+    .btn {
+      padding: 10px 22px; border: none; border-radius: 10px;
+      background: linear-gradient(135deg, var(--blue-mid), var(--orange));
+      color: white; font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1em; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+      cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(30,60,114,0.3);
     }
-    .stat-value {
-      font-size: 2.4em;
-      font-weight: bold;
-      margin-bottom: 8px;
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(30,60,114,0.4); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── CHART CONTAINERS ── */
+    .chart-card {
+      background: var(--card-bg); border-radius: 16px; padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin-bottom: 24px;
     }
-    .stat-label {
-      font-size: 0.95em;
-      opacity: 0.95;
+    .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 24px; }
+    .charts-grid .chart-card { margin-bottom: 0; }
+    .charts-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px; }
+    .charts-grid-3 .chart-card { margin-bottom: 0; }
+    .chart-wrapper { position: relative; height: 300px; }
+    .chart-wrapper.tall { height: 380px; }
+
+    /* ── TARGET LINE LEGEND ── */
+    .chart-legend {
+      display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px;
+      padding: 10px 14px; background: #f8fafc; border-radius: 10px;
+      font-size: 0.83em; color: var(--text-muted);
     }
-    .chart-container {
-      background: white;
-      border-radius: 15px;
-      padding: 25px;
-      margin-bottom: 25px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-      transition: transform 0.2s ease;
+    .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .legend-line { width: 24px; height: 2px; border-radius: 1px; }
+    .legend-dashed { width: 24px; border-top: 2px dashed #f59e0b; }
+
+    /* ── INSIGHTS ── */
+    .insights-section {
+      background: var(--card-bg); border-radius: 16px; padding: 24px;
+      margin-bottom: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);
     }
-    .chart-container:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+    .insights-list { list-style: none; }
+    .insights-list li {
+      padding: 13px 16px; border-left: 3px solid var(--orange);
+      background: #fff7ed; border-radius: 0 10px 10px 0;
+      margin-bottom: 10px; font-size: 0.92em;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .chart-container h2 {
-      color: #1e293b;
-      margin: 0 0 20px 0;
-      font-size: clamp(1.2em, 4vw, 1.5em);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
+    .insights-list li:hover { transform: translateX(6px); box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+
+    /* ── DATA TABLE ── */
+    .table-section {
+      background: var(--card-bg); border-radius: 16px; padding: 24px;
+      margin-bottom: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);
     }
-    .charts-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 25px;
-      margin-bottom: 25px;
+    .table-scroll { overflow-x: auto; max-height: 480px; }
+    table { width: 100%; border-collapse: collapse; min-width: 500px; }
+    thead th {
+      background: linear-gradient(135deg, var(--blue-deep), var(--blue-mid));
+      color: white; padding: 12px 14px; text-align: left;
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 600;
+      letter-spacing: 0.5px; font-size: 0.9em; text-transform: uppercase;
+      position: sticky; top: 0; z-index: 10;
     }
-    .table-container {
-      background: white;
-      border-radius: 15px;
-      padding: 15px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-      overflow-x: auto;
-      max-height: 600px;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+    tbody td { padding: 11px 14px; border-bottom: 1px solid #f1f5f9; font-size: 0.88em; }
+    tbody tr:hover { background: #fef3c7; }
+
+    /* type badges in table */
+    .badge-refill   { background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 700; }
+    .badge-newcust  { background: #fef3c7; color: #b45309; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 700; }
+
+    /* ── SPINNER / LOADING ── */
+    .date-range {
+      background: var(--card-bg); border-radius: 10px; padding: 12px 18px;
+      margin-bottom: 20px; font-size: 0.88em; color: var(--text-muted);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid var(--orange);
     }
-    .table-container h2 {
-      color: #1e293b;
-      margin: 0 0 15px 0;
-      font-size: clamp(1.2em, 4vw, 1.5em);
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 500px;
-    }
-    th, td {
-      padding: 10px 8px;
-      text-align: left;
-      border-bottom: 1px solid #e2e8f0;
-      font-size: clamp(0.75rem, 2vw, 0.95rem);
-    }
-    th {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      font-weight: bold;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    tbody tr:hover {
-      background: rgba(102, 126, 234, 0.05);
-    }
-    .loading {
-      text-align: center;
-      padding: 60px;
-    }
+    .loading-spinner { display: flex; justify-content: center; align-items: center; height: 200px; }
     .spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid rgba(102, 126, 234, 0.2);
-      border-top: 5px solid #667eea;
-      border-radius: 50%;
-      margin: 0 auto 20px;
-      animation: spin 1s linear infinite;
+      width: 36px; height: 36px; border: 3px solid #e2e8f0;
+      border-top-color: var(--orange); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
     }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-box {
+      background: #fee2e2; border-left: 5px solid var(--red);
+      padding: 20px; border-radius: 10px; color: var(--red); margin: 20px 0;
     }
-    .error-message {
-      background: linear-gradient(135deg, #fee2e2, #fecaca);
-      border-left: 5px solid #dc2626;
-      padding: 20px;
-      border-radius: 10px;
-      color: #dc2626;
-      margin: 20px 0;
-    }
-    .error-details {
-      background: white;
-      padding: 15px;
-      border-radius: 5px;
-      margin-top: 10px;
-      font-family: monospace;
-      font-size: 0.9em;
-      color: #1e293b;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    .no-data {
-      text-align: center;
-      padding: 40px;
-      color: #64748b;
-    }
+
+    /* ── FOOTER ── */
     footer {
-      margin-top: 40px;
-      padding: 25px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      border-radius: 15px;
-      font-size: 13px;
-      line-height: 1.6;
-      text-align: center;
+      background: linear-gradient(135deg, var(--blue-deep), #1e293b);
+      color: rgba(255,255,255,0.7); border-radius: 14px; padding: 20px 28px;
+      text-align: center; font-size: 0.83em; line-height: 1.8; margin-top: 8px;
     }
-    
-    /* Mobile Responsive Styles */
-    @media (max-width: 768px) {
-      body {
-        padding: 5px;
-      }
-      .container {
-        padding: 15px;
-        border-radius: 15px;
-      }
-      .config-helper {
-        padding: 15px;
-        font-size: 0.9em;
-      }
-      .control-panel {
-        padding: 15px;
-        gap: 10px;
-      }
-      .control-group {
-        width: 100%;
-      }
-      select, button {
-        padding: 14px 16px;
-        font-size: 16px;
-        min-width: unset;
-      }
-      .charts-grid {
-        grid-template-columns: 1fr;
-      }
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-      }
-      .stat-card {
-        padding: 15px;
-      }
-      .stat-icon {
-        font-size: 1.5em;
-        margin-bottom: 5px;
-      }
-      .stat-value {
-        font-size: 1.8em;
-        margin-bottom: 5px;
-      }
-      .stat-label {
-        font-size: 0.8em;
-      }
-      .chart-container {
-        padding: 15px;
-        margin-bottom: 15px;
-      }
-      .chart-container h2 {
-        font-size: 1.1em;
-        margin-bottom: 15px;
-      }
-      .table-container {
-        padding: 10px;
-      }
-      th, td {
-        padding: 8px 5px;
-        font-size: 0.75rem;
-      }
-      footer {
-        padding: 15px;
-        font-size: 0.75em;
-      }
-      .error-message {
-        padding: 15px;
-        font-size: 0.9em;
-      }
-    }
-    @media (max-width: 480px) {
-      .stats-grid {
-        grid-template-columns: 1fr;
-      }
-      .stat-value {
-        font-size: 2em;
-      }
-      th, td {
-        font-size: 0.7rem;
-      }
-      .last-updated {
-        font-size: 0.75em;
-      }
-    }
-    @media (min-width: 769px) {
-      .control-group {
-        width: auto;
-      }
-      select, button {
-        width: auto;
-      }
+    footer strong { color: white; }
+
+    @media (max-width: 1024px) { .charts-grid { grid-template-columns: 1fr; } .charts-grid-3 { grid-template-columns: 1fr; } }
+    @media (max-width: 900px)  { .target-cards { grid-template-columns: 1fr; } }
+    @media (max-width: 768px)  {
+      body { padding: 12px; }
+      .header { flex-direction: column; gap: 12px; text-align: center; }
+      .header-right { text-align: center; }
+      .filter-bar { flex-direction: column; align-items: stretch; }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🔥 Gas Sales Dashboard</h1>
-    <div class="subtitle" id="headerText">Loading...</div>
-    
-    <div class="control-panel">
-      <div class="control-group">
-        <label class="control-label">📅 Month Filter</label>
-        <select id="monthSelector" onchange="switchMonth(this.value)">
-          <!-- Options will be auto-populated -->
-        </select>
-      </div>
-      <button onclick="loadData()" id="refreshBtn">🔄 Refresh Data</button>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <h1>🔥 LPG Gas Dashboard</h1>
+      <div class="subtitle">Cylinder Sales · Refill Tracking · New Customer Acquisition · Target Monitoring</div>
     </div>
-    <div class="last-updated" id="lastUpdated">Last updated: Loading...</div>
-    
-    <div id="loading" class="loading">
-      <div class="spinner"></div>
-      <p style="color: #667eea; font-weight: bold; font-size: 1.2em;">Loading gas sales data...</p>
+    <div class="header-right">
+      <strong>Kiryan Energy Ltd</strong>
+      <span>Shell Mangu Rd SS · Confidential · v3.0</span>
     </div>
-    
-    <div id="errorContainer"></div>
-    
-    <div id="dashboard" style="display: none;">
-      <div class="stats-grid" id="statsGrid"></div>
-      
-      <div class="charts-grid">
-        <div class="chart-container">
-          <h2>📈 Daily Sales Trend</h2>
-          <canvas id="dailyTrendChart"></canvas>
-        </div>
-        <div class="chart-container">
-          <h2>🎯 Product Distribution</h2>
-          <canvas id="productDistChart"></canvas>
-        </div>
-      </div>
-      
-      <div class="chart-container">
-        <h2>📊 Product Performance Over Time</h2>
-        <canvas id="productTrendChart"></canvas>
-      </div>
-      
-      <div class="table-container">
-        <h2>📋 Detailed Sales Data</h2>
-        <table id="dataTable"></table>
-      </div>
-    </div>
-    
-    <footer>
-      <p><strong>© 2026 Kiryan Energy Ltd — All Rights Reserved</strong></p>
-      <p><strong>Confidential:</strong> This dashboard is for official use only.</p>
-      <p>Data refreshed automatically • Dashboard v2.1 • Pivot Format</p>
-    </footer>
   </div>
 
-  <script>
-    // ============================================================================
-    // 📝 CONFIGURATION SECTION - ADD YOUR MONTHS HERE!
-    // ============================================================================
-    
-    const dataSources = {
-      // Your November sheet from the screenshot - Table14
-      "October 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=285948413&single=true&output=csv",
-      "November 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=285948413&single=true&output=csv",
-      "December 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS6iyMOviuAKEPtY-l7IOcbpkpWIm6hHVz5ongtl9A6xv2idj2VqJ5shpPcteJ-QAMsdQvMgYUpaQec/pub?gid=285948413&single=true&output=csv",
-      "January 2026": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRT8Kama3jzM7pEBPHUY-hUKgiV5Mbp0VC5CN4_-r2MckRoU2xxGcwQb31qeRKjXLg2NHH0eDQlmu3C/pub?gid=285948413&single=true&output=csv",
-      "February 2026": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRWCk42WV4zp0FBWtNJmxIsFW88QPRxE-2S8cnKG205VfA9ntl_2xMhrTyuRPWS82kDtaszDFDyv7r5/pub?gid=285948413&single=true&output=csv".
-      // Add more months as needed
-    };
-    
-    // ============================================================================
-    // 🔧 AUTOMATIC SETUP
-    // ============================================================================
+  <div class="date-range" id="dateRange">📅 Loading data…</div>
 
-    let allData = [];
-    let allMonthsData = {};
-    let currentMonth = "";
-    let charts = {};
+  <!-- SUMMARY METRIC CARDS -->
+  <div class="metrics-grid" id="metricsGrid">
+    <div class="loading-spinner" style="grid-column:1/-1"><div class="spinner"></div></div>
+  </div>
 
-    function initializeMonthFilter() {
-      const monthSelector = document.getElementById('monthSelector');
-      monthSelector.innerHTML = '';
-      
-      const months = Object.keys(dataSources).reverse();
-      
-      months.forEach(month => {
-        const option = document.createElement('option');
-        option.value = month;
-        option.textContent = month;
-        monthSelector.appendChild(option);
-      });
-      
-      const combinedOption = document.createElement('option');
-      combinedOption.value = 'combined';
-      combinedOption.textContent = 'Combined (All Months)';
-      monthSelector.appendChild(combinedOption);
-      
-      console.log(`✅ Initialized with ${months.length} months: ${months.join(', ')}`);
-      currentMonth = months[0];
+  <!-- TARGET PROGRESS -->
+  <div class="target-section" id="targetSection" style="display:none">
+    <div class="section-title">🎯 Monthly Target Progress — 3,114.5 KG</div>
+    <div class="target-cards" id="targetCards"></div>
+  </div>
+
+  <!-- NEW CUSTOMERS SECTION -->
+  <div class="customers-section" id="customersSection" style="display:none">
+    <div class="section-title">🆕 New Customer Acquisition (Empty Cylinders Sold)</div>
+    <div class="customer-cards" id="customerCards"></div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>📅 Month</label>
+      <select id="monthSelector" onchange="switchMonth(this.value)"></select>
+    </div>
+    <div class="filter-group">
+      <label>📦 Product Size</label>
+      <select id="sizeFilter" onchange="applyFilter()">
+        <option value="all">All Sizes</option>
+        <option value="6">6 KG</option>
+        <option value="13">13 KG</option>
+        <option value="45">45 KG</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🔄 Sale Type</label>
+      <select id="typeFilter" onchange="applyFilter()">
+        <option value="all">All Types</option>
+        <option value="refill">Refills Only</option>
+        <option value="new">New Customers Only</option>
+      </select>
+    </div>
+    <button class="btn" onclick="loadData()" id="refreshBtn">🔄 Refresh</button>
+  </div>
+
+  <!-- DAILY TREND + DISTRIBUTION -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="section-title">📈 Daily Refill Volume (KG) vs Target</div>
+      <div class="chart-wrapper tall"><canvas id="dailyTrendChart"></canvas></div>
+      <div class="chart-legend" id="trendLegend">
+        <div class="legend-item"><div class="legend-line" style="background:#ea580c"></div> Refill KG Sold</div>
+        <div class="legend-item"><div class="legend-dashed"></div> Daily Target</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div> Above Target</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div> Below Target</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="section-title">🎯 Refill KG Distribution</div>
+      <div class="chart-wrapper tall"><canvas id="productDistChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- PER-PRODUCT TRENDS + NEW CUSTOMER TREND -->
+  <div class="charts-grid-3">
+    <div class="chart-card">
+      <div class="section-title">📊 Refill Trend by Cylinder</div>
+      <div class="chart-wrapper"><canvas id="productTrendChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="section-title">🆕 New Customers Daily</div>
+      <div class="chart-wrapper"><canvas id="newCustChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="section-title">📦 Pieces Sold by Type</div>
+      <div class="chart-wrapper"><canvas id="piecesChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="insights-section">
+    <div class="section-title">🚨 Key Insights</div>
+    <ul class="insights-list" id="insightsList"></ul>
+  </div>
+
+  <!-- DATA TABLE -->
+  <div class="table-section">
+    <div class="section-title">📋 Detailed Daily Records</div>
+    <div class="table-scroll">
+      <table id="dataTable"></table>
+    </div>
+  </div>
+
+  <footer>
+    <p><strong>© 2026 Kiryan Energy Ltd — All Rights Reserved</strong></p>
+    <p><strong>Confidential:</strong> Proprietary &amp; confidential. Unauthorised use, reproduction or distribution
+    is prohibited under the Kenya Copyright Act (Cap. 130) and the Computer Misuse and Cybercrimes Act 2018.</p>
+    <p>LPG Dashboard v3.0 · Target: 3,114.5 KG/month · New Customer Tracking Enabled</p>
+  </footer>
+</div>
+
+<script>
+  // ============================================================================
+  // DATA SOURCES
+  // ============================================================================
+  const dataSources = {
+    "October 2025":  "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-k0UvgWAF628NHqYnQ58rXfOpyMnrqnRa19R-icgOlkeK2yEhP3hg2_9CtwYCHZ08ciLYioLZNTc7/pub?gid=285948413&single=true&output=csv",
+    "November 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vT7ZVd1O2MMZPQ-eNdmAdfyzuTXLa-KOMwxFibhN0c5nBm1TywXnsyElaKeifVZHH3HOnTL8xZkiHlJ/pub?gid=285948413&single=true&output=csv",
+    "December 2025": "https://docs.google.com/spreadsheets/d/e/2PACX-1vS6iyMOviuAKEPtY-l7IOcbpkpWIm6hHVz5ongtl9A6xv2idj2VqJ5shpPcteJ-QAMsdQvMgYUpaQec/pub?gid=285948413&single=true&output=csv",
+    "January 2026":  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRT8Kama3jzM7pEBPHUY-hUKgiV5Mbp0VC5CN4_-r2MckRoU2xxGcwQb31qeRKjXLg2NHH0eDQlmu3C/pub?gid=285948413&single=true&output=csv",
+    "February 2026": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRWCk42WV4zp0FBWtNJmxIsFW88QPRxE-2S8cnKG205VfA9ntl_2xMhrTyuRPWS82kDtaszDFDyv7r5/pub?gid=285948413&single=true&output=csv",
+  };
+
+  // ============================================================================
+  // BUSINESS CONSTANTS
+  // ============================================================================
+  const LPG_MONTHLY_TARGET = 3114.5; // KG — refills only
+
+  // A product name is a "NEW CUSTOMER / EMPTY" if it contains "EMPTY"
+  // Everything else (REFILL / full cylinder exchange) is a refill
+  function isNewCustomer(productName) {
+    return productName.toUpperCase().includes('EMPTY');
+  }
+
+  function getCylinderKG(productName) {
+    const n = productName.toUpperCase();
+    if (n.includes('45')) return 45;
+    if (n.includes('13')) return 13;
+    if (n.includes('6'))  return 6;
+    return 0;
+  }
+
+  function getCylinderSize(productName) {
+    const n = productName.toUpperCase();
+    if (n.includes('45')) return '45KG';
+    if (n.includes('13')) return '13KG';
+    return '6KG';
+  }
+
+  function getDaysInMonth(monthStr) {
+    if (!monthStr || monthStr === 'combined') return 30;
+    const d = new Date(monthStr + ' 1');
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  }
+
+  // ============================================================================
+  // STATE
+  // ============================================================================
+  let allMonthsData = {};   // raw records per month
+  let currentMonth = '';
+  let filteredRecords = []; // currently displayed
+  let charts = {};
+
+  // ============================================================================
+  // INIT
+  // ============================================================================
+  function initMonthFilter() {
+    const sel = document.getElementById('monthSelector');
+    sel.innerHTML = '';
+    Object.keys(dataSources).reverse().forEach(m => {
+      const o = document.createElement('option'); o.value = m; o.textContent = m; sel.appendChild(o);
+    });
+    const c = document.createElement('option'); c.value = 'combined'; c.textContent = 'Combined (All Months)';
+    sel.appendChild(c);
+    currentMonth = sel.options[0].value;
+  }
+
+  // ============================================================================
+  // CSV / DATE HELPERS
+  // ============================================================================
+  function parseCsvLine(line) {
+    const result = []; let cur = ''; let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; continue; }
+      if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    result.push(cur.trim());
+    return result;
+  }
+
+  function parseCsv(text) {
+    const lines = text.trim().split('\n');
+    return lines.map(parseCsvLine);
+  }
+
+  function formatDateStr(raw) {
+    if (!raw) return null;
+    const p = raw.trim().split('.');
+    if (p.length !== 3) return null;
+    if (p[0].length === 4) return `${p[0]}-${p[1].padStart(2,'0')}-${p[2].padStart(2,'0')}`;
+    return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+  }
+
+  function fmtShort(d) { return new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric' }); }
+  function fmtLong(d)  { return new Date(d).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' }); }
+
+  // ============================================================================
+  // DATA LOADING
+  // ============================================================================
+  async function loadData() {
+    document.getElementById('metricsGrid').innerHTML =
+      '<div class="loading-spinner" style="grid-column:1/-1"><div class="spinner"></div></div>';
+    document.getElementById('targetSection').style.display = 'none';
+    document.getElementById('customersSection').style.display = 'none';
+    document.getElementById('refreshBtn').disabled = true;
+
+    try {
+      allMonthsData = {};
+      for (const [month, url] of Object.entries(dataSources)) {
+        await loadMonthData(url, month);
+      }
+      switchMonth(currentMonth);
+    } catch(e) {
+      document.getElementById('metricsGrid').innerHTML =
+        `<div class="error-box" style="grid-column:1/-1"><strong>❌ Error:</strong> ${e.message}
+         <button class="btn" onclick="loadData()" style="margin-top:12px">🔄 Retry</button></div>`;
+    } finally {
+      document.getElementById('refreshBtn').disabled = false;
+    }
+  }
+
+  async function loadMonthData(url, monthName) {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${monthName}`);
+    const rows = parseCsv(await resp.text());
+    if (rows.length < 2) return;
+
+    // Header = [product_label, date1, date2, ...]
+    const headerRow = rows[0];
+    const dates = [];
+    for (let i = 1; i < headerRow.length; i++) {
+      const ds = formatDateStr(headerRow[i]);
+      if (ds && !isNaN(new Date(ds))) dates.push(ds);
+      else dates.push(null);
     }
 
-    function csvToArray(csv, delimiter = ',') {
-      const lines = csv.trim().split('\n');
-      
-      function parseLine(line) {
-        const result = [];
-        let current = '';
-        let inQuotes = false;
-        
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          const nextChar = line[i + 1];
-          
-          if (char === '"') {
-            if (inQuotes && nextChar === '"') {
-              current += '"';
-              i++;
-            } else {
-              inQuotes = !inQuotes;
-            }
-          } else if (char === delimiter && !inQuotes) {
-            result.push(current);
-            current = '';
-          } else {
-            current += char;
-          }
-        }
-        result.push(current);
-        return result.map(field => field.trim());
-      }
-      
-      return lines.map(line => parseLine(line));
-    }
+    const records = [];
+    for (let ri = 1; ri < rows.length; ri++) {
+      const row = rows[ri];
+      const product = (row[0] || '').trim();
+      if (!product || product.toUpperCase().includes('TOTAL')) continue;
 
-    function formatDate(dateStr) {
-      if (!dateStr) return null;
-      
-      // Handle format like "2025.11.01" or "01.11.2025"
-      const parts = dateStr.trim().split(".");
-      if (parts.length === 3) {
-        if (parts[0].length === 4) {
-          // YYYY.MM.DD
-          return `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
-        } else {
-          // DD.MM.YYYY
-          return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
-        }
-      }
-      
-      return dateStr;
-    }
+      const kgPerUnit = getCylinderKG(product);
+      if (kgPerUnit === 0) continue; // unknown product
 
-    async function loadData() {
-      document.getElementById('loading').style.display = 'block';
-      document.getElementById('dashboard').style.display = 'none';
-      document.getElementById('errorContainer').innerHTML = '';
-      document.getElementById('refreshBtn').disabled = true;
+      const newCust = isNewCustomer(product);
+      const size = getCylinderSize(product);
 
-      try {
-        console.log('📥 Loading gas sales data (pivot format)...');
-        allMonthsData = {};
-        
-        for (const [month, url] of Object.entries(dataSources)) {
-          await loadMonthData(url, month);
-        }
-        
-        console.log(`✅ Loaded ${Object.keys(allMonthsData).length} months of data`);
-
-        document.getElementById('lastUpdated').textContent = 
-          "Last updated: " + new Date().toLocaleString();
-        
-        switchMonth(currentMonth);
-
-      } catch (err) {
-        console.error('❌ Error loading data:', err);
-        document.getElementById('errorContainer').innerHTML = `
-          <div class="error-message">
-            <h3>❌ Data Loading Error</h3>
-            <p><strong>Error:</strong> ${err.message}</p>
-            <div class="error-details">${err.stack || 'No additional details'}</div>
-            <button onclick="loadData()" style="margin-top: 15px; background: #dc2626; border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
-              🔄 Retry
-            </button>
-          </div>
-        `;
-        document.getElementById('loading').style.display = 'none';
-      } finally {
-        document.getElementById('refreshBtn').disabled = false;
-      }
-    }
-
-    async function loadMonthData(csvUrl, monthName) {
-      console.log(`   Loading ${monthName} (pivot format)...`);
-      
-      const response = await fetch(csvUrl);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} for ${monthName}`);
-      }
-      
-      const text = await response.text();
-      if (!text || text.trim() === '') {
-        throw new Error(`Empty response for ${monthName}`);
-      }
-      
-      const rows = csvToArray(text);
-      console.log(`   Parsed ${rows.length} rows from ${monthName}`);
-      
-      if (rows.length === 0) {
-        throw new Error(`No data in ${monthName}`);
-      }
-
-      // Parse pivot table format
-      const headerRow = rows[0];
-      console.log(`   Header row:`, headerRow);
-      
-      // Extract dates from header row
-      const dates = [];
-      for (let i = 1; i < headerRow.length; i++) {
-        const dateStr = headerRow[i];
-        
-        // Skip if empty or contains "TOTAL" or other non-date text
-        if (!dateStr || dateStr.trim() === '') continue;
-        if (dateStr.toString().toUpperCase().includes('TOTAL')) continue;
-        if (dateStr.toString().toUpperCase().includes('PCS')) continue;
-        
-        const formattedDate = formatDate(dateStr);
-        if (formattedDate) {
-          // Validate that it's actually a valid date
-          const testDate = new Date(formattedDate);
-          if (!isNaN(testDate.getTime())) {
-            dates.push(formattedDate);
-          } else {
-            console.log(`   ⚠️ Skipping invalid date: ${dateStr} (formatted as ${formattedDate})`);
-          }
-        }
-      }
-      
-      console.log(`   Found ${dates.length} valid dates in ${monthName}`);
-      if (dates.length === 0) {
-        throw new Error(`No valid dates found in header row for ${monthName}`);
-      }
-
-      // Transform pivot data to row format WITH CONVERSION TO KG
-      const transformedData = [];
-      
-      // Function to extract cylinder size from product name and convert pieces to KG
-      function convertPiecesToKG(product, pieces) {
-        const productUpper = product.toUpperCase();
-        let cylinderSize = 0;
-        
-        if (productUpper.includes('6KG') || productUpper.includes('6 KG')) {
-          cylinderSize = 6;
-        } else if (productUpper.includes('13KG') || productUpper.includes('13 KG')) {
-          cylinderSize = 13;
-        } else if (productUpper.includes('25KG') || productUpper.includes('25 KG')) {
-          cylinderSize = 25;
-        } else if (productUpper.includes('45KG') || productUpper.includes('45 KG')) {
-          cylinderSize = 45;
-        }
-        
-        return pieces * cylinderSize;
-      }
-      
-      for (let rowIdx = 1; rowIdx < rows.length; rowIdx++) {
-        const row = rows[rowIdx];
-        const product = row[0];
-        
-        // Skip if no product name or if it's a total row
-        if (!product || product.toString().toUpperCase().includes('TOTAL')) {
-          continue;
-        }
-        
-        // Process each date column for this product
-        for (let colIdx = 1; colIdx < row.length && colIdx <= dates.length; colIdx++) {
-          const quantityStr = row[colIdx];
-          const pieces = parseFloat(quantityStr) || 0;
-          
-          // Only include if pieces > 0
-          if (pieces > 0) {
-            const date = dates[colIdx - 1];
-            if (date) {
-              const totalKG = convertPiecesToKG(product, pieces);
-              
-              transformedData.push({
-                Date: date,
-                Product: product.trim(),
-                Pieces: pieces,
-                TotalKGs: totalKG,
-                Month: monthName
-              });
-            }
-          }
-        }
-      }
-
-      console.log(`   ✅ Transformed ${transformedData.length} records from ${monthName}`);
-      console.log(`   Sample record:`, transformedData[0]);
-      
-      if (transformedData.length === 0) {
-        console.warn(`   ⚠️ Warning: No valid data extracted from ${monthName}`);
-      }
-      
-      allMonthsData[monthName] = transformedData;
-    }
-
-    function switchMonth(month) {
-      currentMonth = month;
-      
-      const headerText = month === 'combined' ? 'All Months Overview' : `${month} Overview`;
-      document.getElementById('headerText').textContent = headerText;
-      document.getElementById('monthSelector').value = month;
-
-      let filtered = [];
-      if (month === 'combined') {
-        Object.values(allMonthsData).forEach(monthData => {
-          filtered = filtered.concat(monthData);
+      for (let ci = 1; ci < row.length && ci <= dates.length; ci++) {
+        if (!dates[ci-1]) continue;
+        const pieces = parseFloat(row[ci]) || 0;
+        if (pieces <= 0) continue;
+        records.push({
+          date:      dates[ci-1],
+          product:   product,
+          size:      size,
+          isNew:     newCust,   // true = new customer (empty sold), false = refill
+          pieces:    pieces,
+          totalKG:   newCust ? 0 : pieces * kgPerUnit, // KG only counted for refills
+          month:     monthName,
         });
-      } else {
-        filtered = allMonthsData[month] || [];
       }
-      
-      filtered.sort((a, b) => new Date(a.Date) - new Date(b.Date));
-      
-      console.log(`📊 Displaying ${filtered.length} records for ${month}`);
-      displayData(filtered);
+    }
+    allMonthsData[monthName] = records;
+  }
+
+  // ============================================================================
+  // MONTH SWITCH & FILTER
+  // ============================================================================
+  function switchMonth(month) {
+    currentMonth = month;
+    document.getElementById('monthSelector').value = month;
+
+    let raw = [];
+    if (month === 'combined') {
+      Object.values(allMonthsData).forEach(arr => { raw = raw.concat(arr); });
+    } else {
+      raw = allMonthsData[month] || [];
+    }
+    raw.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+    // Update date range label
+    if (raw.length) {
+      const label = month === 'combined' ? 'All Months' : month;
+      document.getElementById('dateRange').innerHTML =
+        `📅 <strong>${label}</strong> — ${fmtLong(raw[0].date)} to ${fmtLong(raw[raw.length-1].date)} (${[...new Set(raw.map(r=>r.date))].length} days)`;
     }
 
-    function displayData(data) {
-      document.getElementById('loading').style.display = 'none';
-      
-      if (data.length === 0) {
-        document.getElementById('dashboard').innerHTML = `
-          <div class="no-data">
-            <h2>📭 No Data Available</h2>
-            <p>No records found for the selected month.</p>
+    filteredRecords = raw;
+    applyFilter();
+  }
+
+  function applyFilter() {
+    const size = document.getElementById('sizeFilter').value;
+    const type = document.getElementById('typeFilter').value;
+
+    let data = filteredRecords;
+    if (size !== 'all') data = data.filter(r => r.size.startsWith(size));
+    if (type === 'refill') data = data.filter(r => !r.isNew);
+    if (type === 'new')    data = data.filter(r => r.isNew);
+
+    render(data);
+  }
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+  function render(data) {
+    // Separate refills from new customers
+    const refills = data.filter(r => !r.isNew);
+    const newCusts = data.filter(r => r.isNew);
+
+    updateMetrics(data, refills, newCusts);
+    updateTargetCards(refills);
+    updateCustomerCards(newCusts);
+    createCharts(refills, newCusts, data);
+    updateInsights(data, refills, newCusts);
+    updateTable(data);
+  }
+
+  // ============================================================================
+  // METRICS
+  // ============================================================================
+  function updateMetrics(data, refills, newCusts) {
+    const totalRefillKG  = refills.reduce((a,r) => a + r.totalKG, 0);
+    const totalRefillPcs = refills.reduce((a,r) => a + r.pieces, 0);
+    const totalNewPcs    = newCusts.reduce((a,r) => a + r.pieces, 0);
+    const uniqueDays     = new Set(refills.map(r=>r.date)).size || 1;
+    const avgPerDay      = totalRefillKG / uniqueDays;
+    const pct            = ((totalRefillKG / LPG_MONTHLY_TARGET)*100).toFixed(1);
+
+    const pctClass = parseFloat(pct) >= 90 ? 'green-top' : parseFloat(pct) >= 60 ? 'amber-top' : 'red-top';
+
+    document.getElementById('metricsGrid').innerHTML = `
+      <div class="metric-card orange-top">
+        <div class="m-icon">🔥</div>
+        <div class="m-value">${totalRefillKG.toLocaleString(undefined,{maximumFractionDigits:1})} KG</div>
+        <div class="m-label">Total Refill KG Sold</div>
+      </div>
+      <div class="metric-card ${pctClass}">
+        <div class="m-icon">🎯</div>
+        <div class="m-value">${pct}%</div>
+        <div class="m-label">Target Progress</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-icon">📈</div>
+        <div class="m-value">${avgPerDay.toLocaleString(undefined,{maximumFractionDigits:1})} KG</div>
+        <div class="m-label">Daily Average (Refills)</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-icon">🔄</div>
+        <div class="m-value">${totalRefillPcs.toLocaleString()}</div>
+        <div class="m-label">Refill Cylinders</div>
+      </div>
+      <div class="metric-card amber-top">
+        <div class="m-icon">🆕</div>
+        <div class="m-value">${totalNewPcs.toLocaleString()}</div>
+        <div class="m-label">New Customers</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-icon">📅</div>
+        <div class="m-value">${uniqueDays}</div>
+        <div class="m-label">Active Days</div>
+      </div>`;
+  }
+
+  // ============================================================================
+  // TARGET CARDS
+  // ============================================================================
+  function updateTargetCards(refills) {
+    const sel = currentMonth;
+    const daysInMonth = getDaysInMonth(sel);
+    const now = new Date();
+    const monthDate = sel !== 'combined' ? new Date(sel + ' 1') : null;
+    const isCurrent = monthDate &&
+      now.getFullYear() === monthDate.getFullYear() &&
+      now.getMonth()    === monthDate.getMonth();
+    const daysElapsed = isCurrent ? Math.min(now.getDate(), daysInMonth) : daysInMonth;
+    const daysLeft = Math.max(daysInMonth - daysElapsed, 0);
+
+    // KG split by size (refills only)
+    const kg6  = refills.filter(r=>r.size==='6KG').reduce((a,r)=>a+r.totalKG,0);
+    const kg13 = refills.filter(r=>r.size==='13KG').reduce((a,r)=>a+r.totalKG,0);
+    const kg45 = refills.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.totalKG,0);
+    const totalKG = kg6 + kg13 + kg45;
+
+    // Station target proportional breakdown (approximate — adjust if you have exact per-size targets)
+    const stationTarget = LPG_MONTHLY_TARGET;
+    const dailyTarget = stationTarget / daysInMonth;
+    const expectedKG = dailyTarget * daysElapsed;
+
+    function buildCard(cls, label, sold, target) {
+      const pct = Math.min((sold/target)*100, 100);
+      const expectedPct = Math.min(((target/stationTarget)*expectedKG/target)*100, 100);
+      const remaining = Math.max(target - sold, 0);
+      const dailyNeeded = daysLeft > 0 ? remaining/daysLeft : 0;
+      let fillCls, bdgCls, bdgTxt;
+      if (pct >= expectedPct - 5) { fillCls='on-track'; bdgCls='badge-on-track'; bdgTxt='✅ On Track'; }
+      else if (pct >= expectedPct - 15) { fillCls='below'; bdgCls='badge-below'; bdgTxt='⚠️ Below Pace'; }
+      else { fillCls='critical'; bdgCls='badge-critical'; bdgTxt='🚨 Behind'; }
+      return `
+        <div class="target-card ${cls}">
+          <div class="tc-name">${label}</div>
+          <div class="tc-numbers">
+            <div class="tc-num-item">
+              <div class="tc-val">${sold.toLocaleString(undefined,{maximumFractionDigits:1})} KG</div>
+              <div class="tc-lbl">Sold (Refills)</div>
+            </div>
+            <div class="tc-num-item">
+              <div class="tc-val">${target.toLocaleString(undefined,{maximumFractionDigits:1})} KG</div>
+              <div class="tc-lbl">Target</div>
+            </div>
           </div>
-        `;
-        document.getElementById('dashboard').style.display = 'block';
-        return;
-      }
-      
-      document.getElementById('dashboard').style.display = 'block';
-
-      // Calculate statistics
-      const totalKG = data.reduce((sum, r) => sum + r.TotalKGs, 0);
-      const totalPieces = data.reduce((sum, r) => sum + r.Pieces, 0);
-      const total6KG = data.filter(r => r.Product.includes('6'))
-        .reduce((sum, r) => sum + r.TotalKGs, 0);
-      const total13KG = data.filter(r => r.Product.includes('13'))
-        .reduce((sum, r) => sum + r.TotalKGs, 0);
-      const total45KG = data.filter(r => r.Product.includes('45'))
-        .reduce((sum, r) => sum + r.TotalKGs, 0);
-      
-      const uniqueDays = new Set(data.map(r => r.Date)).size;
-      const avgPerDay = uniqueDays > 0 ? (totalKG / uniqueDays).toFixed(0) : 0;
-
-      document.getElementById('statsGrid').innerHTML = `
-        <div class="stat-card">
-          <div class="stat-icon">⚖️</div>
-          <div class="stat-value">${totalKG.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
-          <div class="stat-label">Total KGs Sold</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">📅</div>
-          <div class="stat-value">${uniqueDays}</div>
-          <div class="stat-label">Days of Sales</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">📊</div>
-          <div class="stat-value">${avgPerDay}</div>
-          <div class="stat-label">Avg KGs/Day</div>
-        </div>
-        <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
-          <div class="stat-icon">🛢️</div>
-          <div class="stat-value">${totalPieces.toLocaleString()}</div>
-          <div class="stat-label">Total Pieces Sold</div>
-        </div>
-      `;
-
-      createDailyTrendChart(data);
-      createProductDistributionChart(data);
-      createProductTrendChart(data);
-      createDataTable(data);
+          <div class="tc-pct" style="margin-bottom:5px;">
+            <span>${pct.toFixed(1)}% achieved</span>
+            <span>Expected: ${expectedPct.toFixed(1)}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill ${fillCls}" style="width:${pct}%"></div>
+            <div class="pace-marker" style="left:${Math.min(expectedPct,100)}%"></div>
+          </div>
+          <div class="tc-pct" style="font-size:0.78em;opacity:0.6;margin-bottom:4px;">
+            ${daysLeft > 0 ? `Need <strong>${dailyNeeded.toLocaleString(undefined,{maximumFractionDigits:1})} KG/day</strong> over ${daysLeft} days` : 'Month complete'}
+          </div>
+          <div class="tc-badge ${bdgCls}">${bdgTxt}</div>
+        </div>`;
     }
 
-    function createDailyTrendChart(data) {
-      if (charts.dailyTrend) charts.dailyTrend.destroy();
+    // Proportional targets (6KG ≈ 25%, 13KG ≈ 60%, 45KG ≈ 15% — adjust to your actuals)
+    const t6  = stationTarget * 0.25;
+    const t13 = stationTarget * 0.60;
+    const t45 = stationTarget * 0.15;
 
-      const dailyTotals = {};
-      data.forEach(r => {
-        if (!dailyTotals[r.Date]) dailyTotals[r.Date] = 0;
-        dailyTotals[r.Date] += r.TotalKGs;
-      });
+    document.getElementById('targetCards').innerHTML =
+      buildCard('c6kg',  '🔵 6 KG Refills',  kg6,  t6) +
+      buildCard('c13kg', '🟣 13 KG Refills', kg13, t13) +
+      buildCard('station','📊 Station Total', totalKG, stationTarget);
 
-      const dates = Object.keys(dailyTotals).sort();
-      const values = dates.map(d => dailyTotals[d]);
+    document.getElementById('targetSection').style.display = 'block';
+  }
 
-      charts.dailyTrend = new Chart(document.getElementById('dailyTrendChart'), {
-        type: 'line',
-        data: {
-          labels: dates.map(d => {
-            const date = new Date(d);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          }),
-          datasets: [{
-            label: 'Total KGs',
-            data: values,
-            borderColor: '#667eea',
-            backgroundColor: 'rgba(102, 126, 234, 0.1)',
-            tension: 0.4,
-            fill: true,
-            borderWidth: 3
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { callback: v => v.toLocaleString() + ' kg' }
-            }
-          }
+  // ============================================================================
+  // NEW CUSTOMER CARDS
+  // ============================================================================
+  function updateCustomerCards(newCusts) {
+    const new6  = newCusts.filter(r=>r.size==='6KG').reduce((a,r)=>a+r.pieces,0);
+    const new13 = newCusts.filter(r=>r.size==='13KG').reduce((a,r)=>a+r.pieces,0);
+    const total = new6 + new13;
+
+    // Cumulative across all loaded months for context
+    let cumTotal = 0;
+    Object.values(allMonthsData).forEach(arr => {
+      arr.filter(r=>r.isNew).forEach(r => { cumTotal += r.pieces; });
+    });
+
+    document.getElementById('customerCards').innerHTML = `
+      <div class="customer-card c6">
+        <div class="cc-icon">🔵</div>
+        <div class="cc-val">${new6.toLocaleString()}</div>
+        <div class="cc-label">New 6KG Customers</div>
+        <div class="cc-sub">Empty 6KG cylinders sold this period</div>
+      </div>
+      <div class="customer-card c13">
+        <div class="cc-icon">🟣</div>
+        <div class="cc-val">${new13.toLocaleString()}</div>
+        <div class="cc-label">New 13KG Customers</div>
+        <div class="cc-sub">Empty 13KG cylinders sold this period</div>
+      </div>
+      <div class="customer-card total">
+        <div class="cc-icon">🆕</div>
+        <div class="cc-val">${total.toLocaleString()}</div>
+        <div class="cc-label">Total New Customers</div>
+        <div class="cc-sub">Cumulative all months: <strong>${cumTotal.toLocaleString()}</strong></div>
+      </div>`;
+
+    document.getElementById('customersSection').style.display = 'block';
+  }
+
+  // ============================================================================
+  // CHARTS — shaded gap plugin for daily vs target
+  // ============================================================================
+  const shadedGapPlugin = {
+    id: 'shadedGap',
+    afterDatasetsDraw(chart) {
+      const { ctx, chartArea: { top, bottom, left, right } } = chart;
+      const am = chart.getDatasetMeta(0), tm = chart.getDatasetMeta(1);
+      if (!am?.data?.length || !tm?.data?.length) return;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(left, top, right-left, bottom-top); ctx.clip();
+      const n = am.data.length;
+      for (let i = 0; i < n-1; i++) {
+        const ax0=am.data[i].x, ay0=am.data[i].y, ax1=am.data[i+1].x, ay1=am.data[i+1].y;
+        const tx0=tm.data[i].x, ty0=tm.data[i].y, tx1=tm.data[i+1].x, ty1=tm.data[i+1].y;
+        const da0=ay0-ty0, da1=ay1-ty1;
+        const cross = (da0>0&&da1<0)||(da0<0&&da1>0);
+        const shade = (above) => above ? 'rgba(16,185,129,0.22)' : 'rgba(220,38,38,0.18)';
+        if (!cross) {
+          ctx.beginPath(); ctx.moveTo(ax0,ay0); ctx.lineTo(ax1,ay1); ctx.lineTo(tx1,ty1); ctx.lineTo(tx0,ty0); ctx.closePath();
+          ctx.fillStyle = shade(da0<=0); ctx.fill();
+        } else {
+          const t=da0/(da0-da1), cx=ax0+t*(ax1-ax0), cy=ay0+t*(ay1-ay0), tcy=ty0+t*(ty1-ty0);
+          ctx.beginPath(); ctx.moveTo(ax0,ay0); ctx.lineTo(cx,cy); ctx.lineTo(cx,tcy); ctx.lineTo(tx0,ty0); ctx.closePath();
+          ctx.fillStyle = shade(da0<=0); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(ax1,ay1); ctx.lineTo(tx1,ty1); ctx.lineTo(cx,tcy); ctx.closePath();
+          ctx.fillStyle = shade(da1<=0); ctx.fill();
         }
-      });
+      }
+      ctx.restore();
     }
+  };
 
-    function createProductDistributionChart(data) {
-      if (charts.productDist) charts.productDist.destroy();
+  function destroyAll() { Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} }); charts = {}; }
 
-      const total6 = data.filter(r => r.Product.includes('6'))
-        .reduce((a, b) => a + b.TotalKGs, 0);
-      const total13 = data.filter(r => r.Product.includes('13'))
-        .reduce((a, b) => a + b.TotalKGs, 0);
-      const total45 = data.filter(r => r.Product.includes('45'))
-        .reduce((a, b) => a + b.TotalKGs, 0);
+  function createCharts(refills, newCusts, allData) {
+    destroyAll();
 
-      charts.productDist = new Chart(document.getElementById('productDistChart'), {
-        type: 'doughnut',
-        data: {
-          labels: ['6KG', '13KG', '45KG'],
-          datasets: [{
-            data: [total6, total13, total45],
-            backgroundColor: ['#667eea', '#764ba2', '#f093fb'],
-            borderWidth: 3,
-            borderColor: '#ffffff'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: {
-            legend: { position: 'bottom' },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const label = context.label || '';
-                  const value = context.parsed || 0;
-                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                  const percentage = ((value / total) * 100).toFixed(1);
-                  return `${label}: ${value.toLocaleString()} kg (${percentage}%)`;
-                }
+    const daysInMonth = getDaysInMonth(currentMonth);
+    const dailyTarget = LPG_MONTHLY_TARGET / daysInMonth;
+
+    // ── Build daily aggregates ──
+    const refillByDay = {}, newCustByDay = {};
+    const refill6ByDay = {}, refill13ByDay = {}, refill45ByDay = {};
+    const newCust6ByDay = {}, newCust13ByDay = {};
+    const piecesRefill = {}, piecesNew = {};
+
+    refills.forEach(r => {
+      refillByDay[r.date] = (refillByDay[r.date]||0) + r.totalKG;
+      piecesRefill[r.date] = (piecesRefill[r.date]||0) + r.pieces;
+      if (r.size==='6KG')  refill6ByDay[r.date]  = (refill6ByDay[r.date]||0)  + r.totalKG;
+      if (r.size==='13KG') refill13ByDay[r.date] = (refill13ByDay[r.date]||0) + r.totalKG;
+      if (r.size==='45KG') refill45ByDay[r.date] = (refill45ByDay[r.date]||0) + r.totalKG;
+    });
+    newCusts.forEach(r => {
+      newCustByDay[r.date] = (newCustByDay[r.date]||0) + r.pieces;
+      piecesNew[r.date] = (piecesNew[r.date]||0) + r.pieces;
+      if (r.size==='6KG')  newCust6ByDay[r.date]  = (newCust6ByDay[r.date]||0)  + r.pieces;
+      if (r.size==='13KG') newCust13ByDay[r.date] = (newCust13ByDay[r.date]||0) + r.pieces;
+    });
+
+    const allDates = [...new Set([...Object.keys(refillByDay), ...Object.keys(newCustByDay)])].sort();
+    const labels = allDates.map(fmtShort);
+
+    // ── DAILY TREND with shaded target ──
+    const actualKG = allDates.map(d => refillByDay[d]||0);
+    const targetLine = allDates.map(() => parseFloat(dailyTarget.toFixed(2)));
+
+    charts.dailyTrend = new Chart(document.getElementById('dailyTrendChart').getContext('2d'), {
+      type: 'line',
+      plugins: [shadedGapPlugin],
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Refill KG',
+            data: actualKG,
+            borderColor: '#ea580c', backgroundColor: 'transparent',
+            borderWidth: 2.5, tension: 0.35, fill: false,
+            pointRadius: 5, pointHoverRadius: 7,
+            pointBackgroundColor: actualKG.map(v => v >= dailyTarget ? '#10b981' : '#dc2626'),
+            pointBorderColor: 'white', pointBorderWidth: 1.5, order: 1
+          },
+          {
+            label: `Daily Target (${dailyTarget.toFixed(1)} KG)`,
+            data: targetLine,
+            borderColor: '#f59e0b', backgroundColor: 'transparent',
+            borderWidth: 2, borderDash: [10,5], tension: 0,
+            fill: false, pointRadius: 0, order: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode:'index', intersect:false },
+        plugins: {
+          legend: { position:'top' },
+          tooltip: {
+            callbacks: {
+              afterBody(items) {
+                const idx = items[0]?.dataIndex;
+                if (idx === undefined) return '';
+                const diff = actualKG[idx] - dailyTarget;
+                return [`${diff>=0?'✅ Above':'🔴 Below'} target: ${diff>=0?'+':''}${diff.toFixed(1)} KG`];
               }
             }
           }
-        }
-      });
-    }
-
-    function createProductTrendChart(data) {
-      if (charts.productTrend) charts.productTrend.destroy();
-
-      const trends = { '6KG': {}, '13KG': {}, '45KG': {} };
-      data.forEach(r => {
-        const product = r.Product;
-        const kg = r.TotalKGs;
-        
-        if (product.includes('6')) {
-          trends['6KG'][r.Date] = (trends['6KG'][r.Date] || 0) + kg;
-        } else if (product.includes('13')) {
-          trends['13KG'][r.Date] = (trends['13KG'][r.Date] || 0) + kg;
-        } else if (product.includes('45')) {
-          trends['45KG'][r.Date] = (trends['45KG'][r.Date] || 0) + kg;
-        }
-      });
-
-      const dates = [...new Set(data.map(r => r.Date))].sort();
-      const labels = dates.map(d => {
-        const date = new Date(d);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      });
-
-      const datasets = [
-        {
-          label: '6KG',
-          data: dates.map(d => trends['6KG'][d] || 0),
-          borderColor: '#667eea',
-          backgroundColor: 'rgba(102, 126, 234, 0.2)',
-          tension: 0.4,
-          borderWidth: 3
         },
-        {
-          label: '13KG',
-          data: dates.map(d => trends['13KG'][d] || 0),
-          borderColor: '#764ba2',
-          backgroundColor: 'rgba(118, 75, 162, 0.2)',
-          tension: 0.4,
-          borderWidth: 3
-        },
-        {
-          label: '45KG',
-          data: dates.map(d => trends['45KG'][d] || 0),
-          borderColor: '#f093fb',
-          backgroundColor: 'rgba(240, 147, 251, 0.2)',
-          tension: 0.4,
-          borderWidth: 3
+        scales: {
+          y: { beginAtZero:true, ticks:{ callback: v => v.toLocaleString()+' KG' }, title:{ display:true, text:'KG Sold (Refills)' } },
+          x: { ticks:{ maxRotation:45 }, grid:{ color:'rgba(0,0,0,0.05)' } }
         }
-      ];
+      }
+    });
 
-      charts.productTrend = new Chart(document.getElementById('productTrendChart'), {
-        type: 'line',
-        data: { labels, datasets },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: { legend: { position: 'top' } },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { callback: v => v.toLocaleString() + ' kg' }
-            }
-          }
+    // ── DOUGHNUT — refill KG distribution ──
+    const tot6  = refills.filter(r=>r.size==='6KG').reduce((a,r)=>a+r.totalKG,0);
+    const tot13 = refills.filter(r=>r.size==='13KG').reduce((a,r)=>a+r.totalKG,0);
+    const tot45 = refills.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.totalKG,0);
+    charts.dist = new Chart(document.getElementById('productDistChart').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['6 KG Refills','13 KG Refills','45 KG Refills'],
+        datasets: [{
+          data: [tot6, tot13, tot45],
+          backgroundColor: ['#1d4ed8','#7c3aed','#059669'],
+          borderWidth: 3, borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend:{ position:'bottom' },
+          tooltip:{ callbacks:{ label(ctx){ const total=ctx.dataset.data.reduce((a,b)=>a+b,0); return `${ctx.label}: ${ctx.parsed.toLocaleString(undefined,{maximumFractionDigits:1})} KG (${((ctx.parsed/total)*100).toFixed(1)}%)`; } } }
         }
-      });
-    }
+      }
+    });
 
-    function createDataTable(data) {
-      const table = document.getElementById('dataTable');
-      
-      if (!data.length) {
-        table.innerHTML = "<tbody><tr><td>No data available</td></tr></tbody>";
-        return;
+    // ── REFILL TREND by size ──
+    charts.productTrend = new Chart(document.getElementById('productTrendChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label:'6KG', data: allDates.map(d=>refill6ByDay[d]||0),  borderColor:'#1d4ed8', backgroundColor:'rgba(29,78,216,0.1)', fill:true, tension:0.4, borderWidth:2.5 },
+          { label:'13KG',data: allDates.map(d=>refill13ByDay[d]||0), borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.1)', fill:true, tension:0.4, borderWidth:2.5 },
+          { label:'45KG',data: allDates.map(d=>refill45ByDay[d]||0), borderColor:'#059669', backgroundColor:'rgba(5,150,105,0.1)',  fill:true, tension:0.4, borderWidth:2.5 },
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:'top' } },
+        scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>v+' KG' } }, x:{ ticks:{ maxRotation:45 } } }
+      }
+    });
+
+    // ── NEW CUSTOMERS DAILY (bar) ──
+    charts.newCust = new Chart(document.getElementById('newCustChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label:'6KG Empty', data:allDates.map(d=>newCust6ByDay[d]||0),  backgroundColor:'rgba(29,78,216,0.7)',  borderRadius:4 },
+          { label:'13KG Empty',data:allDates.map(d=>newCust13ByDay[d]||0), backgroundColor:'rgba(124,58,237,0.7)', borderRadius:4 },
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:'top' }, title:{ display:false } },
+        scales:{ x:{ stacked:true, ticks:{ maxRotation:45 } }, y:{ stacked:true, beginAtZero:true, ticks:{ callback:v=>v+' pcs' } } }
+      }
+    });
+
+    // ── PIECES bar — refill vs new customers ──
+    charts.pieces = new Chart(document.getElementById('piecesChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label:'Refill Pcs',      data:allDates.map(d=>piecesRefill[d]||0), backgroundColor:'rgba(234,88,12,0.75)',  borderRadius:4 },
+          { label:'New Cust Pcs',    data:allDates.map(d=>piecesNew[d]||0),    backgroundColor:'rgba(251,191,36,0.75)', borderRadius:4 },
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:'top' } },
+        scales:{ x:{ stacked:false, ticks:{ maxRotation:45 } }, y:{ beginAtZero:true, ticks:{ callback:v=>v+' pcs' } } }
+      }
+    });
+  }
+
+  // ============================================================================
+  // INSIGHTS
+  // ============================================================================
+  function updateInsights(data, refills, newCusts) {
+    const daysInMonth = getDaysInMonth(currentMonth);
+    const dailyTarget = LPG_MONTHLY_TARGET / daysInMonth;
+    const totalKG = refills.reduce((a,r)=>a+r.totalKG, 0);
+    const uniqueDays = [...new Set(refills.map(r=>r.date))];
+    const daysElapsed = uniqueDays.length || 1;
+    const daysLeft = Math.max(daysInMonth - daysElapsed, 0);
+    const shortfall = LPG_MONTHLY_TARGET - totalKG;
+    const neededPerDay = daysLeft > 0 ? shortfall/daysLeft : 0;
+
+    // Days above/below for refills
+    const refillByDay = {};
+    refills.forEach(r => { refillByDay[r.date] = (refillByDay[r.date]||0) + r.totalKG; });
+    const daysAbove = Object.values(refillByDay).filter(v=>v>=dailyTarget).length;
+    const daysBelow = Object.values(refillByDay).filter(v=>v>0&&v<dailyTarget).length;
+
+    // Best day
+    const bestDay = Object.entries(refillByDay).sort((a,b)=>b[1]-a[1])[0];
+    const worstDay = Object.entries(refillByDay).sort((a,b)=>a[1]-b[1])[0];
+
+    // New customers cumulative
+    const cumNew = Object.values(allMonthsData).flat().filter(r=>r.isNew).reduce((a,r)=>a+r.pieces,0);
+    const newThisMonth = newCusts.reduce((a,r)=>a+r.pieces, 0);
+
+    const insights = [
+      `🔥 Total refill volume: <strong>${totalKG.toLocaleString(undefined,{maximumFractionDigits:1})} KG</strong> across ${daysElapsed} active days`,
+      `🎯 Monthly target: <strong>${LPG_MONTHLY_TARGET.toLocaleString()} KG</strong> — ${shortfall>0
+        ? `still need <strong>${shortfall.toLocaleString(undefined,{maximumFractionDigits:1})} KG</strong>${daysLeft>0?' ('+neededPerDay.toFixed(1)+' KG/day for '+daysLeft+' days)':''}`
+        : '<strong style="color:#059669">TARGET ACHIEVED 🎉</strong>'}`,
+      `✅ Days above daily target (${dailyTarget.toFixed(1)} KG): <strong>${daysAbove}</strong> &nbsp;|&nbsp; 🔴 Below: <strong>${daysBelow}</strong>`,
+      bestDay  ? `🔥 Best refill day: <strong>${fmtLong(bestDay[0])}</strong> — ${bestDay[1].toFixed(1)} KG` : '',
+      worstDay ? `📉 Lowest refill day: <strong>${fmtLong(worstDay[0])}</strong> — ${worstDay[1].toFixed(1)} KG` : '',
+      `🆕 New customers this period: <strong>${newThisMonth.toLocaleString()} cylinders</strong> sold as empties`,
+      `📊 Cumulative new customers (all months): <strong>${cumNew.toLocaleString()} cylinders</strong>`,
+      `⚠️ Note: Empty cylinder sales represent new customer onboarding — KG from empties is <strong>not included</strong> in refill volume or target progress.`,
+    ].filter(Boolean);
+
+    document.getElementById('insightsList').innerHTML = insights.map(i=>`<li>${i}</li>`).join('');
+  }
+
+  // ============================================================================
+  // DATA TABLE
+  // ============================================================================
+  function updateTable(data) {
+    const daysInMonth = getDaysInMonth(currentMonth);
+    const dailyTarget = LPG_MONTHLY_TARGET / daysInMonth;
+
+    let html = `<thead><tr>
+      <th>📅 Date</th>
+      <th>📦 Product</th>
+      <th>Type</th>
+      <th>📏 Size</th>
+      <th>Pieces</th>
+      <th>KG (Refill)</th>
+      <th>vs Daily Target</th>
+    </tr></thead><tbody>`;
+
+    // Group by date for vs-target column
+    const refillByDay = {};
+    data.filter(r=>!r.isNew).forEach(r => { refillByDay[r.date] = (refillByDay[r.date]||0) + r.totalKG; });
+
+    data.slice().reverse().forEach(r => {
+      const typeBadge = r.isNew
+        ? `<span class="badge-newcust">🆕 New Customer</span>`
+        : `<span class="badge-refill">🔄 Refill</span>`;
+      const kgDisplay = r.isNew ? '—' : r.totalKG.toLocaleString(undefined,{maximumFractionDigits:1})+' KG';
+
+      let vsTarget = '—';
+      if (!r.isNew) {
+        const dayTotal = refillByDay[r.date] || 0;
+        const diff = dayTotal - dailyTarget;
+        vsTarget = diff >= 0
+          ? `<span style="color:#059669;font-weight:700">+${diff.toFixed(1)} KG ✅</span>`
+          : `<span style="color:#dc2626;font-weight:700">${diff.toFixed(1)} KG 🔴</span>`;
       }
 
-      const displayColumns = ['Date', 'Product', 'Pieces', 'TotalKGs', 'Month'];
-      
-      let html = "<thead><tr>" + displayColumns.map(k => {
-        if (k === 'Pieces') return '<th>Pieces Sold</th>';
-        if (k === 'TotalKGs') return '<th>Total KG</th>';
-        return `<th>${k}</th>`;
-      }).join('') + "</tr></thead><tbody>";
-      
-      data.slice().reverse().forEach(r => {
-        html += "<tr>";
-        displayColumns.forEach(k => {
-          let val = r[k] || '';
-          if (k === 'TotalKGs' || k === 'Pieces') {
-            val = Number(val).toLocaleString(undefined, {maximumFractionDigits: 2});
-          } else if (k === 'Date') {
-            const date = new Date(val);
-            val = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-          }
-          html += `<td>${val}</td>`;
-        });
-        html += "</tr>";
-      });
-      
-      html += "</tbody>";
-      table.innerHTML = html;
-    }
-
-    window.addEventListener('load', () => {
-      initializeMonthFilter();
-      loadData();
+      html += `<tr>
+        <td>${fmtShort(r.date)}</td>
+        <td>${r.product}</td>
+        <td>${typeBadge}</td>
+        <td>${r.size}</td>
+        <td>${r.pieces.toLocaleString()}</td>
+        <td>${kgDisplay}</td>
+        <td>${vsTarget}</td>
+      </tr>`;
     });
-  </script>
+
+    document.getElementById('dataTable').innerHTML = html + '</tbody>';
+  }
+
+  // ============================================================================
+  // BOOT
+  // ============================================================================
+  window.onload = () => {
+    initMonthFilter();
+    loadData();
+  };
+</script>
 </body>
 </html>
