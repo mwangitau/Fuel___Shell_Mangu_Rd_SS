@@ -533,7 +533,8 @@
     });
 
     const total = Object.values(dailyTotals).reduce((a,b)=>a+b,0);
-    const avg = total / (Object.keys(dailyTotals).length||1);
+    const daysAccumulated = Object.keys(dailyTotals).length || 1;
+    const avg = total / daysAccumulated;
     const stationDailyTarget = STATION_TOTAL_TARGET / daysInMonth;
     const daysAbove = Object.values(dailyTotals).filter(v=>v>=stationDailyTarget).length;
     const daysBelow = Object.values(dailyTotals).filter(v=>v>0&&v<stationDailyTarget).length;
@@ -549,7 +550,7 @@
       <div class="metric-card">
         <div class="m-icon">📈</div>
         <div class="m-value">${Math.round(avg).toLocaleString()} L</div>
-        <div class="m-label">Daily Average</div>
+        <div class="m-label">Daily Avg (${daysAccumulated} days)</div>
       </div>
       <div class="metric-card ${parseFloat(overallPct)<70?'red-top':parseFloat(overallPct)<90?'amber-top':'green-top'}">
         <div class="m-icon">🎯</div>
