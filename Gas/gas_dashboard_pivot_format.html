@@ -110,7 +110,9 @@
     .target-card:hover { transform: translateY(-3px); }
     .target-card.c6kg  { background: linear-gradient(135deg, #0f172a, #1e3a8a); }
     .target-card.c13kg { background: linear-gradient(135deg, #3b0764, #581c87); }
-    .target-card.station { background: linear-gradient(135deg, #431407, #9a3412); }
+    .target-card.c25kg { background: linear-gradient(135deg, #431407, #9a3412); }
+    .target-card.c45kg { background: linear-gradient(135deg, #064e3b, #065f46); }
+    .target-card.station { background: linear-gradient(135deg, #1e293b, #334155); }
 
     .tc-name {
       font-family: 'Barlow Condensed', sans-serif;
@@ -336,9 +338,10 @@
       <label>📦 Product Size</label>
       <select id="sizeFilter" onchange="applyFilter()">
         <option value="all">All Sizes</option>
-        <option value="6">6 KG</option>
         <option value="13">13 KG</option>
         <option value="45">45 KG</option>
+        <option value="25">25 KG</option>
+        <option value="6">6 KG</option>
       </select>
     </div>
     <div class="filter-group">
@@ -434,6 +437,7 @@
   function getCylinderKG(productName) {
     const n = productName.toUpperCase();
     if (n.includes('45')) return 45;
+    if (n.includes('25')) return 25;
     if (n.includes('13')) return 13;
     if (n.includes('6'))  return 6;
     return 0;
@@ -442,6 +446,7 @@
   function getCylinderSize(productName) {
     const n = productName.toUpperCase();
     if (n.includes('45')) return '45KG';
+    if (n.includes('25')) return '25KG';
     if (n.includes('13')) return '13KG';
     return '6KG';
   }
@@ -559,7 +564,7 @@
 
       for (let ci = 1; ci < row.length && ci <= dates.length; ci++) {
         if (!dates[ci-1]) continue;
-        const pieces = parseFloat(row[ci]) || 0;
+        const pieces = Math.floor(parseFloat(row[ci]) || 0);
         if (pieces <= 0) continue;
         records.push({
           date:      dates[ci-1],
@@ -635,7 +640,7 @@
   function updateMetrics(data, refills, newCusts) {
     const totalRefillKG  = refills.reduce((a,r) => a + r.totalKG, 0);
     const totalRefillPcs = refills.reduce((a,r) => a + r.pieces, 0);
-    const totalNewPcs    = newCusts.reduce((a,r) => a + r.pieces, 0);
+    const totalNewPcs = Math.floor(newCusts.reduce((a,r) => a + r.pieces, 0));
     const uniqueDays     = new Set(refills.map(r=>r.date)).size || 1;
     const avgPerDay      = totalRefillKG / uniqueDays;
     const pct            = ((totalRefillKG / LPG_MONTHLY_TARGET)*100).toFixed(1);
@@ -692,13 +697,21 @@
     // KG split by size (refills only)
     const kg6  = refills.filter(r=>r.size==='6KG').reduce((a,r)=>a+r.totalKG,0);
     const kg13 = refills.filter(r=>r.size==='13KG').reduce((a,r)=>a+r.totalKG,0);
+    const kg25 = refills.filter(r=>r.size==='25KG').reduce((a,r)=>a+r.totalKG,0);
     const kg45 = refills.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.totalKG,0);
-    const totalKG = kg6 + kg13 + kg45;
+    const totalKG = kg6 + kg13 + kg25 + kg45;
 
-    // Station target proportional breakdown (approximate — adjust if you have exact per-size targets)
+    // Station target breakdown reflecting your actual sales mix:
+    // 13KG = dominant (~55%) | 45KG = 135KG/wk ≈ 540KG/mo (~17%) | 25KG (~18%) | 6KG = low (~10%)
     const stationTarget = LPG_MONTHLY_TARGET;
     const dailyTarget = stationTarget / daysInMonth;
     const expectedKG = dailyTarget * daysElapsed;
+
+    // 45KG weekly supply = 135 KG × ~4 weeks = 540 KG/month
+    const t45 = 135 * 4;                        // 540 KG
+    const t6  = stationTarget * 0.10;           // 10% — low customer base
+    const t25 = stationTarget * 0.18;           // 18%
+    const t13 = stationTarget - t6 - t25 - t45; // remainder — dominant
 
     function buildCard(cls, label, sold, target) {
       const pct = Math.min((sold/target)*100, 100);
@@ -737,15 +750,15 @@
         </div>`;
     }
 
-    // Proportional targets (6KG ≈ 25%, 13KG ≈ 60%, 45KG ≈ 15% — adjust to your actuals)
-    const t6  = stationTarget * 0.25;
-    const t13 = stationTarget * 0.60;
-    const t45 = stationTarget * 0.15;
-
     document.getElementById('targetCards').innerHTML =
-      buildCard('c6kg',  '🔵 6 KG Refills',  kg6,  t6) +
-      buildCard('c13kg', '🟣 13 KG Refills', kg13, t13) +
-      buildCard('station','📊 Station Total', totalKG, stationTarget);
+      buildCard('c13kg',   '🟣 13 KG — Dominant',   kg13, t13) +
+      buildCard('station', '📊 Station Total',       totalKG, stationTarget) +
+      buildCard('c45kg',   '🟢 45 KG — Weekly Supply (135 KG/wk)', kg45, t45) +
+      buildCard('c25kg',   '🟠 25 KG',               kg25, t25) +
+      buildCard('c6kg',    '🔵 6 KG',                kg6,  t6);
+
+    // expand grid to 5 cards
+    document.querySelector('.target-cards').style.gridTemplateColumns = 'repeat(auto-fit, minmax(260px, 1fr))';
 
     document.getElementById('targetSection').style.display = 'block';
   }
@@ -754,28 +767,44 @@
   // NEW CUSTOMER CARDS
   // ============================================================================
   function updateCustomerCards(newCusts) {
-    const new6  = newCusts.filter(r=>r.size==='6KG').reduce((a,r)=>a+r.pieces,0);
-    const new13 = newCusts.filter(r=>r.size==='13KG').reduce((a,r)=>a+r.pieces,0);
-    const total = new6 + new13;
+    const new6  = Math.floor(newCusts.filter(r=>r.size==='6KG').reduce((a,r)=>a+r.pieces,0));
+    const new13 = Math.floor(newCusts.filter(r=>r.size==='13KG').reduce((a,r)=>a+r.pieces,0));
+    const new25 = Math.floor(newCusts.filter(r=>r.size==='25KG').reduce((a,r)=>a+r.pieces,0));
+    const new45 = Math.floor(newCusts.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.pieces,0));
+    const total = new6 + new13 + new25 + new45;
 
     // Cumulative across all loaded months for context
     let cumTotal = 0;
     Object.values(allMonthsData).forEach(arr => {
       arr.filter(r=>r.isNew).forEach(r => { cumTotal += r.pieces; });
     });
+    cumTotal = Math.floor(cumTotal);
 
+    // Only render cards for sizes that have at least some data (or always show all 4)
     document.getElementById('customerCards').innerHTML = `
+      <div class="customer-card c13">
+        <div class="cc-icon">🟣</div>
+        <div class="cc-val">${new13.toLocaleString()}</div>
+        <div class="cc-label">New 13KG Customers</div>
+        <div class="cc-sub">Empty 13KG cylinders sold this period</div>
+      </div>
       <div class="customer-card c6">
         <div class="cc-icon">🔵</div>
         <div class="cc-val">${new6.toLocaleString()}</div>
         <div class="cc-label">New 6KG Customers</div>
         <div class="cc-sub">Empty 6KG cylinders sold this period</div>
       </div>
-      <div class="customer-card c13">
-        <div class="cc-icon">🟣</div>
-        <div class="cc-val">${new13.toLocaleString()}</div>
-        <div class="cc-label">New 13KG Customers</div>
-        <div class="cc-sub">Empty 13KG cylinders sold this period</div>
+      <div class="customer-card" style="background:linear-gradient(135deg,#431407,#9a3412);color:white;border-radius:14px;padding:20px;transition:transform 0.2s;">
+        <div class="cc-icon">🟠</div>
+        <div class="cc-val">${new25.toLocaleString()}</div>
+        <div class="cc-label">New 25KG Customers</div>
+        <div class="cc-sub">Empty 25KG cylinders sold this period</div>
+      </div>
+      <div class="customer-card" style="background:linear-gradient(135deg,#064e3b,#065f46);color:white;border-radius:14px;padding:20px;transition:transform 0.2s;">
+        <div class="cc-icon">🟢</div>
+        <div class="cc-val">${new45.toLocaleString()}</div>
+        <div class="cc-label">New 45KG Customers</div>
+        <div class="cc-sub">Empty 45KG cylinders sold this period</div>
       </div>
       <div class="customer-card total">
         <div class="cc-icon">🆕</div>
@@ -830,8 +859,8 @@
 
     // ── Build daily aggregates ──
     const refillByDay = {}, newCustByDay = {};
-    const refill6ByDay = {}, refill13ByDay = {}, refill45ByDay = {};
-    const newCust6ByDay = {}, newCust13ByDay = {};
+    const refill6ByDay = {}, refill13ByDay = {}, refill25ByDay = {}, refill45ByDay = {};
+    const newCust6ByDay = {}, newCust13ByDay = {}, newCust25ByDay = {}, newCust45ByDay = {};
     const piecesRefill = {}, piecesNew = {};
 
     refills.forEach(r => {
@@ -839,6 +868,7 @@
       piecesRefill[r.date] = (piecesRefill[r.date]||0) + r.pieces;
       if (r.size==='6KG')  refill6ByDay[r.date]  = (refill6ByDay[r.date]||0)  + r.totalKG;
       if (r.size==='13KG') refill13ByDay[r.date] = (refill13ByDay[r.date]||0) + r.totalKG;
+      if (r.size==='25KG') refill25ByDay[r.date] = (refill25ByDay[r.date]||0) + r.totalKG;
       if (r.size==='45KG') refill45ByDay[r.date] = (refill45ByDay[r.date]||0) + r.totalKG;
     });
     newCusts.forEach(r => {
@@ -846,6 +876,8 @@
       piecesNew[r.date] = (piecesNew[r.date]||0) + r.pieces;
       if (r.size==='6KG')  newCust6ByDay[r.date]  = (newCust6ByDay[r.date]||0)  + r.pieces;
       if (r.size==='13KG') newCust13ByDay[r.date] = (newCust13ByDay[r.date]||0) + r.pieces;
+      if (r.size==='25KG') newCust25ByDay[r.date] = (newCust25ByDay[r.date]||0) + r.pieces;
+      if (r.size==='45KG') newCust45ByDay[r.date] = (newCust45ByDay[r.date]||0) + r.pieces;
     });
 
     const allDates = [...new Set([...Object.keys(refillByDay), ...Object.keys(newCustByDay)])].sort();
@@ -905,14 +937,15 @@
     // ── DOUGHNUT — refill KG distribution ──
     const tot6  = refills.filter(r=>r.size==='6KG').reduce((a,r)=>a+r.totalKG,0);
     const tot13 = refills.filter(r=>r.size==='13KG').reduce((a,r)=>a+r.totalKG,0);
+    const tot25 = refills.filter(r=>r.size==='25KG').reduce((a,r)=>a+r.totalKG,0);
     const tot45 = refills.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.totalKG,0);
     charts.dist = new Chart(document.getElementById('productDistChart').getContext('2d'), {
       type: 'doughnut',
       data: {
-        labels: ['6 KG Refills','13 KG Refills','45 KG Refills'],
+        labels: ['13 KG — Dominant','45 KG — Weekly','25 KG','6 KG'],
         datasets: [{
-          data: [tot6, tot13, tot45],
-          backgroundColor: ['#1d4ed8','#7c3aed','#059669'],
+          data: [tot13, tot45, tot25, tot6],
+          backgroundColor: ['#7c3aed','#059669','#ea580c','#1d4ed8'],
           borderWidth: 3, borderColor: '#fff'
         }]
       },
@@ -925,15 +958,16 @@
       }
     });
 
-    // ── REFILL TREND by size ──
+    // ── REFILL TREND by size — ordered by volume (13KG dominant first) ──
     charts.productTrend = new Chart(document.getElementById('productTrendChart').getContext('2d'), {
       type: 'line',
       data: {
         labels,
         datasets: [
-          { label:'6KG', data: allDates.map(d=>refill6ByDay[d]||0),  borderColor:'#1d4ed8', backgroundColor:'rgba(29,78,216,0.1)', fill:true, tension:0.4, borderWidth:2.5 },
-          { label:'13KG',data: allDates.map(d=>refill13ByDay[d]||0), borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.1)', fill:true, tension:0.4, borderWidth:2.5 },
-          { label:'45KG',data: allDates.map(d=>refill45ByDay[d]||0), borderColor:'#059669', backgroundColor:'rgba(5,150,105,0.1)',  fill:true, tension:0.4, borderWidth:2.5 },
+          { label:'13KG', data: allDates.map(d=>refill13ByDay[d]||0), borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.1)', fill:true, tension:0.4, borderWidth:2.5 },
+          { label:'45KG', data: allDates.map(d=>refill45ByDay[d]||0), borderColor:'#059669', backgroundColor:'rgba(5,150,105,0.1)',  fill:true, tension:0.4, borderWidth:2.5 },
+          { label:'25KG', data: allDates.map(d=>refill25ByDay[d]||0), borderColor:'#ea580c', backgroundColor:'rgba(234,88,12,0.1)',  fill:true, tension:0.4, borderWidth:2.5 },
+          { label:'6KG',  data: allDates.map(d=>refill6ByDay[d]||0),  borderColor:'#1d4ed8', backgroundColor:'rgba(29,78,216,0.08)', fill:true, tension:0.4, borderWidth:2 },
         ]
       },
       options:{
@@ -943,20 +977,22 @@
       }
     });
 
-    // ── NEW CUSTOMERS DAILY (bar) ──
+    // ── NEW CUSTOMERS DAILY (bar) — all 4 sizes ──
     charts.newCust = new Chart(document.getElementById('newCustChart').getContext('2d'), {
       type: 'bar',
       data: {
         labels,
         datasets: [
-          { label:'6KG Empty', data:allDates.map(d=>newCust6ByDay[d]||0),  backgroundColor:'rgba(29,78,216,0.7)',  borderRadius:4 },
-          { label:'13KG Empty',data:allDates.map(d=>newCust13ByDay[d]||0), backgroundColor:'rgba(124,58,237,0.7)', borderRadius:4 },
+          { label:'13KG New', data:allDates.map(d=>newCust13ByDay[d]||0), backgroundColor:'rgba(124,58,237,0.75)', borderRadius:3 },
+          { label:'6KG New',  data:allDates.map(d=>newCust6ByDay[d]||0),  backgroundColor:'rgba(29,78,216,0.75)',  borderRadius:3 },
+          { label:'25KG New', data:allDates.map(d=>newCust25ByDay[d]||0), backgroundColor:'rgba(234,88,12,0.75)',  borderRadius:3 },
+          { label:'45KG New', data:allDates.map(d=>newCust45ByDay[d]||0), backgroundColor:'rgba(5,150,105,0.75)',  borderRadius:3 },
         ]
       },
       options:{
         responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{ position:'top' }, title:{ display:false } },
-        scales:{ x:{ stacked:true, ticks:{ maxRotation:45 } }, y:{ stacked:true, beginAtZero:true, ticks:{ callback:v=>v+' pcs' } } }
+        plugins:{ legend:{ position:'top' } },
+        scales:{ x:{ stacked:true, ticks:{ maxRotation:45 } }, y:{ stacked:true, beginAtZero:true, ticks:{ callback: v => Math.floor(v)+' pcs', stepSize:1 } } }
       }
     });
 
@@ -1001,9 +1037,8 @@
     const bestDay = Object.entries(refillByDay).sort((a,b)=>b[1]-a[1])[0];
     const worstDay = Object.entries(refillByDay).sort((a,b)=>a[1]-b[1])[0];
 
-    // New customers cumulative
-    const cumNew = Object.values(allMonthsData).flat().filter(r=>r.isNew).reduce((a,r)=>a+r.pieces,0);
-    const newThisMonth = newCusts.reduce((a,r)=>a+r.pieces, 0);
+    const newThisMonth = Math.floor(newCusts.reduce((a,r)=>a+r.pieces, 0));
+    const cumNew = Math.floor(Object.values(allMonthsData).flat().filter(r=>r.isNew).reduce((a,r)=>a+r.pieces,0));
 
     const insights = [
       `🔥 Total refill volume: <strong>${totalKG.toLocaleString(undefined,{maximumFractionDigits:1})} KG</strong> across ${daysElapsed} active days`,
@@ -1011,9 +1046,11 @@
         ? `still need <strong>${shortfall.toLocaleString(undefined,{maximumFractionDigits:1})} KG</strong>${daysLeft>0?' ('+neededPerDay.toFixed(1)+' KG/day for '+daysLeft+' days)':''}`
         : '<strong style="color:#059669">TARGET ACHIEVED 🎉</strong>'}`,
       `✅ Days above daily target (${dailyTarget.toFixed(1)} KG): <strong>${daysAbove}</strong> &nbsp;|&nbsp; 🔴 Below: <strong>${daysBelow}</strong>`,
+      `📊 Sales mix — 🟣 13KG: <strong>${refills.filter(r=>r.size==='13KG').reduce((a,r)=>a+r.totalKG,0).toFixed(1)} KG</strong> · 🟢 45KG: <strong>${refills.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.totalKG,0).toFixed(1)} KG</strong> · 🟠 25KG: <strong>${refills.filter(r=>r.size==='25KG').reduce((a,r)=>a+r.totalKG,0).toFixed(1)} KG</strong> · 🔵 6KG: <strong>${refills.filter(r=>r.size==='6KG').reduce((a,r)=>a+r.totalKG,0).toFixed(1)} KG</strong>`,
+      (() => { const pcs45 = refills.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.pieces,0); const weeks = daysElapsed/7; return pcs45>0 ? `🟢 45KG avg weekly supply: <strong>${(refills.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.totalKG,0)/weeks).toFixed(1)} KG/week</strong> (target: 135 KG/week · ${pcs45} cylinders)` : ''; })(),
       bestDay  ? `🔥 Best refill day: <strong>${fmtLong(bestDay[0])}</strong> — ${bestDay[1].toFixed(1)} KG` : '',
       worstDay ? `📉 Lowest refill day: <strong>${fmtLong(worstDay[0])}</strong> — ${worstDay[1].toFixed(1)} KG` : '',
-      `🆕 New customers this period: <strong>${newThisMonth.toLocaleString()} cylinders</strong> sold as empties`,
+      `🆕 New customers this period: <strong>${newThisMonth.toLocaleString()}</strong> total — 🟣 13KG: ${Math.floor(newCusts.filter(r=>r.size==='13KG').reduce((a,r)=>a+r.pieces,0))} · 🔵 6KG: ${Math.floor(newCusts.filter(r=>r.size==='6KG').reduce((a,r)=>a+r.pieces,0))} · 🟠 25KG: ${Math.floor(newCusts.filter(r=>r.size==='25KG').reduce((a,r)=>a+r.pieces,0))} · 🟢 45KG: ${Math.floor(newCusts.filter(r=>r.size==='45KG').reduce((a,r)=>a+r.pieces,0))} cylinders`,
       `📊 Cumulative new customers (all months): <strong>${cumNew.toLocaleString()} cylinders</strong>`,
       `⚠️ Note: Empty cylinder sales represent new customer onboarding — KG from empties is <strong>not included</strong> in refill volume or target progress.`,
     ].filter(Boolean);
